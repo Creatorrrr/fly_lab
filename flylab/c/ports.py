@@ -6,7 +6,7 @@ from .integrity import digest, finite, bounded_int
 from ..engine import validate_sensor_packet
 
 CHANNELS = {'odor_mean', 'odor_left', 'odor_right', 'panorama_mean', 'panorama_bin',
-            'front_proximity', 'contact', 'angular_velocity', 'danger'}
+            'front_proximity', 'contact', 'angular_velocity', 'danger', 'loom_left','loom_right','head_contact'}
 INPUT_KINDS = {'sensory', 'direct_injection', 'assisted_input'}
 MOTOR_GROUPS = ('forward', 'backward', 'stop', 'yaw_left', 'yaw_right')
 
@@ -29,6 +29,8 @@ class PortBindings:
             seen.add(name)
             if p.get('channel') not in CHANNELS or p.get('input_kind') not in INPUT_KINDS:
                 raise ValueError('BLOCKED_PORT_BINDING: unsupported observation boundary')
+            if p['channel'] in ('loom_left','loom_right','head_contact') and not s.get('sensor_model',{}).get('extended_observations'):
+                raise ValueError('BLOCKED_PORT_BINDING: extended observations must be enabled explicitly')
             self._review(p)
             ids = graph.resolve(p.get('ids'), maximum=10000)
             if len(ids) == 0:
@@ -91,8 +93,11 @@ class PortBindings:
                     and all(p.get('review_status') == 'biologically_validated' for p, ids in self.motor.values() if len(ids)))
 
 
-def feature(packet, port):
+def feature(packet, port, supplemental=None):
     channel = port['channel']
+    if channel in ('loom_left','loom_right','head_contact'):
+        if supplemental is None or channel not in supplemental:raise ValueError('Extended observation unavailable: '+channel)
+        return finite(supplemental[channel],channel,0.,1000.)
     if channel == 'odor_mean': return sum(packet['odor']) / 2
     if channel == 'odor_left': return packet['odor'][0]
     if channel == 'odor_right': return packet['odor'][1]
@@ -111,7 +116,7 @@ class SensoryEncoder:
         self.delays = [[0.] * p['delay_controls'] for p, _ in bindings.sensory]
         self.control_tick = 0
 
-    def encode(self, packet, dt, neural_dt, disabled=()):
+    def encode(self, packet, dt, neural_dt, disabled=(), supplemental=None):
         validate_sensor_packet(packet)
         count = round(dt / neural_dt)
         if abs(count * neural_dt - dt) > 1e-12:
@@ -120,7 +125,9 @@ class SensoryEncoder:
         pulse_ids, pulse_values = [], []
         values = []
         for i, (p, ids) in enumerate(self.bindings.sensory):
-            value = float(np.clip(p['baseline'] + p['gain'] * (feature(packet, p) - p['offset']) * p['scale'], 0, p['cap']))
+            raw_feature = feature(packet, p, supplemental)
+            requested = p['baseline'] + p['gain'] * (raw_feature - p['offset']) * p['scale']
+            value = float(np.clip(requested, 0, p['cap']))
             alpha = 1 if p['tau_s'] == 0 else 1 - math.exp(-dt / p['tau_s'])
             self.filtered[i] += alpha * (value - self.filtered[i])
             value = float(self.filtered[i])
@@ -136,7 +143,8 @@ class SensoryEncoder:
                 pulses = self.rng.poisson(value * neural_dt, (count, len(ids))) * p['pulse_mV']
                 pulse_ids.extend(ids.tolist()); pulse_values.append(pulses if enabled else np.zeros_like(pulses))
             values.append(dict(name=p['name'], value=value if enabled else 0.,
-                               unit='mV' if p['method'] == 'drive_mV' else 'Hz', enabled=enabled))
+                               unit='mV' if p['method'] == 'drive_mV' else 'Hz', enabled=enabled,
+                               feature=float(raw_feature), requested=float(requested), clipped=bool(requested<0 or requested>p['cap'])))
         self.control_tick += 1
         pulses = None if not pulse_values else (np.asarray(pulse_ids, dtype=np.int32), np.concatenate(pulse_values, axis=1))
         return drive, pulses, values
@@ -172,6 +180,7 @@ def zero_command():
 class MotorDecoder:
     def __init__(self, bindings):
         self.bindings = bindings
+        self.diagnostics = {}
 
     def decode(self, backend):
         indices = self.bindings.motor_indices
@@ -184,6 +193,10 @@ class MotorDecoder:
             scaled[role] = value * p['gain']
         command = dict(forwardSpeed=float(np.clip(scaled['forward'] - scaled['backward'] - scaled['stop'], -3.3, 3.3)),
                        yawRate=float(np.clip(scaled['yaw_right'] - scaled['yaw_left'], -3., 3.)), verticalSpeed=0.)
+        raw = dict(forwardSpeed=scaled['forward']-scaled['backward']-scaled['stop'],
+                   yawRate=scaled['yaw_right']-scaled['yaw_left'])
+        self.diagnostics = dict(scaled=scaled, before_limits=raw, after_limits=command,
+                                clipped={k:raw[k]!=command[k] for k in raw})
         return command, values
 
 

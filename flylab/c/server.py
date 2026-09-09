@@ -10,7 +10,9 @@ from .ports import PortBindings
 from .neural import LIFParameters, NEURAL_BACKENDS, create_backend
 from .protocol import signal_frame
 from .storage import StateStore
-from .integrity import read_json, write_json, digest, checked_name, bounded_int
+from .integrity import read_json, write_json, digest, checked_name, bounded_int, file_hash
+from .diagnostics import fault_report
+from .jobs import CampaignJobs
 from .workbench import checked_world, intervention_rows
 from ..server import Server as BServer, ROOT
 from ..body import FlyGymBody, dependency_report
@@ -25,6 +27,10 @@ class CDispatcher:
         self.backend, self.default_mode = backend, default_mode
         self.graph = self.bindings = self.engine = None
         self.profile_cache = {}
+        self.profile_entries = {}
+        self.profile_fingerprints = {}
+        self.last_fault_report = None
+        self.jobs = CampaignJobs(self.artifacts/'campaigns', self.graph_path)
 
     def load(self):
         if self.graph is None:
@@ -36,10 +42,24 @@ class CDispatcher:
     def profiles(self):
         self.load()
         paths = [self.binding_path]+[p for p in sorted(self.binding_path.parent.glob('bindings-*.json')) if p!=self.binding_path]
+        available = {p.name for p in paths[:16]}
+        self.profile_entries = {}
         for path in paths[:16]:
-            if path.name not in self.profile_cache:
-                self.profile_cache[path.name] = PortBindings(self.graph, read_json(path))
-        return self.profile_cache
+            try:
+                fingerprint = file_hash(path)
+                if self.profile_fingerprints.get(path.name) != fingerprint:
+                    binding = PortBindings(self.graph, read_json(path))
+                    self.profile_cache[path.name] = binding
+                    self.profile_fingerprints[path.name] = fingerprint
+                binding = self.profile_cache[path.name]
+                self.profile_entries[path.name] = dict(name=path.name, profile=binding.spec.get('profile', path.name),
+                    hash=binding.hash, available=True, status='AVAILABLE')
+            except Exception as exc:
+                self.profile_cache.pop(path.name, None)
+                self.profile_fingerprints.pop(path.name, None)
+                self.profile_entries[path.name] = dict(name=path.name, profile=path.stem,
+                    available=False, status='UNAVAILABLE', reason=str(exc))
+        return {name: value for name, value in self.profile_cache.items() if name in available}
 
     def checkpoint_bindings(self, state):
         for binding in self.profiles().values():
@@ -51,22 +71,34 @@ class CDispatcher:
         return self.engine
 
     def replace(self, new):
+        try:
+            result = self.ready(new)
+            json.dumps(result, allow_nan=False)
+            result['_prepared_binary'] = signal_frame(new)
+            from .protocol import decode_signals
+            decode_signals(result['_prepared_binary'])
+        except Exception:
+            new.close()
+            raise
         old, self.engine = self.engine, new
         self.bindings = new.bindings
         if new.neural: self.backend = new.neural.backend
-        if old: old.close()
-        return self.ready()
+        if old:
+            try: old.close()
+            except Exception as exc: result['cleanup_error'] = str(exc)
+        return result
 
-    def ready(self):
-        e = self.need()
+    def ready(self, engine=None):
+        e = engine if engine is not None else self.need()
+        self.profiles()
         return dict(capabilities=dict(version=VERSION, protocol=PROTOCOL, modes=list(MODES),
                     backend=e.neural.backend if e.neural else 'legacy_b_rate', neuralBackends=list(NEURAL_BACKENDS),
                     physical=not e.body.test_double, fullBrain=e.neural is not None and e.graph.full_brain,
                     maxSubscription=512, maxAdvance=10, flight=False, biologicalValidation=False,
                     checkpoint=True, replay=True, selectedBinarySignals=True),
                     manifest=e.graph.manifest, binding=e.bindings.summary(), frame=e.frame(),
-                    profiles=[dict(name=name, profile=b.spec.get('profile',name), hash=b.hash,
-                                   current=b.hash==e.bindings.hash) for name,b in self.profiles().items()])
+                    profiles=[dict(entry, current=entry.get('hash')==e.bindings.hash)
+                              for entry in self.profile_entries.values()])
 
     def handle(self, message):
         if not isinstance(message, dict) or message.get('protocol') != PROTOCOL:
@@ -76,22 +108,39 @@ class CDispatcher:
         if not isinstance(payload, dict): raise ValueError('Payload object required')
         op = message.get('op')
         if op == 'init':
-            if set(payload)-{'mode', 'seed', 'config', 'motion_expected', 'profile'}: raise ValueError('Unknown initialization field')
+            if set(payload)-{'mode', 'seed', 'config', 'motion_expected', 'profile','metabolism'}: raise ValueError('Unknown initialization field')
             self.load()
             profile = payload.get('profile', self.binding_path.name)
             bindings = self.profiles().get(profile)
-            if bindings is None: raise ValueError('Unknown binding profile')
+            if bindings is None:
+                reason = self.profile_entries.get(profile, {}).get('reason', 'Unknown binding profile')
+                raise ValueError('Profile unavailable: ' + reason)
             current = self.engine
-            if current and current.recorder: raise ValueError('Finish recording before starting a new experiment')
+            faulted = current is not None and bool(current.fault or current.body.fault)
+            if current and current.recorder and not faulted: raise ValueError('Finish recording before starting a new experiment')
             saved = None
-            if current:
+            recovery = dict(kind='new', restorable_source=False)
+            if faulted:
+                report = fault_report(current)
+                self.last_fault_report = report
+                name = 'fault-'+secrets.token_hex(6)
+                recovery.update(kind='fault_reset', diagnostic_id=name, diagnostic=report)
+                try:
+                    (self.artifacts/'diagnostics').mkdir(parents=True, exist_ok=True)
+                    write_json(self.artifacts/'diagnostics'/(name+'.json'), report)
+                    recovery['diagnostic_saved'] = True
+                except Exception as exc:
+                    recovery.update(diagnostic_saved=False, diagnostic_save_error=str(exc))
+            elif current:
                 saved = 'before-init-'+secrets.token_hex(6)
                 StateStore.save(self.artifacts/'checkpoints'/saved, current.checkpoint())
+                recovery.update(kind='checkpoint_reset', restorable_source=True)
             new = CEngine(self.graph, bindings, mode=payload.get('mode', self.default_mode),
                           seed=payload.get('seed', 42), config=payload.get('config'), backend=self.backend,
-                          body_factory=self.factory, motion_expected=payload.get('motion_expected', True))
+                          body_factory=self.factory, motion_expected=payload.get('motion_expected', True),metabolism=payload.get('metabolism'))
             result = self.replace(new)
             result['source_checkpoint'] = saved
+            result['recovery'] = recovery
         elif op == 'attach': result = self.ready()
         elif op == 'frame': result = self.need().frame()
         elif op == 'backend':
@@ -105,10 +154,19 @@ class CDispatcher:
             StateStore.save(self.artifacts/'checkpoints'/name, checkpoint)
             new = CEngine.from_checkpoint(self.graph, self.bindings, checkpoint, self.factory,
                                           backend_override=target)
-            self.backend = target
             result = self.replace(new)
             result['source_checkpoint'] = name
-        elif op == 'advance': result = self.need().step(bounded_int(payload.get('steps', 10), 'steps', 0, 10))
+        elif op == 'advance':
+            if self.jobs.active(): raise ValueError('Campaign worker is active; live playback is paused to isolate computation')
+            result = self.need().step(bounded_int(payload.get('steps', 10), 'steps', 0, 10))
+        elif op == 'campaign_start':
+            e=self.need()
+            if e.recorder:raise ValueError('Finish live recording before launching a campaign')
+            result=self.jobs.start(e.bindings,self.backend,payload.get('spec'))
+        elif op == 'campaign_status': result=self.jobs.status(payload.get('id'))
+        elif op == 'campaign_cancel': result=self.jobs.cancel(payload.get('id'))
+        elif op == 'campaign_resume': result=self.jobs.resume(payload.get('id'))
+        elif op == 'campaign_list': result=self.jobs.list()
         elif op == 'subscribe':
             self.need().subscribe(payload.get('ids')); result = self.need().frame()
         elif op == 'catalog':
@@ -172,6 +230,10 @@ class CDispatcher:
         elif op == 'checkpoints':
             directory = self.artifacts/'checkpoints'
             result = [{'name': p.name} for p in sorted(directory.iterdir()) if p.is_dir() and (p/'manifest.json').is_file()] if directory.exists() else []
+        elif op == 'diagnostics':
+            directory = self.artifacts/'diagnostics'
+            result = dict(reports=[dict(name=p.stem, restorable=False) for p in sorted(directory.glob('*.json'))],
+                          latest=self.last_fault_report)
         elif op == 'record_start':
             name = checked_name(payload.get('name', 'run-'+secrets.token_hex(6)))
             self.need().start_recording(self.artifacts/'runs'/name, payload.get('ids'))
@@ -197,11 +259,12 @@ class CDispatcher:
         else: raise ValueError('Unsupported C operation: ' + str(op))
         response = dict(protocol=PROTOCOL, requestId=rid, ok=True, result=result)
         if self.engine is not None and op in ('init', 'attach', 'backend', 'frame', 'advance', 'subscribe', 'restore', 'replay'):
-            response['_binary'] = signal_frame(self.engine)
+            response['_binary'] = result.pop('_prepared_binary') if isinstance(result,dict) and '_prepared_binary' in result else signal_frame(self.engine)
             self.engine.selected_events = []
         return response
 
     def close(self):
+        self.jobs.close()
         if self.engine: self.engine.close(); self.engine = None
 
 
@@ -244,6 +307,7 @@ def main():
     parser.add_argument('--backend', choices=NEURAL_BACKENDS, default='exp_lif_cpu_reference')
     parser.add_argument('--mode', choices=MODES, default='C_SHADOW')
     parser.add_argument('--doctor', action='store_true')
+    parser.add_argument('--restore-checkpoint', help='Restore an artifact checkpoint before accepting browser connections')
     args = parser.parse_args()
     if not 1024 <= args.port <= 65535: parser.error('Port must be 1024..65535')
     if args.doctor:
@@ -262,5 +326,13 @@ def main():
     if not (ROOT/'FLY_LAB_C.html').is_file(): raise SystemExit('Run python build_c.py first')
     server = CServer(args.port, args.graph, args.bindings, args.artifacts, backend=args.backend, default_mode=args.mode)
     print(f'FLY LAB C {VERSION} — http://127.0.0.1:{args.port} · {args.mode}', flush=True)
-    web.run_app(server.app(), host='127.0.0.1', port=args.port, access_log=None)
+    app=server.app()
+    if args.restore_checkpoint:
+        name=checked_name(args.restore_checkpoint)
+        async def restore_before_listen(app):
+            import asyncio
+            await asyncio.get_running_loop().run_in_executor(server.executor,server.dispatcher.handle,
+                dict(protocol=PROTOCOL,requestId=1,op='restore',payload=dict(name=name)))
+        app.on_startup.append(restore_before_listen)
+    web.run_app(app, host='127.0.0.1', port=args.port, access_log=None)
     return 0

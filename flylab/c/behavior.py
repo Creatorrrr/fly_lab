@@ -1,5 +1,6 @@
 """Physical displacement metrics, separate from task success or neural commands."""
 import math
+from ..navigation_checks import NavigationMonitor, NavigationPolicy
 
 
 CRITERIA = dict(schema='flylab.behavior_criteria.v1', sample_dt_s=.005,
@@ -12,6 +13,12 @@ def behavior_metrics(trace, world, *, motion_expected=True):
     forward = backward = path = rotation = contact = food = hazard = 0.
     gaps = 0; stuck = []; releases = []; food_entries = 0
     in_food = False
+    monitor=NavigationMonitor(NavigationPolicy(max_sample_gap_seconds=.00500001))
+    for row in trace:
+        monitor.add(dict(t=row['simTime'],p=row['position'],yaw=row['yaw'],forwardAxis=row['forward_axis'],
+                         avoiding=row.get('obstacle_engaged',False),recovering=False,
+                         motorCoupled=bool(row['motion_enabled']),motionExpected=bool(motion_expected)))
+    audit=monitor.result()
     for i, (a, b) in enumerate(zip(trace, trace[1:])):
         dt = b['simTime']-a['simTime']
         if dt <= 0 or dt > .005+1e-8: gaps += 1
@@ -31,29 +38,14 @@ def behavior_metrics(trace, world, *, motion_expected=True):
         if nearby['food'] and not in_food: food_entries += 1
         in_food = nearby['food']
         if a['avoidance'] and not b['avoidance']: releases.append(i+1)
-        if b['simTime']-trace[0]['simTime'] >= 3:
-            window = trace[max(0, i+1-600):i+2]
-            if len(window)>=601 and motion_expected and all(r['motion_enabled'] for r in window):
-                extent = math.hypot(max(r['position'][0] for r in window)-min(r['position'][0] for r in window),
-                                    max(r['position'][2] for r in window)-min(r['position'][2] for r in window))
-                if extent<1: stuck.append(b['tick'])
-    resumed = []
-    for index in releases:
-        start = trace[index]; cumulative = 0.; verdict = 'INCOMPLETE'
-        for a,b in zip(trace[index:],trace[index+1:]):
-            if b['simTime']>start['simTime']+2+1e-8: verdict='FAILED'; break
-            if b['avoidance'] or not b['motion_enabled']: verdict='INTERRUPTED'; break
-            cumulative += ((b['position'][0]-a['position'][0])*a['forward_axis'][0]+
-                           (b['position'][2]-a['position'][2])*a['forward_axis'][2])
-            net = math.hypot(b['position'][0]-start['position'][0],b['position'][2]-start['position'][2])
-            if net>=1 and cumulative>=1: verdict='RESUMED'; break
-            if b['simTime']>=start['simTime']+2-1e-8: verdict='FAILED'
-        resumed.append(dict(release_tick=start['tick'], status=verdict))
+    resumed = audit['resumptionEpisodes']
+    stuck = audit['stationaryWindows']
     return dict(signed_forward_mm=forward-backward, forward_mm=forward, backward_mm=backward,
                 horizontal_path_mm=path, absolute_rotation_rad=rotation,
                 contact_duration_s=contact, food_dwell_s=food, hazard_dwell_s=hazard, food_entries=food_entries,
-                stuck_status='DETECTED' if stuck else 'NOT_DETECTED' if trace and trace[-1]['simTime']-trace[0]['simTime']>=3 else 'INCOMPLETE_WINDOW',
-                stuck_window_count=len(stuck), first_stuck_tick=stuck[0] if stuck else None,
+                stuck_status={'FAIL':'DETECTED','PASS':'NOT_DETECTED','INCOMPLETE':'INCOMPLETE_SAMPLING'}.get(audit['status'],'INCOMPLETE_WINDOW'),
+                stuck_window_count=len(stuck), first_stuck_tick=round(stuck[0]['endTime']/.0001) if stuck else None,
+                navigation=audit,
                 avoidance_releases=resumed, observation_gaps=gaps,
                 faults=[r['fault'] for r in trace if r['fault']], task_status='NOT_EVALUATED')
 
@@ -65,5 +57,7 @@ def trace_sample(frame):
                 avoidance=bool(c.get('assist_reason') or (frame.get('legacy') or {}).get('avoidanceActive') or
                                (frame.get('legacy') or {}).get('recoveryActive')),
                 motion_enabled=bool(c.get('motor_coupled')) and not frame.get('stopped'),
+                obstacle_engaged=bool(frame['sensors']['contact'] or min(frame['sensors']['nearRanges'][3:6])<3.5),
+                sensor_diagnostics=frame.get('sensor_diagnostics',{}),motor_diagnostics=frame.get('motor_diagnostics',{}),
                 command=c, sensors=frame['sensors'], sensory_ports=frame['sensory_ports'],
                 motor_rates_Hz=frame['motor_rates_Hz'], fault=frame['fault'])

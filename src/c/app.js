@@ -4,7 +4,7 @@
 const PROTOCOL='flylab.protocol.v3', $=id=>document.getElementById(id);
 const view=new F.WorldView($('world'),$('world-overlay'));
 const state={frame:null,playing:false,busy:false,selected:[],catalog:[],offset:0,total:0,epoch:0,sequence:0,
-  signals:new Map(),traces:new Map(),spikes:0,closed:false,names:new Map(),recording:false,backend:'exp_lif_cpu_reference'};
+  signals:new Map(),traces:new Map(),spikes:0,closed:false,names:new Map(),recording:false,backend:'exp_lif_cpu_reference',dataset:'연결망'};
 const colors=['#76d9c4','#eac684','#87b4e8','#c9a1ed','#ed9994','#a6d883','#88d9e5','#dba3c6'];
 function setText(node,value){if(node.textContent!==value)node.textContent=value;}
 function tell(message,error=false){$('alert').hidden=!message;$('alert').textContent=message||'';if(error)console.error(message);}
@@ -52,7 +52,8 @@ function applyFrame(f){
  state.frame=f;state.epoch=f.subscription.epoch;state.selected=f.subscription.ids;view.setFrame(f);
  if(changed)workbench.subscriptionChanged();
  $('waiting').hidden=true;$('mode-tag').textContent=f.mode;$('clock').textContent=f.simTime.toFixed(3)+' s';
- $('scope').textContent=f.mode==='B_COMPAT'?'B_COMPAT · 기존 부분 신경 모델':`FAFB v783 · ${f.scope.simulatedNodes.toLocaleString()} 뉴런 · ${f.scope.pairEdges.toLocaleString()} 연결`;
+ $('scope').textContent=f.mode==='B_COMPAT'?'B_COMPAT · 기존 부분 신경 모델':`${state.dataset} · ${f.scope.simulatedNodes.toLocaleString()} 뉴런 · ${f.scope.pairEdges.toLocaleString()} 연결`;
+ $('neural-scope-note').textContent=f.mode==='B_COMPAT'?'현재 B 부분 신경 모델을 사용하며 C 전뇌 계산은 꺼져 있습니다.':`${f.scope.simulatedNodes.toLocaleString()}개 모델 뉴런을 계산하며 선택한 신호만 전송합니다. 전체 스냅샷 판정: ${f.scope.fullBrain?'확인':'미승인'}`;
  $('distance').textContent=f.body.travel.toFixed(2)+' mm';$('speed').textContent=f.body.speed.toFixed(2)+' mm/s';
  $('mean-rate').textContent=f.neural?f.neural.mean_rate_Hz.toFixed(3)+' Hz':'B rate';$('performance').textContent=f.performance.sim_wall_ratio.toFixed(3)+'×';
  $('command-source').textContent=f.command.command_source;$('neural-command').textContent=commandText(f.command.u_neural);
@@ -102,8 +103,9 @@ async function search(reset=true){
 async function toggle(id){const ids=state.selected.includes(id)?state.selected.filter(x=>x!==id):[...state.selected,id];applyFrame(await rpc.request('subscribe',{ids}));}
 async function regions(){const rows=await rpc.request('regions');$('regions').replaceChildren(...rows.map(r=>{const box=document.createElement('div');box.className='region';const name=document.createElement('span');name.textContent=r.region;const value=document.createElement('strong');value.textContent=r.mean_rate_Hz.toFixed(2)+' Hz';const count=document.createElement('small');count.textContent=r.neurons.toLocaleString()+' 뉴런';box.append(name,value,count);return box;}));}
 async function checkpoints(){const rows=await rpc.request('checkpoints');$('checkpoints').replaceChildren();const blank=document.createElement('option');blank.value='';blank.textContent='저장한 체크포인트';$('checkpoints').append(blank);rows.forEach(r=>{const o=document.createElement('option');o.value=o.textContent=r.name;$('checkpoints').append(o);});}
-function applyReady(result){
- applyFrame(result.frame);$('binding-profile').replaceChildren(...(result.profiles||[]).map(p=>new Option(p.name==='bindings.json'?'기존 평균 냄새':p.name==='bindings-bilateral-geosmin-v1.json'?'좌우 먹이·geosmin (실험)':p.profile,p.name,p.current,p.current)));$('mode').value=result.frame.mode;$('seed').value=result.frame.seed;
+function applyReady(result){state.dataset=result.manifest.dataset_id+' v'+result.manifest.snapshot_id;$('dataset-label').textContent=state.dataset+' · NeuroMechFly';
+ const labels={'bindings.json':'기존 평균 냄새','bindings-bilateral-geosmin-v1.json':'좌우 먹이·geosmin v1 (실험)','bindings-bilateral-geosmin-v2.json':'좌우 먹이·geosmin v2 · 농도 압축 (실험)','bindings-visual-head-contact-research-v1.json':'좌우 냄새·물체 시야·머리 접촉 (연구)','bindings-odor-poisson-current-hypothesis-v1.json':'후각 Poisson 전류 입력 (검증 가설)'};
+ applyFrame(result.frame);$('binding-profile').replaceChildren(...(result.profiles||[]).map(p=>{const label=labels[p.name]||p.profile||p.name;const option=new Option(label+(p.available===false?' · 사용 불가':''),p.name,p.current,p.current);option.disabled=p.available===false;option.title=p.reason||'';return option;}));$('mode').value=result.frame.mode;$('seed').value=result.frame.seed;
  state.backend=result.capabilities.backend;$('backend').value=state.backend==='legacy_b_rate'?'exp_lif_cpu_reference':state.backend;$('backend').disabled=state.backend==='legacy_b_rate';
  const friction=String(result.frame.config.friction);
  if(![...$('friction').options].some(o=>o.value===friction))$('friction').add(new Option(friction+'×',friction));
@@ -117,9 +119,11 @@ async function refreshExperiment(result,message){
  $('search').value='DNa02';await search();await regions();await checkpoints();await workbench.ready();tell(message);
 }
 async function init(){
- state.playing=false;updatePlay();$('waiting').hidden=false;state.signals.clear();state.traces.clear();state.spikes=0;state.sequence=0;
- const result=await rpc.request('init',{mode:$('mode').value,seed:Number($('seed').value),profile:$('binding-profile').value});applyReady(result);
- $('search').value='DNa02';await search();await regions();await checkpoints();await workbench.ready();tell('실험을 준비했습니다.'+(result.source_checkpoint?' 이전 상태 저장: '+result.source_checkpoint:'')+' 재생 또는 한 단계로 진행하세요.');
+ state.playing=false;updatePlay();$('waiting').hidden=false;
+ let result;try{result=await rpc.request('init',{mode:$('mode').value,seed:Number($('seed').value),profile:$('binding-profile').value,metabolism:$('metabolism-enabled').checked?{}:null});}catch(e){$('waiting').hidden=!!state.frame;throw e;}
+ state.signals.clear();state.traces.clear();state.spikes=0;state.sequence=0;applyReady(result);
+ const recovery=result.recovery?.kind==='fault_reset'?(result.recovery.diagnostic_saved?' 오류 진단 저장: '+result.recovery.diagnostic_id:' 오류 진단은 메모리에 보존했습니다. 파일 저장 실패: '+result.recovery.diagnostic_save_error):'';
+ $('search').value='DNa02';await search();await regions();await checkpoints();await workbench.ready();tell('실험을 준비했습니다.'+(result.source_checkpoint?' 이전 상태 저장: '+result.source_checkpoint:'')+recovery+(result.cleanup_error?' 이전 실험 정리 오류: '+result.cleanup_error:'')+' 재생 또는 한 단계로 진행하세요.');
 }
 async function command(type,payload={}){const r=await rpc.request('command',{type,payload});if(r.schema==='flylab.frame.v3')applyFrame(r);return r;}
 button('play',()=>{state.playing=!state.playing;updatePlay();});

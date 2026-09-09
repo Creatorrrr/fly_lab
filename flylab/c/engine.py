@@ -9,11 +9,15 @@ from .integrity import digest, bounded_int, finite, boolean
 from .neural import create_backend, LIFParameters, NEURAL_BACKENDS
 from .ports import SensoryEncoder, MotorDecoder, RecoverySupervisor, MotorArbiter, zero_command
 from .storage import Recorder, StateStore, runtime_versions
+from .inputs import InputRejected, validate_input, validate_stimulus_schedule, validate_schedule
 from ..body import FlyGymBody
 from ..brain import Circuit
 from ..legacy import LegacyBRate
 from ..engine import config_values, default_graph, validate_sensor_packet
 from ..sensors import SensorAdapter, default_world, validate_world
+from .sensors import CSensorAdapter
+from .metabolism import Metabolism
+from ..common import to_ui
 from .workbench import (ENVIRONMENT_COMMANDS, edit_environment, intervention_rows,
                         cancel_intervention, terminal_intervention, restore_workbench)
 
@@ -24,13 +28,14 @@ KINDS = {'stimulate', 'suppress_spiking', 'mute_outgoing', 'mute_edges',
 class CEngine:
     def __init__(self, graph, bindings, *, mode='C_SHADOW', seed=42, config=None,
                  world=None, backend='exp_lif_cpu_reference', parameters=None,
-                 body_factory=FlyGymBody, motion_expected=True):
+                 body_factory=FlyGymBody, motion_expected=True, metabolism=None):
         if mode not in MODES: raise ValueError('Unknown C control mode')
         self.graph, self.bindings = graph, bindings
         if graph.hash != bindings.graph.hash: raise ValueError('Graph/port mismatch')
         self.seed = bounded_int(seed, 'seed', 0, 2**32-1)
         self.mode = mode
         self.motion_expected = boolean(motion_expected, 'motion_expected')
+        self.metabolism = Metabolism(metabolism) if metabolism is not None else None
         self.config = config_values(config)
         self.world = copy.deepcopy(validate_world(world if world is not None else default_world()))
         self.parameters = parameters or LIFParameters()
@@ -42,12 +47,16 @@ class CEngine:
         self.decoder = MotorDecoder(bindings)
         self.supervisor = RecoverySupervisor()
         self.legacy = LegacyBRate(Circuit(default_graph()), seed)
-        self.sensors = SensorAdapter(seed)
+        self.sensors = CSensorAdapter(seed, bindings.spec.get('sensor_model'))
         self.body_factory = body_factory
         self.body = body_factory(seed, self.world, self.config)
         self.control_tick = 0
         self.sensor_tick = 0
-        self.last_sensors = self.sensors.observe(self.body, self.world, CONTROL_DT, self.config)
+        try:
+            self.last_sensors = self.sensors.observe(self.body, self.world, CONTROL_DT, self.config)
+        except Exception:
+            self.body.close()
+            raise
         self.subscription = graph.resolve([graph.nodes[int(i)]['id'] for i in bindings.motor_indices])
         self.subscription_epoch = 1
         self.sequence = 0
@@ -90,6 +99,7 @@ class CEngine:
                     motion_expected=self.motion_expected, dataset=self.graph.manifest,
                     bindings=self.bindings.summary(), physical=not self.body.test_double,
                     full_brain=self.graph.full_brain and self.neural is not None,
+                    metabolism_model=(dict(parameters=asdict(self.metabolism.p), parameter_hash=digest(asdict(self.metabolism.p))) if self.metabolism else None),
                     biological_validation=False, versions=runtime_versions())
 
     def event(self, kind, details):
@@ -123,7 +133,8 @@ class CEngine:
     def stop_recording(self):
         if self.recorder:
             self.recorder.manifest['end_tick'] = self.tick
-            self.recorder.close('FAILED' if self.fault else 'COMPLETE', self.fault)
+            fault = self.fault or self.body.fault
+            self.recorder.close('FAILED' if fault else 'COMPLETE', fault)
             self.recorder = None
 
     def subscribe(self, ids):
@@ -164,6 +175,7 @@ class CEngine:
         if self.mode == 'B_COMPAT': raise ValueError('Use B viewer for legacy interventions')
         if len(self.pending) + len(self.active) >= 20000: raise ValueError('Intervention queue capacity reached')
         item = self._validate_intervention(data)
+        validate_stimulus_schedule(item, self.pending + self.active)
         self.event_serial += 1
         item['serial'] = self.event_serial
         self.pending.append(item)
@@ -171,22 +183,16 @@ class CEngine:
         self.event('intervention_scheduled', item)
         return item
 
-    def _interventions(self):
+    def _prepare_interventions(self):
         expired = [e for e in self.active if e['expires_tick'] <= self.tick]
-        self.active = [e for e in self.active if e['expires_tick'] > self.tick]
-        for e in expired:
-            terminal_intervention(self, e, 'expired', e['expires_tick'])
-            self.event('intervention_expired', e)
-        while self.pending and self.pending[0]['at_tick'] == self.tick:
-            item = self.pending.pop(0)
-            self.active.append(item)
-            self.event('intervention_applied', item)
         if self.pending and self.pending[0]['at_tick'] < self.tick:
             raise RuntimeError('FAULT_INTERVENTION_CLOCK: a scheduled command was not applied')
+        applied = [e for e in self.pending if e['at_tick'] == self.tick]
+        active = [e for e in self.active if e['expires_tick'] > self.tick] + applied
         suppress, mute, edges, disabled = set(), set(), set(), set()
         current = np.zeros(self.graph.n, dtype=np.float32)
         motor, assist = self.config['motorCoupled'], True
-        for e in self.active:
+        for e in active:
             kind = e['kind']
             if kind == 'suppress_spiking': suppress.update(e['indices'])
             elif kind == 'mute_outgoing': mute.update(e['indices'])
@@ -195,8 +201,39 @@ class CEngine:
             elif kind == 'motor_disconnect': motor = False
             elif kind == 'assist_off': assist = False
             elif kind == 'stimulate': np.add.at(current, e['indices'], e['amplitude_mV'])
-        if self.neural: self.neural.set_interventions(sorted(suppress), sorted(mute), sorted(edges))
-        return current, disabled, motor, assist
+        return dict(active=active, applied=applied, expired=expired, stimulus=current,
+                    suppress=sorted(suppress), mute=sorted(mute), edges=sorted(edges),
+                    disabled=disabled, coupled=motor, assist_enabled=assist)
+
+    def _commit_interventions(self, prepared):
+        self.active = prepared['active']
+        self.pending = self.pending[len(prepared['applied']):]
+        for event in prepared['expired']:
+            terminal_intervention(self, event, 'expired', event['expires_tick'])
+            self.event('intervention_expired', event)
+        for event in prepared['applied']:
+            self.event('intervention_applied', event)
+        if self.neural:
+            self.neural.set_interventions(prepared['suppress'], prepared['mute'], prepared['edges'])
+
+    def _prepare_control(self, capture):
+        prepared = self._prepare_interventions()
+        sensor_state = self.sensors.snapshot()
+        encoder_state = self.encoder.snapshot() if self.neural else None
+        try:
+            packet = self.sensors.observe(self.body, self.world, CONTROL_DT, self.config)
+            drive = pulses = None
+            ports = []
+            if self.neural:
+                drive, pulses, ports = self.encoder.encode(packet, CONTROL_DT, self.parameters.dt, prepared['disabled'],
+                                                           self.sensors.diagnostics.get('features'))
+                drive += prepared['stimulus']
+                validate_input(self.graph.n, drive, self.substeps, capture, pulses)
+        except Exception:
+            self.sensors.restore(sensor_state)
+            if self.neural: self.encoder.restore(encoder_state)
+            raise
+        return prepared, packet, drive, pulses, ports
 
     def step(self, controls=1):
         bounded_int(controls, 'control steps', 0, 200000)
@@ -208,8 +245,11 @@ class CEngine:
                 if self.fault or self.body.fault or self.stopped: break
                 start = self.tick
                 began = time.perf_counter()
-                stimulus, disabled, coupled, assist_enabled = self._interventions()
-                self.last_sensors = self.sensors.observe(self.body, self.world, CONTROL_DT, self.config)
+                capture = np.unique(np.concatenate([self.subscription, self.record_indices if self.recorder else np.empty(0, dtype=np.int32)])) if self.neural else ()
+                prepared, packet, drive, pulses, ports = self._prepare_control(capture)
+                self._commit_interventions(prepared)
+                coupled, assist_enabled = prepared['coupled'], prepared['assist_enabled']
+                self.last_sensors = packet
                 self.sensor_tick = start
                 legacy_command = self.legacy.step(self.last_sensors, CONTROL_DT, self.config) if self.mode in ('B_COMPAT', 'C_SHADOW') else None
                 # Extract at t_k, before integrating either model into the future.
@@ -222,10 +262,8 @@ class CEngine:
                                interval_start_tick=start, interval_end_tick=start + self.substeps)
                 self.last_command = command
                 if self.neural:
-                    drive, pulses, self.last_ports = self.encoder.encode(self.last_sensors, CONTROL_DT, self.parameters.dt, disabled)
-                    drive += stimulus
+                    self.last_ports = ports
                 self.timings['ports_s'] += time.perf_counter() - began
-                capture = np.unique(np.concatenate([self.subscription, self.record_indices if self.recorder else np.empty(0, dtype=np.int32)])) if self.neural else ()
                 overlap = self.neural is not None and hasattr(self.neural, 'begin_advance')
                 if overlap:
                     began = time.perf_counter()
@@ -247,6 +285,10 @@ class CEngine:
                     self.selected_events.extend(e for e in self.neural.last_events if e['index'] in subscribed)
                     self.timings['neural_s'] += time.perf_counter() - began
                 self.control_tick += 1
+                if self.metabolism:
+                    p, R, velocity=self.body.pose()
+                    eaten=self.metabolism.step(CONTROL_DT,to_ui(p+R@np.array([.65,0.,-.1])),float(velocity[3:]@R[:,0]),self.world)
+                    if eaten:self.event('virtual_food_intake',dict(amount=eaten,energy=self.metabolism.energy))
                 self.timing_controls += 1
                 if self.body.fault: self.fault = self.body.fault
                 began = time.perf_counter()
@@ -268,9 +310,17 @@ class CEngine:
                                                 motion_expected=self.motion_expected))
                 self.timings['recording_s'] += time.perf_counter() - began
                 self._clocks()
+                if self.fault:
+                    self.stop_recording()
+                    break
+        except InputRejected:
+            # Preparation restores the sensory state; both physical/neural
+            # clocks and the accepted intervention journal remain unchanged.
+            raise
         except Exception as e:
             self.fault = str(e)
             if self.recorder:
+                self.recorder.manifest['end_tick'] = self.tick
                 try: self.recorder.close('FAILED', self.fault)
                 finally: self.recorder = None
             raise
@@ -295,8 +345,11 @@ class CEngine:
                     simTime=self.control_tick * CONTROL_DT, neuralDt=self.parameters.dt, mode=self.mode, seed=self.seed, config=copy.deepcopy(self.config),
                     world=copy.deepcopy(self.world), body=body, physics=physics,
                     sensors=copy.deepcopy(self.last_sensors), sensorTick=self.sensor_tick,
+                    sensor_diagnostics=copy.deepcopy(self.sensors.diagnostics),
+                    metabolism=self.metabolism.summary() if self.metabolism else dict(enabled=False),
                     command=copy.deepcopy(self.last_command), sensory_ports=copy.deepcopy(self.last_ports),
                     motor_rates_Hz=dict(self.last_motor_rates), neural=self.neural.summary() if self.neural else None,
+                    motor_diagnostics=copy.deepcopy(self.decoder.diagnostics),
                     legacy=self.legacy.readout([]) if self.mode in ('B_COMPAT', 'C_SHADOW') else None,
                     scope=dict(fullBrain=self.graph.full_brain and self.neural is not None,
                                sourceNodes=self.graph.n, simulatedNodes=self.graph.n if self.neural else 0,
@@ -373,6 +426,7 @@ class CEngine:
                     last_command=copy.deepcopy(self.last_command), last_ports=copy.deepcopy(self.last_ports),
                     last_motor_rates=dict(self.last_motor_rates), pending=copy.deepcopy(self.pending),
                     active=copy.deepcopy(self.active), event_serial=self.event_serial, object_serial=self.object_serial,
+                    metabolism=self.metabolism.snapshot() if self.metabolism else None,
                     environment_history=copy.deepcopy(self.environment_history), environment_updated_tick=self.environment_updated_tick,
                     intervention_history=copy.deepcopy(self.intervention_history),
                     record_cohort_ids=[self.graph.nodes[int(i)]['id'] for i in self.record_indices],
@@ -385,7 +439,10 @@ class CEngine:
         s = state
         if backend_override is not None and (backend_override not in NEURAL_BACKENDS or not s.get('neural')):
             raise ValueError('A C neural checkpoint and known backend are required for transfer')
-        if s.get('schema') != 'flylab.checkpoint.v3' or s.get('app_version') != VERSION or s.get('versions') != runtime_versions():
+        # 0.3 checkpoints have the same baseline equations/coupling/state.
+        # Optional new state is validated below. New saves use 0.4 so an older
+        # executable cannot silently discard metabolism or sensory history.
+        if s.get('schema') != 'flylab.checkpoint.v3' or s.get('app_version') not in ('0.3.0', VERSION) or s.get('versions') != runtime_versions():
             raise ValueError('C version/runtime checkpoint required; B neural state cannot be converted')
         if s.get('graph_hash') != graph.hash or s.get('binding_hash') != bindings.hash:
             raise ValueError('Checkpoint data or binding mismatch')
@@ -399,7 +456,8 @@ class CEngine:
         if st != max(0, (ct-1)*substeps): raise ValueError('Sensor timestamp mismatch')
         e = cls(graph, bindings, mode=s['mode'], seed=s['seed'], config=s['config'], world=s['world'],
                 backend=backend_override or (s['neural']['backend'] if s.get('neural') else 'exp_lif_cpu_reference'),
-                parameters=parameters, body_factory=body_factory, motion_expected=s['motion_expected'])
+                parameters=parameters, body_factory=body_factory, motion_expected=s['motion_expected'],
+                metabolism=s['metabolism']['parameters'] if s.get('metabolism') else None)
         try:
             if e.body.frame()[1]['bodyModelHash'] != s.get('body_model_hash'): raise ValueError('Body model hash mismatch')
             e.body.restore(s['body'])
@@ -420,6 +478,9 @@ class CEngine:
             elif s.get('neural') is not None: raise ValueError('B_COMPAT cannot restore a C neural state')
             e.sensors.restore(s['sensors']); e.legacy.restore(s['legacy']); e.supervisor.restore(s['supervisor'])
             e.control_tick, e.sensor_tick = ct, st
+            if e.metabolism:
+                e.metabolism.restore(s['metabolism'])
+                if e.metabolism.tick!=ct:raise ValueError('Metabolism/control clock mismatch')
             e.last_sensors = copy.deepcopy(s['last_sensors']); validate_sensor_packet(e.last_sensors)
             if e.sensors.last != e.last_sensors: raise ValueError('Sensor snapshot/packet mismatch')
             e.pending, e.active = copy.deepcopy(s['pending']), copy.deepcopy(s['active'])
@@ -444,6 +505,7 @@ class CEngine:
                         order = (at, serial)
                         if order < last_order: raise ValueError('Unsorted intervention queue')
                         last_order = order
+            validate_schedule(e.pending + e.active, e.tick)
             e.event_serial = bounded_int(s['event_serial'], 'event serial', max(serials, default=0))
             e.object_serial = bounded_int(s['object_serial'], 'object serial', 0, 1000000)
             restore_workbench(e, s)

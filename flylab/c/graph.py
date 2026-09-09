@@ -9,6 +9,7 @@ import json
 import re
 import shutil
 import tempfile
+from functools import cached_property
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix
 from .integrity import canonical, digest, file_hash, read_json, write_json, finite
@@ -19,10 +20,12 @@ MODULATORY = {'DA', 'SER', 'OCT'}
 ARRAYS = ('indptr', 'indices', 'counts', 'weights')
 
 
-def external_id(root):
+def external_id(root, dataset='fafb', snapshot='783'):
     if not isinstance(root, str) or not re.fullmatch(r'[1-9][0-9]{0,19}', root):
         raise ValueError('FAFB root IDs must be decimal strings, never JSON numbers')
-    return NAMESPACE + root
+    if dataset not in ('fafb', 'banc') or not isinstance(snapshot, str) or not snapshot.isdecimal():
+        raise ValueError('Unsupported dataset namespace')
+    return f'flywire:{dataset}:{snapshot}:' + root
 
 
 def normalized_nt(value):
@@ -53,8 +56,9 @@ class GraphStore:
     def validate(self):
         if not 1 <= self.n <= 2_000_000 or len(self.index) != self.n:
             raise ValueError('Empty, oversized or duplicate master roster')
+        dataset = self.manifest.get('dataset_id', 'flywire_fafb').removeprefix('flywire_')
         for node in self.nodes:
-            if node.get('id') != external_id(node.get('root_id')):
+            if node.get('id') != external_id(node.get('root_id'), dataset, self.manifest.get('snapshot_id','783')):
                 raise ValueError('Invalid namespaced root ID')
             if node.get('soma_side', 'unknown') not in ('left', 'right', 'center', 'unknown'):
                 raise ValueError('Invalid biological soma side')
@@ -87,12 +91,10 @@ class GraphStore:
     def hash(self):
         return self.manifest['graph_hash']
 
-    @property
+    @cached_property
     def full_brain(self):
-        m = self.manifest
-        return (m.get('scope') == 'full_snapshot' and m.get('dataset_id') == 'flywire_fafb'
-                and m.get('snapshot_id') == '783' and m.get('excluded_node_count') == 0
-                and m.get('source_node_count') == self.n and bool(m.get('raw_file_hashes')))
+        from .data_identity import verify_snapshot
+        return verify_snapshot(self)['status'] == 'PASS'
 
     @classmethod
     def from_edges(cls, nodes, pre, post, counts, *, metadata=None, unit_weight=.275,
@@ -136,9 +138,16 @@ class GraphStore:
                  weight_model=dict(unit_weight_mV=unit_weight, signs=SIGN, unknown_policy=unknown_policy,
                                    modulatory_policy=modulatory_policy, receptor_model=False))
         import hashlib
-        h = hashlib.sha256(canonical(dict(nodes=nodes, metadata=m)))
-        for a in (c.indptr, c.indices, c.data, weights):
-            h.update(str(a.dtype).encode()); h.update(a.tobytes())
+        if m.get('graph_hash_schema') == 'content-v2':
+            fields = ('dataset_id','specimen_id','sex','snapshot_id','scope','excluded_node_ids',
+                      'upstream_filters','applied_filters','weight_model','matrix_orientation')
+            h = hashlib.sha256(canonical(dict(nodes=nodes, model={k:m.get(k) for k in fields})))
+            for a, dtype in ((c.indptr,'<i8'),(c.indices,'<i8'),(c.data,'<i8'),(weights,'<f4')):
+                h.update(np.asarray(a,dtype=dtype).tobytes())
+        else:
+            h = hashlib.sha256(canonical(dict(nodes=nodes, metadata=m)))
+            for a in (c.indptr, c.indices, c.data, weights):
+                h.update(str(a.dtype).encode()); h.update(a.tobytes())
         m['graph_hash'] = h.hexdigest()
         return cls(nodes, c.indptr, c.indices, c.data, weights, m)
 

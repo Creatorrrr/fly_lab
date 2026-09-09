@@ -1,3 +1,5 @@
+> 2026-09-10 후속 변경: 새 설치·빌드에는 [재현 절차](C_REPRODUCIBILITY.md)를 사용한다. 아래 초기 빌드 명령의 기본 출력이 이미 존재하면 덮어쓰지 말고 새 획득 경로를 사용한다. [현재 구현 범위](C_IMPLEMENTATION_20260910.md)도 함께 확인한다.
+
 # FLY LAB C 0.3.0
 
 2026-09-09 추가: Apple silicon의 `exp_lif_mps` 백엔드와 상태 보존 장치 전환을 지원합니다. 설치·알고리즘·실측 결과는 [C_MPS_VALIDATION.md](C_MPS_VALIDATION.md)를 참고하세요. CPU 기준 계산과 CUDA 경로도 유지합니다.

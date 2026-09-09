@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """C acceptance evidence with separate neural, physical and behavioral gates.
 
-No fixture can be selected from this CLI. Small synthetic circuits are used
-only for numerical CPU/CUDA equivalence and labelled explicitly.
+The default acceptance scope requires an independently pinned full snapshot.
+--scope loaded-graph permits numerical fixtures without granting full status.
 """
 from pathlib import Path
 import argparse
@@ -26,11 +26,14 @@ def main():
     parser.add_argument('--seconds',type=float,default=.3)
     parser.add_argument('--navigation-seconds',type=float,default=3.2)
     parser.add_argument('--cuda',action='store_true')
+    parser.add_argument('--backend', choices=('exp_lif_cpu_reference','exp_lif_mps','exp_lif_cuda'), default='exp_lif_cpu_reference')
+    parser.add_argument('--scope', choices=('full-snapshot','loaded-graph'), default='full-snapshot')
+    parser.add_argument('--reference', type=Path, help='Independent snapshot reference')
     args=parser.parse_args()
     if not .1<=args.seconds<=10 or not 0<=args.navigation_seconds<=60: parser.error('Invalid experiment duration')
     if args.out.exists(): parser.error('Use a new output directory to preserve previous evidence')
     args.out.mkdir(parents=True)
-    result=dict(schema='flylab.c.validation.v1',status='RUNNING',physicalExecuted=False,
+    result=dict(schema='flylab.c.validation.v2',status='RUNNING',physicalExecuted=False,
                 biologicalValidation=False,platform=platform.platform(),gates={},cases=[])
     def persist(): (args.out/'report.json').write_text(json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False))
     persist()
@@ -38,7 +41,8 @@ def main():
         import numpy as np
         from flylab.c.graph import GraphStore
         from flylab.c.ports import PortBindings
-        from flylab.c.neural import ExpLIF,LIFParameters
+        from flylab.c.neural import ExpLIF,LIFParameters,create_backend
+        from flylab.c.data_identity import verify_snapshot, validation_status
         from flylab.c.engine import CEngine
         from flylab.c.integrity import read_json,write_json
         from flylab.c.storage import StateStore
@@ -48,14 +52,27 @@ def main():
         t=time.perf_counter();g=GraphStore.load(args.graph);bindings=PortBindings(g,read_json(args.bindings))
         result['gates']['data']=dict(status='PASS',load_seconds=time.perf_counter()-t,manifest=g.manifest)
         result['gates']['bindings']=dict(status='ENGINEERING_REVIEWED',summary=bindings.summary())
-        n=ExpLIF(g); drive=np.zeros(g.n,dtype=np.float32);drive[bindings.motor_indices]=12.
+        result['requested_scope']=args.scope
+        required=['data','loaded_graph_compute']
+        if args.scope=='full-snapshot': required.extend(['full_snapshot_membership','full_snapshot_compute'])
+        if args.cuda: required.append('cuda')
+        if args.physics: required.extend(['closed_loop_contribution','physical_restore'])
+        if args.physics and args.navigation_seconds: required.append('strict_navigation')
+        result['required_gates']=required
+        result['gates']['full_snapshot_membership']=verify_snapshot(g,args.reference)
+        persist()
+        n=create_backend(g,backend=args.backend); drive=np.zeros(g.n,dtype=np.float32);drive[bindings.motor_indices]=12.
         t=time.perf_counter();n.advance(drive,500,capture=bindings.motor_indices)
         duration=time.perf_counter()-t
-        result['gates']['full_brain_compute']=dict(status='PASS',model_seconds=.05,wall_seconds=duration,
+        result['gates']['loaded_graph_compute']=dict(status='PASS',model_seconds=.05,wall_seconds=duration,backend=n.backend,
             sim_wall_ratio=.05/duration,summary=n.summary(),sparse_bytes=int(g.indptr.nbytes+g.indices.nbytes+g.counts.nbytes+g.weights.nbytes),
-            neural_state_bytes=sum(getattr(n,k).nbytes for k in ['v','h','rate','queue','refractory_until','spike_count','suppress','mute']),
+            neural_state_bytes=sum(g.n*(n.slots if k=='queue' else 1)*(8 if k in ('refractory_until','spike_count') else 1 if k in ('suppress','mute') else np.dtype(n.p.dtype).itemsize) for k in ['v','h','rate','queue','refractory_until','spike_count','suppress','mute']),
             cpu_peak_rss_native=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
             rss_native_unit='bytes' if sys.platform=='darwin' else 'KiB')
+        membership=result['gates']['full_snapshot_membership']
+        result['gates']['full_snapshot_compute']=dict(status=membership['status'],simulated_nodes=n.n,computed_ticks=n.tick,
+            reason='Full source membership and actual state/ticks required',backend=n.backend)
+        if membership['status']=='PASS' and (n.n!=g.n or n.tick!=500): result['gates']['full_snapshot_compute']['status']='FAIL'
         del n
         result['gates']['cuda']=dict(status='NOT_RUN',reason='No CUDA verification requested; CPU success is not GPU validation')
         if args.cuda:
@@ -70,11 +87,11 @@ def main():
                 result['gates']['cuda']=dict(status='PASS' if delta<1e-3 and spike_equal else 'FAIL',
                                               voltage_max_abs_mV=delta,spike_times_equal=spike_equal,scope='synthetic numerical circuit')
             except Exception as ex: result['gates']['cuda']=dict(status='BLOCKED',reason=str(ex))
-        persist();print('Full-brain compute:',result['gates']['full_brain_compute'],flush=True)
+        persist();print('Loaded-graph compute:',result['gates']['loaded_graph_compute'],flush=True)
         if args.physics:
             report=dependency_report()
             if not report['ready']: raise RuntimeError('BLOCKED_PHYSICS: '+str(report))
-            base=CEngine(g,bindings,mode='C_STRICT')
+            base=CEngine(g,bindings,mode='C_STRICT',backend=args.backend)
             try:
                 cp=base.checkpoint();StateStore.save(args.out/'initial_checkpoint',cp)
                 # Calibrate actual body response to bounded direct DN input and
@@ -92,8 +109,9 @@ def main():
                 restored=CEngine.from_checkpoint(g,bindings,StateStore.load(args.out/'active_checkpoint'))
                 try:
                     restored.step(10)
-                    neural_error=float(np.max(np.abs(expected_neural['v']-restored.neural.v)))
-                    queue_equal=bool(np.array_equal(expected_neural['queue'],restored.neural.queue))
+                    actual_neural=restored.neural.snapshot()
+                    neural_error=float(np.max(np.abs(expected_neural['v']-actual_neural['v'])))
+                    queue_equal=bool(np.array_equal(expected_neural['queue'],actual_neural['queue']))
                     body_error=float(np.max(np.abs(expected_body-np.asarray(restored.body.snapshot()['state']))))
                     result['gates']['physical_restore']=dict(status='PASS' if neural_error==0 and body_error<1e-7 and queue_equal else 'FAIL',
                         neural_voltage_max_abs_mV=neural_error,queue_equal=queue_equal,body_state_max_abs=body_error,continuation_seconds=.05)
@@ -110,7 +128,7 @@ def main():
                    dict(name='seed42_shadow',seed=42,friction=1.,mode='C_SHADOW',role=None)]
             for case in cases:
                 print('Native case:',case['name'],flush=True)
-                e=CEngine(g,bindings,mode=case['mode'],seed=case['seed'],config=dict(friction=case['friction']))
+                e=CEngine(g,bindings,mode=case['mode'],seed=case['seed'],config=dict(friction=case['friction']),backend=args.backend)
                 directory=args.out/case['name']; trace=[]; begin=time.perf_counter();start=e.body.frame()[0]
                 e.start_recording(directory)
                 try:
@@ -136,7 +154,7 @@ def main():
                 persist()
             if args.navigation_seconds:
                 print('Native C_STRICT natural-sensory navigation:',args.navigation_seconds,'model seconds',flush=True)
-                e=CEngine(g,bindings,mode='C_STRICT',seed=42);monitor=NavigationMonitor();trace=[]
+                e=CEngine(g,bindings,mode='C_STRICT',seed=42,backend=args.backend);monitor=NavigationMonitor();trace=[]
                 e.start_recording(args.out/'strict_navigation')
                 try:
                     for _ in range(round(args.navigation_seconds/.1)):
@@ -159,9 +177,10 @@ def main():
         else:
             result['gates']['closed_loop_contribution']=dict(status='NOT_RUN')
             result['gates']['strict_navigation']=dict(status='NOT_RUN')
-        result['status']='FAIL' if any(gate['status']=='FAIL' for gate in result['gates'].values()) or any(c['status']=='FAIL' for c in result['cases']) else 'COMPLETE_WITH_LIMITATIONS'
+        verdict=validation_status(result['gates'],required,result['cases'])
+        result.update(status=verdict['status'],acceptance=verdict)
         persist();print(json.dumps({k:v for k,v in result.items() if k not in ('gates','cases')},indent=2),flush=True)
-        return 1 if result['status']=='FAIL' else 0
+        return verdict['exit_code']
     except Exception as e:
         result.update(status='BLOCKED' if 'BLOCKED' in str(e) or isinstance(e,ImportError) else 'FAIL',reason=str(e),traceback=traceback.format_exc())
         persist();print(str(e),file=sys.stderr);return 2 if result['status']=='BLOCKED' else 1

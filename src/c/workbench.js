@@ -154,16 +154,28 @@ F.createWorkbench=function({state,rpc,view,applyFrame,tell,button,command,update
   return {kind:$('intervention-kind').value,ids:[...wb.intervention],amplitude_mV:Number($('amplitude').value),duration_controls:Math.round(duration/.005),at_tick:state.frame.tick+Math.round(onset/state.frame.neuralDt)};
  }
  function frame(f){
+  $('metabolism-status').textContent=f.metabolism?.enabled?`가상 에너지 ${f.metabolism.energy.toFixed(3)} · 배고픔 ${(f.metabolism.hunger*100).toFixed(0)}% · 누적 섭취 ${f.metabolism.intake.toFixed(4)} · ${f.metabolism.feeding?'섭취 중':'섭취 없음'} · 신경 조절 미연결`:'섭취·에너지 모델 꺼짐';
+  const clipped=(f.sensory_ports||[]).filter(p=>p.clipped).map(p=>p.name);$('saturation-status').textContent='입력 상한 적용: '+(clipped.join(', ')||'없음')+' · 운동 출력 상한: '+Object.entries(f.motor_diagnostics?.clipped||{}).filter(([k,v])=>v).map(([k])=>k).join(', ');
+
   if(state.recording)wb.record=[...f.recording.cohort_ids];
   $('mode-explanation').textContent=`현재 실행: ${f.mode} · `+({C_SHADOW:'B가 몸을 구동합니다. C 신경 개입은 관측·회로 검사에 적용됩니다.',C_STRICT:'C 신경 출력을 몸에 적용합니다.',C_ASSISTED:'C 신경 출력에 회피 보조가 개입할 수 있습니다.',B_COMPAT:'기존 B 회로가 몸을 구동합니다.'}[f.mode])+` 현재 명령: ${f.command.command_source} · 위 모드 설정은 새 실험에만 적용됩니다.`;
   cohortDisplay();renderWorld();renderInterventions();timing();
  }
  async function ready(){
   resetSignals();wb.extraItems=[];wb.record=[...state.frame.recording.cohort_ids];wb.intervention=[...state.selected];
-  await loadPresets();await lookup([...new Set([...state.selected,...wb.record])]);await loadEnvironmentList();cohortDisplay();chartPicker();
+  await campaigns();await loadPresets();await lookup([...new Set([...state.selected,...wb.record])]);await loadEnvironmentList();cohortDisplay();chartPicker();
   applyFrame(await rpc.request('frame'));
  }
- function animate(now,drawn){if(drawn)drawPreview();if(now-wb.lastRegions>=5000){wb.lastRegions=now;timing();if($('regions-auto').checked&&!state.busy&&!wb.regionsPending&&!document.hidden){wb.regionsPending=true;regions().catch(e=>tell(e.message,true)).finally(()=>wb.regionsPending=false);}}}
+ let campaignPoll=0,campaignBusy=false;
+ function showCampaign(r){$('campaign-status').textContent=JSON.stringify(r,null,2);}
+ async function campaigns(){const rows=await rpc.request('campaign_list'),selected=$('campaign-list').value;$('campaign-list').replaceChildren();for(const row of rows){const o=document.createElement('option');o.value=row.id;o.textContent=row.id+' · '+row.status;$('campaign-list').append(o);}if(rows.some(r=>r.id===selected))$('campaign-list').value=selected;if(rows.length)showCampaign(rows.find(r=>r.id===$('campaign-list').value)||rows.at(-1));}
+ button('campaign-refresh',campaigns);
+ button('campaign-start',async()=>{pause();const f=state.frame,r=await rpc.request('campaign_start',{spec:{schema:'flylab.campaign.v1',cases:[{name:'interactive',mode:f.mode,seed:f.seed,scene:$('campaign-scene').value,seconds:Number($('campaign-seconds').value)}]}});await campaigns();$('campaign-list').value=r.id;showCampaign(r);});
+ button('campaign-pilot',async()=>{pause();const r=await rpc.request('campaign_start');await campaigns();$('campaign-list').value=r.id;showCampaign(r);});
+ button('campaign-cancel',async()=>showCampaign(await rpc.request('campaign_cancel',{id:$('campaign-list').value})));
+ button('campaign-resume',async()=>{pause();showCampaign(await rpc.request('campaign_resume',{id:$('campaign-list').value}));});
+ $('campaign-list').addEventListener('change',()=>rpc.request('campaign_status',{id:$('campaign-list').value}).then(showCampaign).catch(e=>tell(e.message,true)));
+ function animate(now,drawn){if(now-campaignPoll>3000&&!campaignBusy&&$('campaign-list').value){campaignPoll=now;campaignBusy=true;rpc.request('campaign_status',{id:$('campaign-list').value}).then(showCampaign).catch(e=>tell(e.message,true)).finally(()=>campaignBusy=false);}if(drawn)drawPreview();if(now-wb.lastRegions>=5000){wb.lastRegions=now;timing();if($('regions-auto').checked&&!state.busy&&!wb.regionsPending&&!document.hidden){wb.regionsPending=true;regions().catch(e=>tell(e.message,true)).finally(()=>wb.regionsPending=false);}}}
  function showComparison(report){
   const first=report.comparisons?.[0];if(!first?.preview)return;$('comparison-chart').hidden=false;
   const {ctx,w,h}=chartContext('comparison-chart');ctx.fillStyle='#8ca5ae';ctx.fillText('첫 비교 · 청록: 대조군 / 노랑: 개입군 · 동일 모델 시간축',8,12);

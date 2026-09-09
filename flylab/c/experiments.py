@@ -107,7 +107,8 @@ def paired_campaign(original, path, intervention, *, seconds=.5, onset=.2, ids=N
             source = original if origin=='current' else CEngine(original.graph, original.bindings,
                 mode=original.mode, seed=seed+i, world=original.world, config=original.config,
                 backend=original.neural.backend if original.neural else 'exp_lif_cpu_reference', parameters=original.parameters,
-                body_factory=original.body_factory, motion_expected=original.motion_expected)
+                body_factory=original.body_factory, motion_expected=original.motion_expected,
+                metabolism=original.metabolism.snapshot()["parameters"] if original.metabolism else None)
             try: reports.append(dict(repeat=i+1, seed=source.seed, **paired(source,path/f'repeat-{i+1}',intervention,seconds=seconds,onset=onset,ids=ids)))
             finally:
                 if source is not original: source.close()

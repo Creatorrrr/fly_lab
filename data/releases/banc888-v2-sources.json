@@ -1,0 +1,19 @@
+{
+  "source": "https://www.nature.com/articles/s41586-026-10735-w",
+  "files": [
+    {
+      "name": "banc_888_meta.feather",
+      "url": "https://storage.googleapis.com/lee-lab_brain-and-nerve-cord-fly-connectome/compiled_data/banc_888/banc_888_meta.feather?generation=1787336614757441",
+      "size": 57503026,
+      "sha256": "86ccf5df0c67419f8c5f43e93a7ed38d23a080e9f7fde26737290252f3780098",
+      "generation": "1787336614757441"
+    },
+    {
+      "name": "banc_888_edgelist_simple_v2.feather",
+      "url": "https://storage.googleapis.com/lee-lab_brain-and-nerve-cord-fly-connectome/compiled_data/banc_888/banc_888_edgelist_simple_v2.feather?generation=1780396134870867",
+      "size": 305250378,
+      "sha256": "363fdef3813b72a5e45a42f17034cd5a544b654c838929cecf6e1ce5f60625cb",
+      "generation": "1780396134870867"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ from dataclasses import dataclass, asdict
 import math
 import numpy as np
 from .integrity import digest, bounded_int, finite
+from .inputs import validate_input
 
 NEURAL_BACKENDS = ('exp_lif_cpu_reference', 'exp_lif_mps', 'exp_lif_cuda')
 
@@ -119,13 +120,7 @@ class ExpLIF:
             self.edge_mutes = edges
 
     def advance(self, drive, steps, capture=(), pulses=None):
-        bounded_int(steps, 'neural steps', 0, 10000)
-        drive = np.asarray(drive)
-        if drive.shape != (self.n,) or not np.isfinite(drive).all() or np.max(np.abs(drive)) > 1000:
-            raise ValueError('Finite mV input per included neuron required')
-        capture = np.asarray(capture, dtype=np.int32)
-        if capture.ndim != 1 or len(capture) > 1024 or (len(capture) and (capture.min() < 0 or capture.max() >= self.n)):
-            raise ValueError('Invalid bounded readout')
+        drive, capture = validate_input(self.n, drive, steps, capture, pulses)
         xp = self.xp
         x = xp.asarray(drive, dtype=self.p.dtype)
         selected = xp.asarray(capture)

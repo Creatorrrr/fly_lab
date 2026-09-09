@@ -217,6 +217,24 @@ class FlyGymBody:
         panorama=np.where((ids[9:]==self.landmark_id)&self.world_spec['cueOn'],.92,0.).tolist()
         return ranges,panorama
 
+    def obstacle_silhouette(self,origin,R):
+        """Coarse horizontal obstacle silhouette; an explicit visual proxy."""
+        directions=np.array([R@direction for direction in self._panorama_directions])
+        ids=np.empty(64,dtype=np.int32);distances=np.empty(64)
+        self.mj.mj_multiRay(self.m,self.d,np.asarray(origin,dtype=float),directions.ravel(),
+            self.ray_mask,1,-1,ids,distances,None,64,np.inf)
+        visible=np.isin(ids,self.obstacle_ids).astype(float)
+        return visible.tolist()
+
+    def head_contact(self):
+        head_id=int(self.body_ids[self.body_indices['c_head']])
+        for contact in self.d.contact[:self.d.ncon]:
+            if contact.exclude:continue
+            if ((self.m.geom_bodyid[contact.geom1]==head_id and int(contact.geom2) in self.world_geom_ids) or
+                (self.m.geom_bodyid[contact.geom2]==head_id and int(contact.geom1) in self.world_geom_ids)):
+                return True
+        return False
+
     def perturb(self,bw=.5,duration=.05):
         number(bw,'pushBW',-2,2); number(duration,'duration',.005,.2)
         _,R,_=self.pose(); self.push_force=-R[:,1]*self.weight0*bw; self.push_left=duration

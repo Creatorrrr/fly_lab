@@ -14,6 +14,7 @@ import json
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from flylab.c.graph import GraphStore, external_id
 from flylab.c.integrity import file_hash, read_json, write_json
@@ -45,7 +46,7 @@ def download(raw):
     write_json(raw / 'download_manifest.json', manifest)
 
 
-def build(raw, output, unknown_policy):
+def build(raw, output, unknown_policy, *, acquisition=None):
     began = time.perf_counter()
     sources = read_json(raw / 'download_manifest.json')
     for p in sources:
@@ -109,7 +110,8 @@ def build(raw, output, unknown_policy):
     for n, region in zip(nodes, regions):
         n['regions'] = sorted(region)
     graph = GraphStore.from_edges(nodes, pre, post, counts, unknown_policy=unknown_policy,
-        metadata=dict(scope='full_snapshot', annotation_release='Codex static acquisition 2026-09-09',
+        metadata=dict(scope='full_snapshot', graph_hash_schema='content-v2',
+                      annotation_release=acquisition or datetime.now(timezone.utc).isoformat(),
                       raw_file_hashes={p['product'] + '.csv.gz': p['sha256'] for p in sources},
                       sources=[p['url'] for p in sources],
                       master_roster_product='neurons', edge_product='connections_princeton',

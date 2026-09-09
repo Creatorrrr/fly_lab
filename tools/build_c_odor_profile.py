@@ -13,7 +13,8 @@ SOURCES = ['https://codex.flywire.ai/faq', 'https://www.nature.com/articles/natu
            'https://www.nature.com/articles/srep21841', 'https://doi.org/10.1016/j.cell.2012.09.046']
 
 
-def build(graph, base):
+def build(graph, base, version=1):
+    if version not in (1, 2): raise ValueError('Unknown odor profile version')
     spec=copy.deepcopy(base);sensory=[]
     for side in ('left','right'):
         ids=[n['id'] for n in graph.nodes if n.get('cell_type')=='ORN_DM1' and n.get('soma_side')==side]
@@ -42,13 +43,18 @@ def build(graph, base):
                 hazard_semantics='geosmin proxy; not generic danger',
                 unused_observations=[v for v in base['unused_observations'] if v!='danger'])
     PortBindings(graph,spec)
+    if version == 2:
+        spec.update(profile='fafb783-bilateral-food-geosmin-engineering-v2', profile_version=2,
+                    sensor_model=dict(kind='compressive-odor-v2', half_concentration=1.),
+                    transduction_scope='c/(c+1) in engineering units; finite monotonic response, no receptor calibration')
     return spec
 
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--graph',default='data/fafb783/bundle')
     p.add_argument('--base',default='data/fafb783/bindings.json');p.add_argument('--out',type=Path,default=Path('data/fafb783/bindings-bilateral-geosmin-v1.json'))
+    p.add_argument('--version',type=int,choices=(1,2),default=1)
     a=p.parse_args()
     if a.out.exists():raise SystemExit('Use a new versioned filename; existing bindings are immutable')
-    g=GraphStore.load(a.graph);s=build(g,read_json(a.base));write_json(a.out,s)
+    g=GraphStore.load(a.graph);s=build(g,read_json(a.base),a.version);write_json(a.out,s)
     print({p['name']:len(p['ids']) for p in s['sensory']});print('binding_hash:',PortBindings(g,s).hash)

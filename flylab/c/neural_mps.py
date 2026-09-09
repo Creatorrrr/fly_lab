@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import numpy as np
 from .neural import ExpLIF, LIFParameters
 from .integrity import bounded_int, file_hash
+from .inputs import validate_input
 
 
 class _MPSArrays:
@@ -92,14 +93,7 @@ class MetalLIF(ExpLIF):
     def begin_advance(self, drive, steps, capture=(), pulses=None):
         """Submit a whole control period, allowing independent CPU body work."""
         if self._pending_advance is not None: raise RuntimeError('Previous neural period still pending')
-        self._observed_tick = None
-        bounded_int(steps, 'neural steps', 0, 10000)
-        drive = np.asarray(drive)
-        if drive.shape != (self.n,) or not np.isfinite(drive).all() or np.max(np.abs(drive)) > 1000:
-            raise ValueError('Finite mV input per included neuron required')
-        capture = np.asarray(capture, dtype=np.int32)
-        if capture.ndim != 1 or len(capture) > 1024 or (len(capture) and (capture.min() < 0 or capture.max() >= self.n)):
-            raise ValueError('Invalid bounded readout')
+        drive, capture = validate_input(self.n, drive, steps, capture, pulses)
         # Keep duplicate capture indices legal, as in the CPU reference.
         unique = np.union1d(capture, self.additional_readout)
         inverse = np.searchsorted(unique, capture)

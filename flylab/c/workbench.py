@@ -8,6 +8,7 @@ import math
 from ..engine import Engine as BEngine
 from ..sensors import validate_world
 from .integrity import bounded_int, finite
+from .inputs import validate_schedule
 
 ENVIRONMENT_COMMANDS = {'place', 'update_object', 'delete_object', 'clear_added',
                         'load_environment', 'undo_environment'}
@@ -128,6 +129,7 @@ def cancel_intervention(engine, serial):
     if not found or found[0]['expires_tick'] <= engine.tick:
         raise ValueError('Only pending or active interventions can be cancelled')
     item = found[0]
+    validate_schedule([e for e in engine.pending+engine.active if e['serial'] != serial], engine.tick)
     engine.pending = [e for e in engine.pending if e['serial'] != serial]
     engine.active = [e for e in engine.active if e['serial'] != serial]
     terminal_intervention(engine, item, 'cancelled', engine.tick)

@@ -4,10 +4,10 @@
 
 #comparison-chart{height:330px}
 </style></head><body>
-<header><a class="brand" href="/">FLY <b>LAB</b> <span>C</span></a><div class="title">전뇌 실험실<small>FAFB v783 · NeuroMechFly</small></div><div class="connection"><i id="status-dot"></i><span id="connection-status">연결 중</span></div></header>
+<header><a class="brand" href="/">FLY <b>LAB</b> <span>C</span></a><div class="title">전뇌 실험실<small id="dataset-label">연결망 · NeuroMechFly</small></div><div class="connection"><i id="status-dot"></i><span id="connection-status">연결 중</span></div></header>
 <div class="scope"><strong id="scope">연결망 확인 중…</strong><span>신경 신호는 모델 계산값입니다. 생물학적 재현은 검증되지 않았습니다.</span></div>
 <main>
-<section class="toolbar"><div class="play-group"><button id="play" class="primary" disabled>▶ 재생</button><button id="step" disabled>한 단계 · 50ms</button><strong id="clock">0.000 s</strong></div><label>신경 계산 <select id="backend"><option value="exp_lif_cpu_reference">CPU · 기준 계산</option><option value="exp_lif_mps">MPS · Apple GPU</option><option value="exp_lif_cuda">CUDA · NVIDIA GPU</option></select></label><label>다음 새 실험 모드 <select id="mode"><option value="C_SHADOW">C_SHADOW · B 구동 / C 관측</option><option value="C_STRICT">C_STRICT · C 신경 출력</option><option value="C_ASSISTED">C_ASSISTED · C + 회피 보조</option><option value="B_COMPAT">B_COMPAT · 기존 B 기준선</option></select></label><label>새 실험 감각 포트 <select id="binding-profile" aria-label="새 실험 감각 포트"><option value="bindings.json">기존 평균 냄새</option></select></label><label>시드 <input id="seed" type="number" value="42" min="0" max="4294967295"></label><button id="init">새 실험</button></section>
+<section class="toolbar"><div class="play-group"><button id="play" class="primary" disabled>▶ 재생</button><button id="step" disabled>한 단계 · 50ms</button><strong id="clock">0.000 s</strong></div><label>신경 계산 <select id="backend"><option value="exp_lif_cpu_reference">CPU · 기준 계산</option><option value="exp_lif_mps">MPS · Apple GPU</option><option value="exp_lif_cuda">CUDA · NVIDIA GPU</option></select></label><label>다음 새 실험 모드 <select id="mode"><option value="C_SHADOW">C_SHADOW · B 구동 / C 관측</option><option value="C_STRICT">C_STRICT · C 신경 출력</option><option value="C_ASSISTED">C_ASSISTED · C + 회피 보조</option><option value="B_COMPAT">B_COMPAT · 기존 B 기준선</option></select></label><label>새 실험 감각 포트 <select id="binding-profile" aria-label="새 실험 감각 포트"><option value="bindings.json">기존 평균 냄새</option></select></label><label>시드 <input id="seed" type="number" value="42" min="0" max="4294967295"></label><label><input id="metabolism-enabled" type="checkbox"> 새 실험에 가상 섭취·에너지 적용</label><button id="init">새 실험</button></section>
 <p id="mode-explanation" class="mode-explanation"></p>
 <div id="alert" class="alert" role="status" hidden></div>
 <div class="workspace">
@@ -23,10 +23,10 @@
 <div class="input-row"><button id="environment-undo" disabled>환경 편집 되돌리기</button><button id="environment-clear">추가한 물체 모두 제거</button></div>
 <div class="input-row"><input id="environment-name" aria-label="환경 저장 이름" placeholder="환경 이름 (영문·숫자)"><button id="environment-save">환경 저장</button><select id="environments" aria-label="저장한 환경"></select><button id="environment-load">불러오기</button></div>
 <p id="environment-sensors" class="muted"></p></section>
-<section class="card"><div class="card-head"><h2>운동 명령의 출처</h2><span class="source" id="command-source">—</span></div><div class="command-grid"><div><span>신경 출력</span><strong id="neural-command">—</strong></div><div><span>회피·후진 보조</span><strong id="assist-command">—</strong></div><div><span>몸에 적용한 명령</span><strong id="final-command">—</strong></div></div><p id="causal-time" class="muted">감각 관측과 신경 출력의 시각을 분리해 표시합니다.</p><div class="toggles"><label><input id="motor" type="checkbox" checked> 신경–몸 연결</label><label><input id="cue" type="checkbox" checked> 시각 표식</label><label><input id="food" type="checkbox" checked> 냄새장</label><button id="push">측면 밀기 · 0.5 BW</button><label>마찰 <select id="friction"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option></select></label></div><p id="port-note" class="muted"></p><p id="port-values" class="muted"></p></section>
+<section class="card"><div class="card-head"><h2>운동 명령의 출처</h2><span class="source" id="command-source">—</span></div><div class="command-grid"><div><span>신경 출력</span><strong id="neural-command">—</strong></div><div><span>회피·후진 보조</span><strong id="assist-command">—</strong></div><div><span>몸에 적용한 명령</span><strong id="final-command">—</strong></div></div><p id="causal-time" class="muted">감각 관측과 신경 출력의 시각을 분리해 표시합니다.</p><div class="toggles"><label><input id="motor" type="checkbox" checked> 신경–몸 연결</label><label><input id="cue" type="checkbox" checked> 시각 표식</label><label><input id="food" type="checkbox" checked> 냄새장</label><button id="push">측면 밀기 · 0.5 BW</button><label>마찰 <select id="friction"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option></select></label></div><p id="port-note" class="muted"></p><p id="port-values" class="muted"></p><p id="metabolism-status" class="muted"></p><p id="saturation-status" class="muted"></p></section>
 <section class="card"><div class="card-head"><h2>관절과 접촉</h2><span id="body-status">—</span></div><div id="feet" class="feet"></div><details><summary>42개 관절의 측정·목표·출력</summary><div class="table-scroll"><table><thead><tr><th>관절</th><th>측정 rad</th><th>목표 rad</th><th>출력 · 모델 단위</th></tr></thead><tbody id="joints"></tbody></table></div></details></section>
 </div>
-<aside class="card neural"><div class="card-head"><h2>선택 신경 모니터</h2><span id="selected-count">0 / 512</span></div><p class="muted">전뇌 전체를 계산하며, 선택한 신호만 전송합니다.</p><div class="search"><input id="search" type="search" aria-label="뉴런 검색" placeholder="root ID · 세포형 · 영역 · 전달물질"><button id="search-button">검색</button></div><div class="catalog-head"><span id="catalog-count">—</span><button id="previous">이전</button><button id="next">다음</button></div><div id="catalog" class="catalog" role="list"></div><div class="card-head selection-title"><h3>구독 신호</h3><button id="clear-selection">선택 해제</button></div><div id="selection" class="selection"></div>
+<aside class="card neural"><div class="card-head"><h2>선택 신경 모니터</h2><span id="selected-count">0 / 512</span></div><p class="muted" id="neural-scope-note">연결한 모델의 계산 범위를 확인합니다.</p><div class="search"><input id="search" type="search" aria-label="뉴런 검색" placeholder="root ID · 세포형 · 영역 · 전달물질"><button id="search-button">검색</button></div><div class="catalog-head"><span id="catalog-count">—</span><button id="previous">이전</button><button id="next">다음</button></div><div id="catalog" class="catalog" role="list"></div><div class="card-head selection-title"><h3>구독 신호</h3><button id="clear-selection">선택 해제</button></div><div id="selection" class="selection"></div>
 <details class="cohort-details"><summary>관측 집단 전체 ID</summary><pre id="observe-ids"></pre></details>
 <div class="input-row"><label>프리셋 <select id="cohort-preset" aria-label="신경 집단 프리셋"></select></label><button id="preset-observe">관측으로 지정</button><button id="preset-intervene">개입으로 지정</button><button id="preset-record">기록으로 지정</button></div>
 <div class="input-row"><input id="cohort-name" aria-label="관측 집단 저장 이름" placeholder="관측 집단 이름"><button id="cohort-save">관측 집단 저장</button></div>
@@ -37,9 +37,13 @@
 <div class="action-row"><button id="record">기록 시작</button><button id="checkpoint">체크포인트 저장</button></div><div class="action-row"><select id="checkpoints" aria-label="저장한 체크포인트"><option value="">저장한 체크포인트</option></select><button id="restore">복원</button></div><div class="action-row"><select id="pair-kind"><option value="motor_disconnect">신경–몸 연결 차단</option><option value="sensor_off">감각 입력 차단</option><option value="assist_off">회피 보조 차단</option><option value="suppress_spiking">개입 집단 발화 억제</option><option value="stimulate">개입 집단 자극</option><option value="mute_outgoing">개입 집단 출력 차단</option></select><button id="paired">대조 비교 실행</button></div><div class="input-row"><label>기간 s <input id="pair-seconds" type="number" value="0.5" min="0.01" max="10" step="0.005"></label><label>개입 시점 s <input id="pair-onset" type="number" value="0.2" min="0" max="9.995" step="0.005"></label><label>시작 상태 <select id="pair-origin"><option value="current">현재 체크포인트</option><option value="fresh">현재 환경 / 새 시드</option></select></label></div>
 <div class="input-row"><label>첫 시드 <input id="pair-seed" type="number" min="0" max="4294967295" value="42" disabled></label><label>반복 <input id="pair-repeats" type="number" min="1" max="5" value="1"></label></div><p class="muted">자극 세기는 개입 패널의 mV 값을 사용합니다. 각 쌍은 동일 상태로 시작합니다. 새 시드 반복은 첫 시드부터 1씩 증가합니다.</p><canvas id="comparison-chart" aria-label="대조군과 개입군의 실제 전진 변위 비교" hidden></canvas>
 <pre id="experiment-result">체크포인트와 원자료는 서버의 artifacts/c/에 저장됩니다.</pre><p class="muted">선택 전압·발화율 100Hz, 몸·접촉 10Hz, 운동 명령 200Hz. 모델 시간이 느려져도 계산 tick을 생략하지 않습니다.</p></section></div>
-<section class="card provenance"><details><summary>데이터·모델·검증 범위</summary><p>FAFB v783의 전체 포함 뉴런에 LIF를 적용합니다. 화학 연결 가중치는 시냅스 수 × 0.275mV × 전달물질 부호입니다. ACh는 양수, GABA·glutamate는 음수이며, 미확정·신경조절성 출력은 현재 프로파일에서 0으로 가립니다. 해당 뉴런의 상태 계산은 계속합니다.</p><p>현재 자연 입력은 이상화한 냄새장을 ORN_DM1 집단에 연결합니다. 실제 복안·냄새 수용체 반응·VNC 전체는 재현하지 않습니다. 조향·전후진은 문헌과 실제 ID를 검토한 공학적 출력 해석이며, 회피 보조가 꺼진 C_STRICT의 안정적 탐색은 별도 검증 대상입니다.</p><p>CPU 수치 검사, 실제 물리 실행, CUDA 일치성, 생물학적 타당성은 별도로 판정합니다. CUDA 실장치 검증은 NVIDIA 환경이 필요합니다.</p><pre id="manifest">—</pre></details></section>
+<section class="card"><div class="card-head"><h2>장시간 독립 실험</h2><button id="campaign-refresh">목록 갱신</button></div>
+<p class="muted">현재 몸 상태를 보존하고 별도 실험을 실행합니다. 실행 중 화면 재생은 일시 중지됩니다. 각 장면의 성공 여부는 물리 실행 완료와 별도로 판정합니다.</p>
+<div class="input-row"><label>장면 <select id="campaign-scene"><option value="baseline">기준선</option><option value="food_left">왼쪽 먹이</option><option value="food_right">오른쪽 먹이</option><option value="hazard_left">왼쪽 위험</option><option value="hazard_right">오른쪽 위험</option><option value="front_obstacle">정면 장애물</option></select></label><label>모델초 <input id="campaign-seconds" type="number" min="0.005" max="3600" value="10" step="0.005"></label><button id="campaign-start">현재 모드·프로파일로 실행</button><button id="campaign-pilot">54조건 파일럿 · 540모델초</button></div>
+<div class="input-row"><select id="campaign-list" aria-label="독립 실험 목록"></select><button id="campaign-cancel">취소·상태 보존</button><button id="campaign-resume">마지막 정상 상태에서 재개</button></div><pre id="campaign-status" aria-live="polite">아직 시작한 독립 실험이 없습니다.</pre></section>
+<section class="card provenance"><details><summary>데이터·모델·검증 범위</summary><p>FAFB v783의 전체 포함 뉴런에 LIF를 적용합니다. 화학 연결 가중치는 시냅스 수 × 0.275mV × 전달물질 부호입니다. ACh는 양수, GABA·glutamate는 음수이며, 미확정·신경조절성 출력은 현재 프로파일에서 0으로 가립니다. 해당 뉴런의 상태 계산은 계속합니다.</p><p>기본 입력은 이상화한 냄새장을 ORN_DM1 집단에 연결합니다. 선택 프로파일은 양측 냄새·geosmin 가정·물체 시야 변화·머리 접촉을 추가합니다. 실제 복안·냄새 수용체 반응·VNC 전체는 이 관찰 모드에서 재현하지 않습니다. 가상 섭취·에너지는 선택 기능이며 현재 신경 조절과 연결되지 않습니다. 조향·전후진은 문헌과 실제 ID를 검토한 공학적 출력 해석이며, 회피 보조가 꺼진 C_STRICT의 안정적 탐색은 별도 검증 대상입니다.</p><p>CPU 수치 검사, 실제 물리 실행, CUDA 일치성, 생물학적 타당성은 별도로 판정합니다. CUDA 실장치 검증은 NVIDIA 환경이 필요합니다.</p><pre id="manifest">—</pre></details></section>
 <section class="event-log"><span>EVENT LOG</span><div id="events"></div></section>
-</main><footer><span>FLY LAB C · 0.3.0</span><span>실제 연결망 / 모델 신경 상태 / 가상 물리 실험</span><span>0.1ms LIF · 0.1ms PHYSICS</span></footer><script>/* FLY LAB A — dependency-free core. Also runs unchanged in Node and Workers. */
+</main><footer><span>FLY LAB C · 0.4.0</span><span>실제 연결망 / 모델 신경 상태 / 가상 물리 실험</span><span>0.1ms LIF · 0.1ms PHYSICS</span></footer><script>/* FLY LAB A — dependency-free core. Also runs unchanged in Node and Workers. */
 (function (root) {
     'use strict';
     const F = root.Fly = root.Fly || {};
@@ -538,16 +542,28 @@ F.createWorkbench=function({state,rpc,view,applyFrame,tell,button,command,update
   return {kind:$('intervention-kind').value,ids:[...wb.intervention],amplitude_mV:Number($('amplitude').value),duration_controls:Math.round(duration/.005),at_tick:state.frame.tick+Math.round(onset/state.frame.neuralDt)};
  }
  function frame(f){
+  $('metabolism-status').textContent=f.metabolism?.enabled?`가상 에너지 ${f.metabolism.energy.toFixed(3)} · 배고픔 ${(f.metabolism.hunger*100).toFixed(0)}% · 누적 섭취 ${f.metabolism.intake.toFixed(4)} · ${f.metabolism.feeding?'섭취 중':'섭취 없음'} · 신경 조절 미연결`:'섭취·에너지 모델 꺼짐';
+  const clipped=(f.sensory_ports||[]).filter(p=>p.clipped).map(p=>p.name);$('saturation-status').textContent='입력 상한 적용: '+(clipped.join(', ')||'없음')+' · 운동 출력 상한: '+Object.entries(f.motor_diagnostics?.clipped||{}).filter(([k,v])=>v).map(([k])=>k).join(', ');
+
   if(state.recording)wb.record=[...f.recording.cohort_ids];
   $('mode-explanation').textContent=`현재 실행: ${f.mode} · `+({C_SHADOW:'B가 몸을 구동합니다. C 신경 개입은 관측·회로 검사에 적용됩니다.',C_STRICT:'C 신경 출력을 몸에 적용합니다.',C_ASSISTED:'C 신경 출력에 회피 보조가 개입할 수 있습니다.',B_COMPAT:'기존 B 회로가 몸을 구동합니다.'}[f.mode])+` 현재 명령: ${f.command.command_source} · 위 모드 설정은 새 실험에만 적용됩니다.`;
   cohortDisplay();renderWorld();renderInterventions();timing();
  }
  async function ready(){
   resetSignals();wb.extraItems=[];wb.record=[...state.frame.recording.cohort_ids];wb.intervention=[...state.selected];
-  await loadPresets();await lookup([...new Set([...state.selected,...wb.record])]);await loadEnvironmentList();cohortDisplay();chartPicker();
+  await campaigns();await loadPresets();await lookup([...new Set([...state.selected,...wb.record])]);await loadEnvironmentList();cohortDisplay();chartPicker();
   applyFrame(await rpc.request('frame'));
  }
- function animate(now,drawn){if(drawn)drawPreview();if(now-wb.lastRegions>=5000){wb.lastRegions=now;timing();if($('regions-auto').checked&&!state.busy&&!wb.regionsPending&&!document.hidden){wb.regionsPending=true;regions().catch(e=>tell(e.message,true)).finally(()=>wb.regionsPending=false);}}}
+ let campaignPoll=0,campaignBusy=false;
+ function showCampaign(r){$('campaign-status').textContent=JSON.stringify(r,null,2);}
+ async function campaigns(){const rows=await rpc.request('campaign_list'),selected=$('campaign-list').value;$('campaign-list').replaceChildren();for(const row of rows){const o=document.createElement('option');o.value=row.id;o.textContent=row.id+' · '+row.status;$('campaign-list').append(o);}if(rows.some(r=>r.id===selected))$('campaign-list').value=selected;if(rows.length)showCampaign(rows.find(r=>r.id===$('campaign-list').value)||rows.at(-1));}
+ button('campaign-refresh',campaigns);
+ button('campaign-start',async()=>{pause();const f=state.frame,r=await rpc.request('campaign_start',{spec:{schema:'flylab.campaign.v1',cases:[{name:'interactive',mode:f.mode,seed:f.seed,scene:$('campaign-scene').value,seconds:Number($('campaign-seconds').value)}]}});await campaigns();$('campaign-list').value=r.id;showCampaign(r);});
+ button('campaign-pilot',async()=>{pause();const r=await rpc.request('campaign_start');await campaigns();$('campaign-list').value=r.id;showCampaign(r);});
+ button('campaign-cancel',async()=>showCampaign(await rpc.request('campaign_cancel',{id:$('campaign-list').value})));
+ button('campaign-resume',async()=>{pause();showCampaign(await rpc.request('campaign_resume',{id:$('campaign-list').value}));});
+ $('campaign-list').addEventListener('change',()=>rpc.request('campaign_status',{id:$('campaign-list').value}).then(showCampaign).catch(e=>tell(e.message,true)));
+ function animate(now,drawn){if(now-campaignPoll>3000&&!campaignBusy&&$('campaign-list').value){campaignPoll=now;campaignBusy=true;rpc.request('campaign_status',{id:$('campaign-list').value}).then(showCampaign).catch(e=>tell(e.message,true)).finally(()=>campaignBusy=false);}if(drawn)drawPreview();if(now-wb.lastRegions>=5000){wb.lastRegions=now;timing();if($('regions-auto').checked&&!state.busy&&!wb.regionsPending&&!document.hidden){wb.regionsPending=true;regions().catch(e=>tell(e.message,true)).finally(()=>wb.regionsPending=false);}}}
  function showComparison(report){
   const first=report.comparisons?.[0];if(!first?.preview)return;$('comparison-chart').hidden=false;
   const {ctx,w,h}=chartContext('comparison-chart');ctx.fillStyle='#8ca5ae';ctx.fillText('첫 비교 · 청록: 대조군 / 노랑: 개입군 · 동일 모델 시간축',8,12);
@@ -570,7 +586,7 @@ F.createWorkbench=function({state,rpc,view,applyFrame,tell,button,command,update
 const PROTOCOL='flylab.protocol.v3', $=id=>document.getElementById(id);
 const view=new F.WorldView($('world'),$('world-overlay'));
 const state={frame:null,playing:false,busy:false,selected:[],catalog:[],offset:0,total:0,epoch:0,sequence:0,
-  signals:new Map(),traces:new Map(),spikes:0,closed:false,names:new Map(),recording:false,backend:'exp_lif_cpu_reference'};
+  signals:new Map(),traces:new Map(),spikes:0,closed:false,names:new Map(),recording:false,backend:'exp_lif_cpu_reference',dataset:'연결망'};
 const colors=['#76d9c4','#eac684','#87b4e8','#c9a1ed','#ed9994','#a6d883','#88d9e5','#dba3c6'];
 function setText(node,value){if(node.textContent!==value)node.textContent=value;}
 function tell(message,error=false){$('alert').hidden=!message;$('alert').textContent=message||'';if(error)console.error(message);}
@@ -618,7 +634,8 @@ function applyFrame(f){
  state.frame=f;state.epoch=f.subscription.epoch;state.selected=f.subscription.ids;view.setFrame(f);
  if(changed)workbench.subscriptionChanged();
  $('waiting').hidden=true;$('mode-tag').textContent=f.mode;$('clock').textContent=f.simTime.toFixed(3)+' s';
- $('scope').textContent=f.mode==='B_COMPAT'?'B_COMPAT · 기존 부분 신경 모델':`FAFB v783 · ${f.scope.simulatedNodes.toLocaleString()} 뉴런 · ${f.scope.pairEdges.toLocaleString()} 연결`;
+ $('scope').textContent=f.mode==='B_COMPAT'?'B_COMPAT · 기존 부분 신경 모델':`${state.dataset} · ${f.scope.simulatedNodes.toLocaleString()} 뉴런 · ${f.scope.pairEdges.toLocaleString()} 연결`;
+ $('neural-scope-note').textContent=f.mode==='B_COMPAT'?'현재 B 부분 신경 모델을 사용하며 C 전뇌 계산은 꺼져 있습니다.':`${f.scope.simulatedNodes.toLocaleString()}개 모델 뉴런을 계산하며 선택한 신호만 전송합니다. 전체 스냅샷 판정: ${f.scope.fullBrain?'확인':'미승인'}`;
  $('distance').textContent=f.body.travel.toFixed(2)+' mm';$('speed').textContent=f.body.speed.toFixed(2)+' mm/s';
  $('mean-rate').textContent=f.neural?f.neural.mean_rate_Hz.toFixed(3)+' Hz':'B rate';$('performance').textContent=f.performance.sim_wall_ratio.toFixed(3)+'×';
  $('command-source').textContent=f.command.command_source;$('neural-command').textContent=commandText(f.command.u_neural);
@@ -668,8 +685,9 @@ async function search(reset=true){
 async function toggle(id){const ids=state.selected.includes(id)?state.selected.filter(x=>x!==id):[...state.selected,id];applyFrame(await rpc.request('subscribe',{ids}));}
 async function regions(){const rows=await rpc.request('regions');$('regions').replaceChildren(...rows.map(r=>{const box=document.createElement('div');box.className='region';const name=document.createElement('span');name.textContent=r.region;const value=document.createElement('strong');value.textContent=r.mean_rate_Hz.toFixed(2)+' Hz';const count=document.createElement('small');count.textContent=r.neurons.toLocaleString()+' 뉴런';box.append(name,value,count);return box;}));}
 async function checkpoints(){const rows=await rpc.request('checkpoints');$('checkpoints').replaceChildren();const blank=document.createElement('option');blank.value='';blank.textContent='저장한 체크포인트';$('checkpoints').append(blank);rows.forEach(r=>{const o=document.createElement('option');o.value=o.textContent=r.name;$('checkpoints').append(o);});}
-function applyReady(result){
- applyFrame(result.frame);$('binding-profile').replaceChildren(...(result.profiles||[]).map(p=>new Option(p.name==='bindings.json'?'기존 평균 냄새':p.name==='bindings-bilateral-geosmin-v1.json'?'좌우 먹이·geosmin (실험)':p.profile,p.name,p.current,p.current)));$('mode').value=result.frame.mode;$('seed').value=result.frame.seed;
+function applyReady(result){state.dataset=result.manifest.dataset_id+' v'+result.manifest.snapshot_id;$('dataset-label').textContent=state.dataset+' · NeuroMechFly';
+ const labels={'bindings.json':'기존 평균 냄새','bindings-bilateral-geosmin-v1.json':'좌우 먹이·geosmin v1 (실험)','bindings-bilateral-geosmin-v2.json':'좌우 먹이·geosmin v2 · 농도 압축 (실험)','bindings-visual-head-contact-research-v1.json':'좌우 냄새·물체 시야·머리 접촉 (연구)','bindings-odor-poisson-current-hypothesis-v1.json':'후각 Poisson 전류 입력 (검증 가설)'};
+ applyFrame(result.frame);$('binding-profile').replaceChildren(...(result.profiles||[]).map(p=>{const label=labels[p.name]||p.profile||p.name;const option=new Option(label+(p.available===false?' · 사용 불가':''),p.name,p.current,p.current);option.disabled=p.available===false;option.title=p.reason||'';return option;}));$('mode').value=result.frame.mode;$('seed').value=result.frame.seed;
  state.backend=result.capabilities.backend;$('backend').value=state.backend==='legacy_b_rate'?'exp_lif_cpu_reference':state.backend;$('backend').disabled=state.backend==='legacy_b_rate';
  const friction=String(result.frame.config.friction);
  if(![...$('friction').options].some(o=>o.value===friction))$('friction').add(new Option(friction+'×',friction));
@@ -683,9 +701,11 @@ async function refreshExperiment(result,message){
  $('search').value='DNa02';await search();await regions();await checkpoints();await workbench.ready();tell(message);
 }
 async function init(){
- state.playing=false;updatePlay();$('waiting').hidden=false;state.signals.clear();state.traces.clear();state.spikes=0;state.sequence=0;
- const result=await rpc.request('init',{mode:$('mode').value,seed:Number($('seed').value),profile:$('binding-profile').value});applyReady(result);
- $('search').value='DNa02';await search();await regions();await checkpoints();await workbench.ready();tell('실험을 준비했습니다.'+(result.source_checkpoint?' 이전 상태 저장: '+result.source_checkpoint:'')+' 재생 또는 한 단계로 진행하세요.');
+ state.playing=false;updatePlay();$('waiting').hidden=false;
+ let result;try{result=await rpc.request('init',{mode:$('mode').value,seed:Number($('seed').value),profile:$('binding-profile').value,metabolism:$('metabolism-enabled').checked?{}:null});}catch(e){$('waiting').hidden=!!state.frame;throw e;}
+ state.signals.clear();state.traces.clear();state.spikes=0;state.sequence=0;applyReady(result);
+ const recovery=result.recovery?.kind==='fault_reset'?(result.recovery.diagnostic_saved?' 오류 진단 저장: '+result.recovery.diagnostic_id:' 오류 진단은 메모리에 보존했습니다. 파일 저장 실패: '+result.recovery.diagnostic_save_error):'';
+ $('search').value='DNa02';await search();await regions();await checkpoints();await workbench.ready();tell('실험을 준비했습니다.'+(result.source_checkpoint?' 이전 상태 저장: '+result.source_checkpoint:'')+recovery+(result.cleanup_error?' 이전 실험 정리 오류: '+result.cleanup_error:'')+' 재생 또는 한 단계로 진행하세요.');
 }
 async function command(type,payload={}){const r=await rpc.request('command',{type,payload});if(r.schema==='flylab.frame.v3')applyFrame(r);return r;}
 button('play',()=>{state.playing=!state.playing;updatePlay();});

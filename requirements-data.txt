@@ -1,0 +1,2 @@
+# Optional acquisition tools; not required to run an existing graph bundle.
+pyarrow==23.0.1

@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 import traceback
+import copy
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -86,6 +87,25 @@ def exact_differences(a,b,path=''):
     elif a!=b:return [path]
     return []
 
+def baseline_state(state):
+    """Compare unchanged dynamics across an additive telemetry schema change.
+
+    Only the legacy concentration model with metabolism disabled is eligible.
+    Every neural/body/encoder/RNG/control field remains in the exact comparison.
+    """
+    state=copy.deepcopy(state)
+    if state['app_version'] not in ('0.3.0','0.4.0'):raise ValueError('Unreviewed application migration')
+    state['app_version']='0.3-to-0.4-validated-baseline'
+    if state.pop('metabolism',None) is not None:raise ValueError('Metabolism is outside legacy equivalence scope')
+    sensors=state['sensors']
+    if sensors.pop('transduction',{'kind':'legacy-clipped-v1'})!={'kind':'legacy-clipped-v1'}:
+        raise ValueError('Changed sensory model cannot use legacy equivalence')
+    if sensors.pop('previous_silhouette',None) is not None:raise ValueError('Optical state cannot be excluded')
+    sensors.pop('diagnostics',None)
+    for row in state['last_ports']:
+        for key in ('feature','requested','clipped'):row.pop(key,None)
+    return state
+
 
 def recording_differences(a,b):
     import numpy as np
@@ -119,6 +139,7 @@ def main():
     p.add_argument('--worker',action='store_true')
     p.add_argument('--source-root',type=Path,default=ROOT)
     p.add_argument('--case',choices=('shadow','strict','assisted','recording'),default='shadow')
+    p.add_argument('--additive-telemetry',action='store_true',help='Compare legacy dynamics with explicit additive telemetry exclusions')
     args=p.parse_args()
     if not 0<args.seconds<=5 or abs(args.seconds/.005-round(args.seconds/.005))>1e-8 or not 1<=args.repeats<=10:
         p.error('Use 5ms multiples up to five model seconds and 1–10 repeats')
@@ -149,9 +170,12 @@ def main():
                 print(json.dumps(dict(case=case,trial=trial,version=label,wall_seconds=row['wall_seconds'])),flush=True)
         diffs=[]
         reference=StateStore.load(runs[0,'baseline']/'final_checkpoint')
+        if args.additive_telemetry:reference=baseline_state(reference)
         reference_trace=json.loads((runs[0,'baseline']/'trace.json').read_text())
         for (trial,label),path in runs.items():
-            diff=exact_differences(reference,StateStore.load(path/'final_checkpoint'),'checkpoint')
+            current=StateStore.load(path/'final_checkpoint')
+            if args.additive_telemetry:current=baseline_state(current)
+            diff=exact_differences(reference,current,'checkpoint')
             diff+=exact_differences(reference_trace,json.loads((path/'trace.json').read_text()),'trace')
             if case=='recording':diff+=recording_differences(runs[0,'baseline']/'recording',path/'recording')
             if diff:diffs.append(dict(trial=trial,version=label,paths=diff[:50],total=len(diff)))
@@ -160,6 +184,8 @@ def main():
                     model_seconds=args.seconds,speedup=medians['baseline']/medians['optimized'],
                     optimized_sim_wall_ratio=args.seconds/medians['optimized'],
                     status='PASS' if not diffs else 'FAIL',exact_state_and_trace=not diffs,differences=diffs)
+        result['excluded_observational_fields']=['app_version=0.3.0/0.4.0 compatibility migration','metabolism=None','sensors.transduction=legacy-clipped-v1','sensors.previous_silhouette=None','sensors.diagnostics','last_ports.feature/requested/clipped'] if args.additive_telemetry else []
+        result['wall_distribution']={label:dict(min=min(v),max=max(v),p95=sorted(v)[max(0,__import__('math').ceil(.95*len(v))-1)]) for label,values in rows.items() for v in [[r['wall_seconds'] for r in values]]}
         report['cases'].append(result);write(args.out/'report.json',report)
         print(json.dumps({k:v for k,v in result.items() if k!='runs'}),flush=True)
     report['status']='PASS' if all(c['status']=='PASS' for c in report['cases']) else 'FAIL'

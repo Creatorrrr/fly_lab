@@ -65,8 +65,21 @@ class MetalLIF(ExpLIF):
         self.library = torch.mps.compile_shader(self.kernel_path.read_text())
         self.runtime_identity = dict(torch=torch.__version__, shader_sha256=file_hash(self.kernel_path),
                                      numerical_policy='float32-serial-csr-no-fma-v1')
+        self.observation_library = torch.mps.compile_shader(Path(__file__).with_name('observation.metal').read_text())
+        self._readout_indices = None
+        self._readout_device = None
+        self._pending_advance = None
+        self.submitted_event = torch.mps.Event()
+        self._observed_tick = None
 
     def advance(self, drive, steps, capture=(), pulses=None):
+        self.begin_advance(drive, steps, capture, pulses)
+        self.finish_advance()
+
+    def begin_advance(self, drive, steps, capture=(), pulses=None):
+        """Submit a whole control period, allowing independent CPU body work."""
+        if self._pending_advance is not None: raise RuntimeError('Previous neural period still pending')
+        self._observed_tick = None
         bounded_int(steps, 'neural steps', 0, 10000)
         drive = np.asarray(drive)
         if drive.shape != (self.n,) or not np.isfinite(drive).all() or np.max(np.abs(drive)) > 1000:
@@ -81,6 +94,8 @@ class MetalLIF(ExpLIF):
             mapping[unique] = np.arange(len(unique), dtype=np.int32)
             self.capture_map = self.xp.asarray(mapping)
             self.capture_cache = tuple(unique)
+            self.capture_device = self.xp.asarray(unique,np.int32)
+            self._capture_lookup = {int(j):i for i,j in enumerate(unique)}
         pulse_ptr, pv, pulse_width = self.empty_pulse_ptr, self.empty_pulses, 0
         if pulses is not None:
             pi, values = map(np.asarray, pulses)
@@ -96,8 +111,14 @@ class MetalLIF(ExpLIF):
                 pv = self.xp.asarray(values[:, order], np.float32)
                 pulse_width = len(pi)
         x = self.xp.asarray(drive, np.float32)
-        events = self.torch.empty(max(1, steps*len(unique)), dtype=self.torch.uint8, device='mps')
-        health = self.torch.zeros(1, dtype=self.torch.int32, device='mps')
+        self._observed_tick = None
+        event_bytes=max(1,steps*len(unique))
+        read_start=(8+event_bytes+7)//8*8
+        stats_start=read_start+16*len(unique)
+        blocks=(self.n+255)//256
+        collected=self.torch.empty(stats_start+24*blocks,dtype=self.torch.uint8,device='mps')
+        health=collected[:4].view(self.torch.int32);health.zero_()
+        events=collected[8:8+event_bytes]
         start = self.tick
         for k in range(steps):
             slot = self.tick % self.slots
@@ -112,13 +133,70 @@ class MetalLIF(ExpLIF):
             self.library.propagate(self.indptr, self.indices, self.W.data, self.emitted, self.active_rows,
                                    self.queue, self.n, slot, threads=self.n)
             self.tick += 1
-        # The first host read synchronizes all queued work. No substep readback.
-        if int(health.cpu()[0]): raise RuntimeError('FAULT_NEURAL_NONFINITE')
+        if len(unique):
+            self.observation_library.read_state(self.v,self.rate,self.spike_count,self.capture_device,
+                collected[read_start:stats_start],len(unique),threads=len(unique))
+        self.observation_library.summarize(self.v,self.rate,self.spike_count,collected[stats_start:],self.n,threads=blocks)
+        self._pending_advance = (collected,read_start,stats_start,start,steps,capture,unique,inverse)
+        # Event.record commits the MPS command buffer without waiting for GPU
+        # completion. Merely encoding kernels would postpone work until readback.
+        self.submitted_event.record()
+
+    def finish_advance(self):
+        if self._pending_advance is None: raise RuntimeError('No pending neural period')
+        collected,read_start,stats_start,start,steps,capture,unique,inverse = self._pending_advance
+        self._pending_advance = None
+        # Health, events, selected state and aggregate statistics share one copy.
+        raw=collected.cpu().numpy()
+        if int(raw[:4].view(np.int32)[0]): raise RuntimeError('FAULT_NEURAL_NONFINITE')
         self.last_events = []
         if steps and len(capture):
-            samples = events.cpu().numpy().reshape(steps, len(unique))[:, inverse]
+            samples = raw[8:8+steps*len(unique)].reshape(steps, len(unique))[:, inverse]
             times, cells = np.nonzero(samples)
             self.last_events = [{'tick': start+int(t)+1, 'index': int(capture[j])} for t,j in zip(times,cells)]
+        self._observed_values=self._unpack_readout(raw[read_start:stats_start],len(unique))
+        self._observed_summary=self._unpack_summary(raw[stats_start:])
+        self._observed_tick=self.tick
+
+    @staticmethod
+    def _unpack_readout(raw,n):
+        return dict(voltage_mV=raw[:n*4].view(np.float32).copy(),
+                    rate_Hz=raw[n*4:n*8].view(np.float32).copy(),
+                    spike_count=raw[n*8:].view(np.int64).copy())
+
+    def readout(self, indices):
+        if self._pending_advance is not None: raise RuntimeError('Finish neural period before observing it')
+        indices=np.asarray(indices,dtype=np.int32)
+        if indices.ndim!=1 or (len(indices) and (indices.min()<0 or indices.max()>=self.n)):
+            raise ValueError('Invalid readout indices')
+        n=len(indices)
+        if not n:return dict(voltage_mV=np.empty(0,np.float32),rate_Hz=np.empty(0,np.float32),spike_count=np.empty(0,np.int64))
+        if self._observed_tick==self.tick and all(int(j) in self._capture_lookup for j in indices):
+            order=np.array([self._capture_lookup[int(j)] for j in indices])
+            return {k:v[order].copy() for k,v in self._observed_values.items()}
+        key=tuple(indices)
+        if key!=self._readout_indices:
+            self._readout_indices=key;self._readout_device=self.xp.asarray(indices,np.int32)
+        packed=self.torch.empty(n*16,dtype=self.torch.uint8,device='mps')
+        self.observation_library.read_state(self.v,self.rate,self.spike_count,self._readout_device,packed,n,threads=n)
+        raw=packed.cpu().numpy()
+        return self._unpack_readout(raw,n)
+
+    def summary(self):
+        if self._pending_advance is not None: raise RuntimeError('Finish neural period before observing it')
+        if self._observed_tick==self.tick:return dict(self._observed_summary)
+        blocks=(self.n+255)//256
+        packed=self.torch.empty(blocks*24,dtype=self.torch.uint8,device='mps')
+        self.observation_library.summarize(self.v,self.rate,self.spike_count,packed,self.n,threads=blocks)
+        raw=packed.cpu().numpy()
+        return self._unpack_summary(raw)
+
+    def _unpack_summary(self,raw):
+        values=raw.view(np.dtype([('stats','<f4',(4,)),('count','<i8')]))
+        return dict(min_voltage_mV=float(values['stats'][:,0].min()),
+                    max_voltage_mV=float(values['stats'][:,1].max()),
+                    mean_rate_Hz=float(values['stats'][:,2].sum(dtype=np.float64)/self.n),
+                    cumulative_spikes=int(values['count'].sum()),simulated_node_count=self.n,tick=self.tick)
 
     def region_summary(self, groups):
         # One bounded host transfer, rather than a synchronized operation per ROI.
@@ -127,11 +205,15 @@ class MetalLIF(ExpLIF):
                 for name, ids in groups.items()]
 
     def snapshot(self):
+        if self._pending_advance is not None: raise RuntimeError('Finish neural period before checkpointing')
         state = super().snapshot()
         state['backend_runtime'] = dict(self.runtime_identity)
         return state
 
     def restore(self, state):
+        if self._pending_advance is not None: raise RuntimeError('Finish neural period before restoring')
         if state.get('backend_runtime') != self.runtime_identity:
             raise ValueError('MPS runtime or shader differs; explicit backend transfer required')
-        return super().restore(state)
+        result=super().restore(state)
+        self._observed_tick=None
+        return result

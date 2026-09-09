@@ -2,6 +2,8 @@
 
 2026-09-09 추가: Apple silicon의 `exp_lif_mps` 백엔드와 상태 보존 장치 전환을 지원합니다. 설치·알고리즘·실측 결과는 [C_MPS_VALIDATION.md](C_MPS_VALIDATION.md)를 참고하세요. CPU 기준 계산과 CUDA 경로도 유지합니다.
 
+후속 실행 최적화는 [C_RUNTIME_OPTIMIZATION.md](C_RUNTIME_OPTIMIZATION.md)에 기록했습니다. 같은 물리 모델에서 다리 제어·센서 조회를 네이티브로 묶고, MPS 신경 계산과 CPU 몸 계산을 겹쳐 실행합니다. Apple GPU 물리 포트는 실제 모델 변환 검사에서 미지원 충돌 기능으로 차단되었습니다.
+
 구현 기준은 [최근 설계 대화](C_DESIGN_REFERENCE.md)입니다. 원래 설계서 첨부 파일은 대화 조회 도구에서 제공되지 않아, 조회된 최신 답변 전체의 요구사항을 기준으로 구현했습니다.
 
 ## 실행과 범위
@@ -63,7 +65,7 @@
 | C_ASSISTED | C 출력, 필요 시 명시적 회피/후진 | 전체 C LIF |
 | C_STRICT | C 출력만 | 전체 C LIF |
 
-상위 경계는 5ms입니다. t_k의 예약 개입 → 몸 관측 → **t_k의 신경 출력** → 현재 명령으로 몸 [t_k,t_k+5ms) 적분 → 같은 구간의 LIF 적분 → clock 일치 확인 → 기록 순서입니다. 새 관측의 신경 효과는 다음 구간부터 적용됩니다. `u_neural`, `u_assist`, `u_legacy`, `u_final`, `command_source`, `assist_reason`, `sensor_tick`, `neural_readout_tick`, 구동 구간을 기록합니다. 주기 생략이나 몸통 위치 보정은 없습니다.
+상위 경계는 5ms입니다. t_k의 예약 개입 → 몸 관측 → **t_k의 신경 출력**을 구한 뒤, 고정한 입력으로 몸과 LIF를 각각 [t_k,t_k+5ms) 동안 적분합니다. MPS 경로는 GPU LIF 작업을 제출한 뒤 CPU 몸을 적분하고 두 작업의 완료를 확인합니다. CPU/CUDA 경로는 몸과 LIF를 순차 실행합니다. 새 관측의 신경 효과는 다음 구간부터 적용됩니다. `u_neural`, `u_assist`, `u_legacy`, `u_final`, `command_source`, `assist_reason`, `sensor_tick`, `neural_readout_tick`, 구동 구간을 기록합니다. 주기 생략이나 몸통 위치 보정은 없습니다.
 
 회피·후진은 `RecoverySupervisor`에서 C_ASSISTED일 때만 작동합니다. C 출력이 0이라고 B가 대신 구동하지 않습니다. 넘어짐·신경 오류·기록 오류에서는 실험을 중단합니다. 이동 기대 `motion_expected`는 명시적 실험 조건이며 구동이 0이라고 자동으로 꺼지지 않습니다.
 

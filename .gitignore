@@ -1,5 +1,6 @@
 # Python environments and generated caches
 .venv/
+.venv-mjx/
 venv/
 __pycache__/
 *.py[cod]

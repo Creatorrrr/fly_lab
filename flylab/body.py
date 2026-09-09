@@ -33,7 +33,7 @@ class MotorAdapter:
 class FlyGymBody:
     backend='flygym-2.1.0-neuromechfly'
     test_double=False
-    def __init__(self,seed,world,config):
+    def __init__(self,seed,world,config,*,optimized=True):
         report=dependency_report()
         if not report['ready']:
             raise RuntimeError('물리 엔진 의존성이 없거나 버전이 다릅니다. '+report['hint']+' '+str(report['versions']))
@@ -46,6 +46,7 @@ class FlyGymBody:
             HybridTurningController, HybridControllerObservation, LocomotionAction, apply_locomotion_action)
         self.mj=mj; self.ActuatorType=ActuatorType; self.BodySegment=BodySegment
         self.Observation=HybridControllerObservation; self.Action=LocomotionAction; self.apply=apply_locomotion_action
+        self.optimized=optimized
         self.motor=MotorAdapter(); self.world_spec=clone(world); self.config=clone(config)
         self.fly=make_locomotion_fly(name='flylab',add_adhesion=True,colorize=False)
         self.native_world=FlatGroundWorld(name='flylab_arena',half_size=100)
@@ -105,6 +106,7 @@ class FlyGymBody:
         self.ray_mask=np.array([1,0,0,0,0,0],dtype=np.uint8)
         self.m.geom_group[:]=2
         for gid in self.world_geom_ids: self.m.geom_group[gid]=0
+        self._prepare_execution()
         # Eye-independent camera preview (not used by neural controller).
         self.renderer=None; self.camera_error=None
         self.descending=np.zeros(2); self.travel=0.; self.collisions=0; self.prev_contact=False; self.push_left=0.; self.push_force=np.zeros(3)
@@ -116,6 +118,51 @@ class FlyGymBody:
         self.t0=float(self.d.time); self.last_position=self.d.xpos[self.thorax].copy()
         self.model_hash=hashlib.sha256(json.dumps(dict(commit=FLYGYM_COMMIT,adapter='B-0.2.1',mujoco=version('mujoco'),numpy=version('numpy'),joints=self.joint_names,nq=self.m.nq,nv=self.m.nv,nu=self.m.nu,body_names=[b.name for b in self.body_order]),sort_keys=True).encode()).hexdigest()
         if not np.isfinite(self.d.qpos).all(): raise RuntimeError('Non-finite state after neutral settling')
+
+    def _prepare_execution(self):
+        from .locomotion import CachedHybridStepper
+        self._stepper=CachedHybridStepper(self.controller,compiled_splines=self.optimized)
+        self._tip_ids=np.array([self.body_ids[self.body_indices[f'{leg}_tarsus5']] for leg in LEGS])
+        geom_by_segment=self.sim._internal_geomid_by_bodyseg_by_fly[self.fly.name]
+        self._ground_mask=np.zeros(self.m.ngeom,dtype=bool)
+        self._ground_mask[list(self.world_geom_ids)]=True
+        self._force_maps={}
+        for key,links in [('stumble',('tibia','tarsus1','tarsus2')),('feet',('tarsus1','tarsus2','tarsus3','tarsus4','tarsus5'))]:
+            indices=np.full(self.m.ngeom,-1,dtype=np.int32)
+            for i,name in enumerate(f'{leg}_{link}' for leg in LEGS for link in links):
+                indices[geom_by_segment[self.BodySegment(name)]]=i
+            self._force_maps[key]=(indices,6*len(links))
+        self._fly_body_mask=np.zeros(self.m.nbody,dtype=bool); self._fly_body_mask[self.body_ids]=True
+        self._core_mask=np.zeros(self.m.nbody,dtype=bool)
+        for name,i in self.body_indices.items():
+            if name in ('c_thorax','c_head') or name.startswith('c_abdomen'):self._core_mask[self.body_ids[i]]=True
+        self._panorama_directions=np.array([[math.cos(k/64*math.tau-math.pi),-math.sin(k/64*math.tau-math.pi),0.] for k in range(64)])
+        self._near_directions=np.array([[math.cos((k-4)*math.pi/8),-math.sin((k-4)*math.pi/8),0.] for k in range(9)])
+
+    def _contact_forces(self,key):
+        mapping,size=self._force_maps[key]
+        forces=np.zeros((size,3))
+        contacts=self.d.contact
+        n=self.d.ncon
+        g1=contacts.geom1[:n];g2=contacts.geom2[:n]
+        i1=mapping[g1];i2=mapping[g2]
+        active=(((i1>=0)&self._ground_mask[g2])|((i2>=0)&self._ground_mask[g1]))&(contacts.exclude[:n]==0)
+        wrench=np.zeros(6)
+        for j in np.flatnonzero(active):
+            self.mj.mj_contactForce(self.m,self.d,int(j),wrench)
+            force=contacts.frame[j].reshape(3,3).T@wrench[:3]
+            if i1[j]>=0:forces[i1[j]]-=force
+            if i2[j]>=0:forces[i2[j]]+=force
+        return forces
+
+    def _observation(self):
+        return self.Observation(thorax_z=float(self.d.xpos[self.thorax,2]),
+            tarsus5_z=self.d.xpos[self._tip_ids,2],
+            stumbling_contact_forces=self._contact_forces('stumble').reshape(6,3,3),
+            fly_heading=self.d.xmat[self.thorax].reshape(3,3)[:,0].copy())
+
+    def physics_time(self):
+        return float(self.d.time-self.t0)
 
     def set_config(self,config):
         self.config=clone(config)
@@ -156,6 +203,20 @@ class FlyGymBody:
             values.append(.92 if gid==self.landmark_id and self.world_spec['cueOn'] else 0.)
         return values
 
+    def sensor_rays(self,origin,R):
+        if not self.optimized:
+            ranges=[self.ray(origin,R@direction,10) for direction in self._near_directions]
+            return ranges,self.visual_panorama(origin,R)
+        # Keep the same per-ray rotation arithmetic and exact MuJoCo geometry;
+        # submit all rays from this receptor origin in one native call.
+        directions=np.array([R@direction for direction in np.concatenate((self._near_directions,self._panorama_directions))])
+        ids=np.empty(73,dtype=np.int32);distances=np.empty(73)
+        self.mj.mj_multiRay(self.m,self.d,np.asarray(origin,dtype=float),directions.ravel(),
+            self.ray_mask,1,-1,ids,distances,None,73,np.inf)
+        ranges=np.where(distances[:9]<0,10,np.minimum(distances[:9],10)).tolist()
+        panorama=np.where((ids[9:]==self.landmark_id)&self.world_spec['cueOn'],.92,0.).tolist()
+        return ranges,panorama
+
     def perturb(self,bw=.5,duration=.05):
         number(bw,'pushBW',-2,2); number(duration,'duration',.005,.2)
         _,R,_=self.pose(); self.push_force=-R[:,1]*self.weight0*bw; self.push_left=duration
@@ -165,13 +226,14 @@ class FlyGymBody:
         n=round(dt/PHYSICS_DT)
         if abs(n*PHYSICS_DT-dt)>1e-10: raise ValueError('Control dt must be integer physical steps')
         self.descending=self.motor.map(command)
+        parked=np.max(np.abs(self.descending))<1e-7
         for _ in range(n):
-            if np.max(np.abs(self.descending))<1e-7:
+            if parked:
                 # Park at neutral with position actuators; no hidden root braking.
                 self.last_action=self.Action(joint_angles=self.neutral.copy(),adhesion_onoff=np.ones(6,dtype=bool))
             else:
-                obs=self.Observation.from_sim(self.sim,self.fly.name)
-                self.last_action=self.controller.step(self.descending,obs)
+                obs=self._observation() if self.optimized else self.Observation.from_sim(self.sim,self.fly.name)
+                self.last_action=self._stepper.step(self.descending,obs) if self.optimized else self.controller.step(self.descending,obs)
             self.apply(self.sim,self.fly.name,self.last_action)
             self.d.xfrc_applied[:]=0
             if self.push_left>0:
@@ -192,6 +254,12 @@ class FlyGymBody:
     def nonfoot_contact(self):
         # Floor support is normal; any leg/body contact with walls or obstacles
         # is an avoidance event. Keep the name for the sensor adapter contract.
+        if self.optimized:
+            c=self.d.contact;n=self.d.ncon
+            g1=c.geom1[:n];g2=c.geom2[:n];b1=self.m.geom_bodyid[g1];b2=self.m.geom_bodyid[g2]
+            w1=self._ground_mask[g1];w2=self._ground_mask[g2]
+            hits=(w1&(g1!=self.floor_id)&self._fly_body_mask[b2])|(w2&(g2!=self.floor_id)&self._fly_body_mask[b1])|(self._core_mask[b1]&w2)|(self._core_mask[b2]&w1)
+            return bool(np.any(hits&(c.exclude[:n]==0)))
         target={int(self.body_ids[i]) for n,i in self.body_indices.items() if n in ('c_thorax','c_head') or n.startswith('c_abdomen')}
         for c in self.d.contact[:self.d.ncon]:
             if c.exclude: continue
@@ -205,7 +273,7 @@ class FlyGymBody:
         p,R,vel=self.pose(); heading=R[:,0]; yaw=math.atan2(-heading[1],heading[0]); ui_R=S@R
         positions=self.sim.get_body_positions(self.fly.name)
         legs={leg:[to_ui(positions[self.body_indices[f'{leg}_{link}']]) for link in LINKS if f'{leg}_{link}' in self.body_indices] for leg in LEGS}
-        foot_forces=self.sim.get_bodysegment_contact_forces(self.fly.name,[self.BodySegment(f'{leg}_{link}') for leg in LEGS for link in ('tarsus1','tarsus2','tarsus3','tarsus4','tarsus5')],ground_only=True).reshape(6,5,3).sum(axis=1)
+        foot_forces=(self._contact_forces('feet') if self.optimized else self.sim.get_bodysegment_contact_forces(self.fly.name,[self.BodySegment(f'{leg}_{link}') for leg in LEGS for link in ('tarsus1','tarsus2','tarsus3','tarsus4','tarsus5')],ground_only=True)).reshape(6,5,3).sum(axis=1)
         contacts=np.linalg.norm(foot_forces,axis=1)/max(self.weight0,1e-30)
         segments={name:to_ui(positions[i]) for name,i in self.body_indices.items() if name in ('c_thorax','c_head') or name.startswith('c_abdomen')}
         if 'c_abdomen12' in segments: segments['c_abdomen']=segments['c_abdomen12']

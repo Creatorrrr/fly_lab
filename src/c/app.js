@@ -6,6 +6,7 @@ const view=new F.WorldView($('world'),$('world-overlay'));
 const state={frame:null,playing:false,busy:false,selected:[],catalog:[],offset:0,total:0,epoch:0,sequence:0,
   signals:new Map(),traces:new Map(),spikes:0,closed:false,names:new Map(),recording:false,backend:'exp_lif_cpu_reference'};
 const colors=['#76d9c4','#eac684','#87b4e8','#c9a1ed','#ed9994','#a6d883','#88d9e5','#dba3c6'];
+function setText(node,value){if(node.textContent!==value)node.textContent=value;}
 function tell(message,error=false){$('alert').hidden=!message;$('alert').textContent=message||'';if(error)console.error(message);}
 function button(id,handler){$(id).addEventListener('click',()=>Promise.resolve().then(handler).catch(e=>{state.playing=false;updatePlay();tell(e.message,true);}));}
 class Transport{
@@ -58,9 +59,9 @@ function applyFrame(f){
  $('port-note').textContent='현재 입력: '+f.binding.sensory.map(p=>`${p.channel} → ${p.targets} 뉴런 (${p.method})`).join(', ')+` · 미확정 전달물질 ${f.scope.unknownNeurotransmitters.toLocaleString()} 뉴런 / 효력 0인 연결 ${f.scope.maskedEdges.toLocaleString()}개`;
  $('motor').checked=f.config.motorCoupled;$('cue').checked=f.world.cueOn;$('food').checked=f.world.foodOn;
  $('body-status').textContent=f.physics.testDouble?'TEST DOUBLE':`${f.physics.jointNames.length} 관절 · ${f.physics.backend}`;
- const feet=$('feet');feet.replaceChildren();['LF','LM','LH','RF','RM','RH'].forEach((leg,i)=>{
-  const row=document.createElement('div');row.className='foot';const label=document.createElement('span');label.textContent=leg;const number=document.createElement('b');number.textContent=f.physics.contactsBW[i].toFixed(2)+' BW';const bar=document.createElement('i');bar.style.width=Math.min(100,f.physics.contactsBW[i]*100)+'%';row.append(label,number,bar);feet.append(row);
- });
+ const feet=$('feet');
+ if(!feet.children.length)['LF','LM','LH','RF','RM','RH'].forEach(leg=>{const row=document.createElement('div');row.className='foot';const label=document.createElement('span');label.textContent=leg;row.append(label,document.createElement('b'),document.createElement('i'));feet.append(row);});
+ [...feet.children].forEach((row,i)=>{setText(row.children[1],f.physics.contactsBW[i].toFixed(2)+' BW');row.children[2].style.width=Math.min(100,f.physics.contactsBW[i]*100)+'%';});
  if($('joints').closest('details').open){const body=$('joints');body.replaceChildren();f.physics.jointNames.forEach((name,i)=>{const tr=document.createElement('tr');[name,f.physics.jointAngles[i].toFixed(4),f.physics.jointTargets[i].toFixed(4),f.physics.actuatorForces[i].toFixed(4)].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.append(td);});body.append(tr);});}
  $('events').replaceChildren(...f.events.slice(-8).reverse().map(e=>{const div=document.createElement('div');div.textContent=`${(e.tick*dt).toFixed(3)} s · ${e.kind}`;return div;}));
  state.recording=f.recording.active;$('record-status').textContent=f.recording.active?`기록 중 · ${(f.recording.bytes/1024).toFixed(1)} KB`:'기록 꺼짐';$('record').textContent=f.recording.active?'기록 종료':'기록 시작';
@@ -86,14 +87,17 @@ function receiveSignals(buffer){
  state.spikes+=h.spike_count;$('spike-count').textContent='발화 이벤트 '+state.spikes.toLocaleString();renderSelection();drawTrace();
 }
 function renderSelection(){
- const root=$('selection');root.replaceChildren();
- for(const [i,id] of state.selected.entries()){
-  const value=state.signals.get(id),row=document.createElement('div');row.className='signal-row';
-  const name=document.createElement('span');name.textContent=state.names.get(id)||id.replace('flywire:fafb:783:','');name.title=id;name.style.color=colors[i%colors.length];
-  const voltage=document.createElement('span');voltage.className='voltage';voltage.textContent=value?value.voltage.toFixed(2)+' mV':'— mV';
-  const rate=document.createElement('span');rate.className='rate';rate.textContent=value?value.rate.toFixed(2)+' Hz':'— Hz';row.append(name,voltage,rate);root.append(row);
+ const root=$('selection'),key=state.selected.join('|');
+ if(root.dataset.subscriptionKey!==key){root.replaceChildren();root.dataset.subscriptionKey=key;
+  for(const id of state.selected){const row=document.createElement('div');row.className='signal-row';row.append(document.createElement('span'),document.createElement('span'),document.createElement('span'));row.children[1].className='voltage';row.children[2].className='rate';root.append(row);}
+  if(!state.selected.length)root.textContent='검색 결과에서 모니터링할 뉴런을 선택하세요.';
  }
- if(!state.selected.length)root.textContent='검색 결과에서 모니터링할 뉴런을 선택하세요.';
+ for(const [i,id] of state.selected.entries()){
+  const value=state.signals.get(id),row=root.children[i],name=row.children[0];
+  setText(name,state.names.get(id)||id.replace('flywire:fafb:783:',''));name.title=id;name.style.color=colors[i%colors.length];
+  setText(row.children[1],value?value.voltage.toFixed(2)+' mV':'— mV');
+  setText(row.children[2],value?value.rate.toFixed(2)+' Hz':'— Hz');
+ }
  for(const row of $('catalog').children)row.classList.toggle('selected',state.selected.includes(row.dataset.id));
 }
 function drawTrace(){
@@ -162,7 +166,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){state.play
 document.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='Space'){e.preventDefault();state.playing=!state.playing;updatePlay();}if(e.key==='f')view.track();});
 window.addEventListener('resize',drawTrace);
 let lastAdvance=0,lastDraw=0;
-function animate(now){requestAnimationFrame(animate);if(!document.hidden&&now-lastDraw>=33){view.draw();lastDraw=now;}if(state.playing&&!state.busy&&!document.hidden&&now-lastAdvance>=16){state.busy=true;lastAdvance=now;rpc.request('advance',{steps:state.backend==='exp_lif_mps'?2:10}).then(applyFrame).catch(e=>{state.playing=false;tell(e.message,true);}).finally(()=>{state.busy=false;updatePlay();});}}
+function animate(now){requestAnimationFrame(animate);if(!document.hidden&&now-lastDraw>=33&&view.needsDraw()){view.draw();lastDraw=now;}if(state.playing&&!state.busy&&!document.hidden&&now-lastAdvance>=16){state.busy=true;lastAdvance=now;rpc.request('advance',{steps:state.backend==='exp_lif_mps'?2:10}).then(applyFrame).catch(e=>{state.playing=false;tell(e.message,true);}).finally(()=>{state.busy=false;updatePlay();});}}
 requestAnimationFrame(animate);
 rpc.connect().then(async(config)=>{$('status-dot').className='ready';if(config.hasExperiment){await refreshExperiment(await rpc.request('attach'),'저장된 현재 실험에 연결했습니다. 재생으로 계속 진행하세요.');}else await init();}).catch(e=>{$('waiting').textContent='초기화 실패';tell(e.message,true);});
 })(globalThis.Fly);

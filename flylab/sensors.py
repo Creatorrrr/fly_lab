@@ -38,8 +38,11 @@ class SensorAdapter:
         p,R,vel=body.pose(); head=p+R@np.array([.65,0,.12]); left=head+R@np.array([0,.3,0]);right=head+R@np.array([0,-.3,0])
         odor=[smell(to_ui(left),world,'food'),smell(to_ui(right),world,'food')]; mean=sum(odor)/2
         derivative=clamp((mean-self.previousOdor)/dt,-2,2); self.previousOdor=mean
-        ranges=[body.ray(head,R@np.array([math.cos((k-4)*math.pi/8),-math.sin((k-4)*math.pi/8),0.]),10) for k in range(9)]
-        panorama=body.visual_panorama(head,R)
+        if hasattr(body,'sensor_rays'):
+            ranges,panorama=body.sensor_rays(head,R)
+        else:
+            ranges=[body.ray(head,R@np.array([math.cos((k-4)*math.pi/8),-math.sin((k-4)*math.pi/8),0.]),10) for k in range(9)]
+            panorama=body.visual_panorama(head,R)
         # Same RNG draw count with the cue on and off for paired comparisons.
         panorama=[clamp(v+self.rng.signed()*.004) if world['cueOn'] else (self.rng.signed()*0.) for v in panorama]
         self.last=dict(schema='flylab.sensors.v2',panorama=panorama,nearRanges=ranges,odor=odor,odorChange=derivative,

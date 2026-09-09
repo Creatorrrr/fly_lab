@@ -75,6 +75,7 @@
             this.dpr = Math.min(devicePixelRatio || 1, 1.75);
             this.engine = 'CANVAS 3D';
             this.disposed = false;
+            this.renderStats = { frames: 0, geometryBuilds: 0, uploads: 0 };
             let gl = null;
             try {
                 if (!(globalThis.FLY_FORCE_SOFTWARE || location.search.includes('software=1')))
@@ -102,8 +103,8 @@
         }
         initGL(gl) { this.gl = gl; const shader = (t, s) => { const x = gl.createShader(t); gl.shaderSource(x, s); gl.compileShader(x); if (!gl.getShaderParameter(x, gl.COMPILE_STATUS))
             throw Error(gl.getShaderInfoLog(x)); return x; }; this.program = gl.createProgram(); gl.attachShader(this.program, shader(gl.VERTEX_SHADER, vert)); gl.attachShader(this.program, shader(gl.FRAGMENT_SHADER, frag)); gl.linkProgram(this.program); if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
-            throw Error('Shader link failure'); this.loc = { p: gl.getAttribLocation(this.program, 'p'), n: gl.getAttribLocation(this.program, 'n'), c: gl.getAttribLocation(this.program, 'c'), vp: gl.getUniformLocation(this.program, 'vp'), eye: gl.getUniformLocation(this.program, 'eye'), lit: gl.getUniformLocation(this.program, 'lit') }; this.buffer = gl.createBuffer(); gl.enable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); this.canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); this.lost = true; window.dispatchEvent(new CustomEvent('fly-render-error', { detail: 'WebGL 컨텍스트가 중단되었습니다. 체크포인트를 저장하고 다시 여세요.' })); }); }
-        resize() { const r = this.canvas.getBoundingClientRect(); this.width = Math.max(1, r.width); this.height = Math.max(1, r.height); for (const c of [this.canvas, this.overlay]) {
+            throw Error('Shader link failure'); this.loc = { p: gl.getAttribLocation(this.program, 'p'), n: gl.getAttribLocation(this.program, 'n'), c: gl.getAttribLocation(this.program, 'c'), vp: gl.getUniformLocation(this.program, 'vp'), eye: gl.getUniformLocation(this.program, 'eye'), lit: gl.getUniformLocation(this.program, 'lit') }; this.buffer = gl.createBuffer(); this.lineBuffer = gl.createBuffer(); gl.enable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); this.canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); this.lost = true; window.dispatchEvent(new CustomEvent('fly-render-error', { detail: 'WebGL 컨텍스트가 중단되었습니다. 체크포인트를 저장하고 다시 여세요.' })); }); }
+        resize() { this._drawnFrame = null; const r = this.canvas.getBoundingClientRect(); this.width = Math.max(1, r.width); this.height = Math.max(1, r.height); for (const c of [this.canvas, this.overlay]) {
             c.width = Math.round(this.width * this.dpr);
             c.height = Math.round(this.height * this.dpr);
         } if (this.gl)
@@ -179,25 +180,30 @@
             gl.useProgram(this.program);
             gl.uniformMatrix4fv(this.loc.vp, false, this.vp);
             gl.uniform3fv(this.loc.eye, this.eye);
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-            for (const [n, size, off] of [['p', 3, 0], ['n', 3, 12], ['c', 4, 24]]) {
-                gl.enableVertexAttribArray(this.loc[n]);
-                gl.vertexAttribPointer(this.loc[n], size, gl.FLOAT, false, 40, off);
+            if (this._uploadedGeometry !== g) {
+                const tris = [], lines = [];
+                for (const t of g.triangles) for (const p of t.p) tris.push(...p, ...t.n, ...t.c);
+                for (const l of g.lines) for (const p of l.p) lines.push(...p, 0, 1, 0, ...l.c);
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tris), gl.DYNAMIC_DRAW);
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.lineBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lines), gl.DYNAMIC_DRAW);
+                this._triangleCount = tris.length / 10; this._lineCount = lines.length / 10;
+                this._uploadedGeometry = g; this.renderStats.uploads += 2;
             }
-            const tris = [];
-            for (const t of g.triangles)
-                for (const p of t.p)
-                    tris.push(...p, ...t.n, ...t.c);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tris), gl.DYNAMIC_DRAW);
+            const bind = buffer => {
+                gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+                for (const [n, size, off] of [['p', 3, 0], ['n', 3, 12], ['c', 4, 24]]) {
+                    gl.enableVertexAttribArray(this.loc[n]);
+                    gl.vertexAttribPointer(this.loc[n], size, gl.FLOAT, false, 40, off);
+                }
+            };
+            bind(this.buffer);
             gl.uniform1f(this.loc.lit, 1);
-            gl.drawArrays(gl.TRIANGLES, 0, tris.length / 10);
-            const ls = [];
-            for (const l of g.lines)
-                for (const p of l.p)
-                    ls.push(...p, 0, 1, 0, ...l.c);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ls), gl.DYNAMIC_DRAW);
+            gl.drawArrays(gl.TRIANGLES, 0, this._triangleCount);
+            bind(this.lineBuffer);
             gl.uniform1f(this.loc.lit, 0);
-            gl.drawArrays(gl.LINES, 0, ls.length / 10);
+            gl.drawArrays(gl.LINES, 0, this._lineCount);
         }
         drawSoftware(g) { const ctx = this.ctx; ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); ctx.fillStyle = '#071019'; ctx.fillRect(0, 0, this.width, this.height); const jobs = []; const light = V.norm([-.4, .9, .6]); for (const t of g.triangles) {
             const p = t.p.map(v => this.project(v));
@@ -245,10 +251,28 @@
             ctx.fillStyle = '#a1bcb9';
             ctx.fillText('D. melanogaster · B', p.x + 15, p.y - 28);
         } ctx.fillStyle = '#618583'; ctx.fillText('x / z: mm   y: height   •   MODEL SPACE', 18, this.height - 18); }
-        draw() { if (!this.frame || this.disposed)
-            return; this.camera(); const g = this.geometry(); this.gl ? this.drawGL(g) : this.drawSoftware(g); this.hud(); }
+        cameraKey() { return [this.theta, this.phi, this.distance, ...this.target, this.follow, this.firstPerson,
+            this.width, this.height, this.showTrail].join(','); }
+        needsDraw() {
+            if (!this.frame || this.disposed || this.lost) return false;
+            return this._drawnFrame !== this.frame || this._cameraKey !== this.cameraKey() ||
+                (this.follow && !this.firstPerson && this.target.some((v, i) => Math.abs(v-this.frame.body.position[i]) > 1e-5));
+        }
+        draw() { if (!this.frame || this.disposed) return;
+            this.camera();
+            if (this._geometryFrame !== this.frame || this._geometryTrail !== this.showTrail || this._geometryFirstPerson !== this.firstPerson) {
+                this._geometry = this.geometry(); this._geometryFrame = this.frame; this._geometryTrail = this.showTrail;
+                this._geometryFirstPerson = this.firstPerson;
+                this.renderStats.geometryBuilds++;
+            }
+            this.gl ? this.drawGL(this._geometry) : this.drawSoftware(this._geometry); this.hud();
+            this._drawnFrame = this.frame; this._cameraKey = this.cameraKey(); this.renderStats.frames++;
+            if (this.canvas.dataset) Object.assign(this.canvas.dataset, {renderFrames:String(this.renderStats.frames),
+                geometryBuilds:String(this.renderStats.geometryBuilds),geometryUploads:String(this.renderStats.uploads)});
+        }
         dispose() { this.disposed = true; this.resizeObserver.disconnect(); if (this.gl) {
             this.gl.deleteBuffer(this.buffer);
+            this.gl.deleteBuffer(this.lineBuffer);
             this.gl.deleteProgram(this.program);
         } }
     }

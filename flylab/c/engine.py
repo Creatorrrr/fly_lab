@@ -212,16 +212,27 @@ class CEngine:
                     drive, pulses, self.last_ports = self.encoder.encode(self.last_sensors, CONTROL_DT, self.parameters.dt, disabled)
                     drive += stimulus
                 self.timings['ports_s'] += time.perf_counter() - began
+                capture = np.unique(np.concatenate([self.subscription, self.record_indices if self.recorder else np.empty(0, dtype=np.int32)])) if self.neural else ()
+                overlap = self.neural is not None and hasattr(self.neural, 'begin_advance')
+                if overlap:
+                    began = time.perf_counter()
+                    self.neural.begin_advance(drive, self.substeps, capture, pulses)
+                    self.timings['neural_s'] += time.perf_counter() - began
                 began = time.perf_counter()
-                self.body.step(command['u_final'], CONTROL_DT)
-                self.timings['physics_s'] += time.perf_counter() - began
-                began = time.perf_counter()
+                try:
+                    self.body.step(command['u_final'], CONTROL_DT)
+                finally:
+                    self.timings['physics_s'] += time.perf_counter() - began
+                    if overlap:
+                        began = time.perf_counter()
+                        self.neural.finish_advance()
+                        self.timings['neural_s'] += time.perf_counter() - began
                 if self.neural:
-                    capture = np.unique(np.concatenate([self.subscription, self.record_indices if self.recorder else np.empty(0, dtype=np.int32)]))
-                    self.neural.advance(drive, self.substeps, capture, pulses)
+                    began = time.perf_counter()
+                    if not overlap:self.neural.advance(drive, self.substeps, capture, pulses)
                     subscribed = set(self.subscription.tolist())
                     self.selected_events.extend(e for e in self.neural.last_events if e['index'] in subscribed)
-                self.timings['neural_s'] += time.perf_counter() - began
+                    self.timings['neural_s'] += time.perf_counter() - began
                 self.control_tick += 1
                 self.timing_controls += 1
                 if self.body.fault: self.fault = self.body.fault
@@ -261,7 +272,8 @@ class CEngine:
     def _clocks(self):
         expected = self.control_tick * CONTROL_DT
         if self.neural and self.neural.tick != self.tick: raise RuntimeError('Neural/control clock mismatch')
-        if abs(self.body.frame()[1]['physicsTime'] - expected) > 1e-5: raise RuntimeError('Physics/control clock mismatch')
+        body_time = self.body.physics_time() if hasattr(self.body,'physics_time') else self.body.frame()[1]['physicsTime']
+        if abs(body_time - expected) > 1e-5: raise RuntimeError('Physics/control clock mismatch')
         if self.neural and self.encoder.control_tick != self.control_tick: raise RuntimeError('Encoder/control clock mismatch')
 
     def frame(self):
@@ -288,6 +300,8 @@ class CEngine:
 
     def performance(self):
         return dict(**self.timings, measured_model_s=self.timing_controls*CONTROL_DT,
+                    neural_overlaps_physics=self.neural is not None and hasattr(self.neural,'begin_advance'),
+                    timing_policy='host-stage-wall; neural_s includes submission and remaining wait',
                     sim_wall_ratio=(self.timing_controls*CONTROL_DT/self.timings['total_s']) if self.timings['total_s'] else 0.)
 
     def region_summary(self):

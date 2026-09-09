@@ -150,7 +150,7 @@ class CServer(BServer):
 
     async def send_reply(self, socket, result):
         binary = result.pop('_binary', None)
-        await super().send_reply(socket, result)
+        await socket.send_str(json.dumps(result,ensure_ascii=False,allow_nan=False,separators=(',',':')))
         if binary is not None: await socket.send_bytes(binary)
 
 

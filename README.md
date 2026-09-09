@@ -12,6 +12,8 @@ C 화면: **http://127.0.0.1:8766**. 기본 C_SHADOW에서 B가 몸을 구동하
 
 Apple silicon에서는 **MPS 가속**을 사용할 수 있습니다. `.venv/bin/python -m pip install -r requirements-mps.txt` 후 `./launch_mps.sh`로 실행하거나 화면의 **신경 계산 → MPS · Apple GPU**를 선택하세요. 전환 전 체크포인트를 저장하고 현재 모델 시간·신경·물리 상태를 그대로 옮깁니다. 이 M1 Max의 측정 결과는 전뇌 계산 11.56배, 짧은 실제 몸 연결 3.58–4.35배 향상이며 실시간 속도는 아닙니다. [MPS 검증 보고서](docs/C_MPS_VALIDATION.md)에 원자료와 수치 오차를 기록했습니다.
 
+후속 최적화에서는 다리 제어·접촉·광선 조회를 묶고 MPS와 CPU 몸 계산을 겹쳐 실행하며, 정지 화면의 반복 렌더링을 제거했습니다. 현재 C_SHADOW의 같은 상태에서 **기존 MPS 버전 대비 추가 3.05배** 향상을 측정했습니다. 실제 전뇌·몸·기록 비교와 Apple GPU 물리 경로의 미지원 사항은 [실행 최적화 보고서](docs/C_RUNTIME_OPTIMIZATION.md)에 있습니다.
+
 **제한:** 미확정·신경조절성 연결 출력은 명시적으로 0 처리합니다. 현재 자연 입력은 이상화한 ORN_DM1 후각 연결이며, 운동 디코더는 공학적 매핑입니다. 전뇌 계산·직접 자극 폐루프·안정적인 자연 탐색·생물학적 타당성·CUDA 실장치 검증은 별개의 결과입니다.
 
 설계·명령·데이터 재구성: [C_ARCHITECTURE.md](docs/C_ARCHITECTURE.md). 실제 실행 결과: [C_VALIDATION.md](docs/C_VALIDATION.md). 기존 B 실행은 `python run.py`, 포트 8765로 유지됩니다. 아래는 B 이력입니다.

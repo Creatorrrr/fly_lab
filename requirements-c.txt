@@ -1,4 +1,5 @@
 -r requirements.txt
 scipy>=1.14,<2
+numba==0.67.0
 # Optional NVIDIA backend: install the CuPy package matching the host CUDA.
 # CPU runs never silently select or require CUDA.

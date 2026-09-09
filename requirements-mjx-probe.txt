@@ -1,0 +1,6 @@
+# Isolated compatibility probe only; not part of the production runtime.
+mujoco==3.9.0
+mujoco-mjx==3.9.0
+jax==0.4.34
+jaxlib==0.4.34
+jax-metal==0.1.1

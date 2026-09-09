@@ -12,8 +12,10 @@ from .storage import Recorder, StateStore, runtime_versions
 from ..body import FlyGymBody
 from ..brain import Circuit
 from ..legacy import LegacyBRate
-from ..engine import config_values, default_graph, validate_sensor_packet, Engine as BEngine
+from ..engine import config_values, default_graph, validate_sensor_packet
 from ..sensors import SensorAdapter, default_world, validate_world
+from .workbench import (ENVIRONMENT_COMMANDS, edit_environment, intervention_rows,
+                        cancel_intervention, terminal_intervention, restore_workbench)
 
 KINDS = {'stimulate', 'suppress_spiking', 'mute_outgoing', 'mute_edges',
          'sensor_off', 'motor_disconnect', 'assist_off'}
@@ -34,6 +36,8 @@ class CEngine:
         self.parameters = parameters or LIFParameters()
         self.substeps = round(CONTROL_DT / self.parameters.dt)
         self.neural = None if mode == 'B_COMPAT' else create_backend(graph, self.parameters, backend)
+        if hasattr(self.neural, 'set_readout_cohort') and len(bindings.motor_indices)<=512:
+            self.neural.set_readout_cohort(bindings.motor_indices)
         self.encoder = SensoryEncoder(bindings, seed)
         self.decoder = MotorDecoder(bindings)
         self.supervisor = RecoverySupervisor()
@@ -53,6 +57,9 @@ class CEngine:
         self.active = []
         self.event_serial = 0
         self.object_serial = 0
+        self.environment_history = []
+        self.environment_updated_tick = None
+        self.intervention_history = []
         self.events = []
         self.recorder = None
         self.record_indices = bindings.motor_indices.copy()
@@ -98,12 +105,16 @@ class CEngine:
     def start_recording(self, path, ids=None, max_bytes=2*1024**3):
         if self.recorder: raise ValueError('Recording already active')
         selected = self.bindings.motor_indices.copy() if ids is None else self.graph.resolve(ids)
+        if self.neural and not len(selected): raise ValueError('Choose a nonempty fixed recording cohort')
         names = [self.graph.nodes[int(i)]['id'] for i in selected]
         recorder = Recorder(path, self.provenance(), names, max_bytes=max_bytes)
+        previous_cohort = self.record_indices
         try:
             from pathlib import Path
+            self.record_indices = selected
             StateStore.save(Path(path)/'initial_checkpoint', self.checkpoint())
         except Exception:
+            self.record_indices = previous_cohort
             recorder.close('FAILED', 'Initial checkpoint could not be saved')
             raise
         self.record_indices, self.recorder = selected, recorder
@@ -163,7 +174,9 @@ class CEngine:
     def _interventions(self):
         expired = [e for e in self.active if e['expires_tick'] <= self.tick]
         self.active = [e for e in self.active if e['expires_tick'] > self.tick]
-        for e in expired: self.event('intervention_expired', e)
+        for e in expired:
+            terminal_intervention(self, e, 'expired', e['expires_tick'])
+            self.event('intervention_expired', e)
         while self.pending and self.pending[0]['at_tick'] == self.tick:
             item = self.pending.pop(0)
             self.active.append(item)
@@ -292,9 +305,15 @@ class CEngine:
                                maskedEdges=self.graph.manifest['masked_edge_count'], biologicalValidation=False),
                     binding=self.bindings.summary(), subscription=dict(epoch=self.subscription_epoch,
                         ids=[self.graph.nodes[int(i)]['id'] for i in self.subscription]),
-                    events=copy.deepcopy(self.events), interventions=dict(pending=len(self.pending), active=copy.deepcopy(self.active)),
+                    events=copy.deepcopy(self.events), interventions=dict(pending=len(self.pending),
+                        active=copy.deepcopy(self.active), **intervention_rows(self)),
+                    environment=dict(undo_depth=len(self.environment_history), updated_tick=self.environment_updated_tick,
+                        sensor_refresh_pending=self.environment_updated_tick is not None and self.tick <= self.environment_updated_tick),
                     fault=self.fault or self.body.fault, stopped=self.stopped,
                     recording=dict(active=self.recorder is not None, dropped=0,
+                                   cohort_ids=[self.graph.nodes[int(i)]['id'] for i in self.record_indices],
+                                   path=str(self.recorder.path) if self.recorder else None,
+                                   signals_hz=100, body_hz=10, motor_hz=200,
                                    bytes=self.recorder.bytes if self.recorder else 0),
                     performance=self.performance())
 
@@ -312,8 +331,14 @@ class CEngine:
         if not isinstance(payload, dict): raise ValueError('Command payload object required')
         if kind == 'intervene': return self.schedule(payload)
         if kind == 'release_all':
+            for e in self.pending+self.active:
+                expired = e['expires_tick'] <= self.tick
+                terminal_intervention(self, e, 'expired' if expired else 'cancelled', e['expires_tick'] if expired else self.tick)
             self.pending.clear(); self.active.clear()
             if self.neural: self.neural.set_interventions()
+        elif kind == 'cancel_intervention':
+            if set(payload) != {'serial'}: raise ValueError('Intervention serial required')
+            cancel_intervention(self, payload['serial'])
         elif kind == 'stop': self.stopped = True
         elif kind == 'resume':
             if self.fault or self.body.fault: raise ValueError('Faulted experiment must be restored or restarted')
@@ -327,27 +352,7 @@ class CEngine:
             self.body.set_world(self.world)
         elif kind == 'push':
             self.body.perturb(finite(payload.get('bw', .5), 'bw', -2, 2), finite(payload.get('duration', .05), 'duration', .005, .2))
-        elif kind == 'place':
-            category = payload.get('kind')
-            if category not in ('food', 'hazard', 'obstacle'): raise ValueError('Unknown object kind')
-            w = copy.deepcopy(self.world)
-            p = payload.get('position')
-            if not isinstance(p, list) or len(p) != 3: raise ValueError('Position required')
-            p = [finite(v, 'position', -100, 100) for v in p]
-            obj = dict(id='user-' + str(self.object_serial+1), p=p)
-            if category == 'obstacle':
-                r = finite(payload.get('radius', .8), 'radius', .2, 3)
-                obj.update(r=r); obj['p'][1] = r
-                if np.linalg.norm(np.asarray(obj['p']) - self.body.frame()[0]['position']) < r + 3:
-                    raise ValueError('Place obstacle at least 3 mm clear of body')
-                w['obstacles'].append(obj)
-            else:
-                obj.update(kind=category, strength=1.2); w['sources'].append(obj)
-            validate_world(w); BEngine._set_world(self, w); self.object_serial += 1
-        elif kind == 'clear_added':
-            w = copy.deepcopy(self.world)
-            for key in ('obstacles', 'sources'): w[key] = [o for o in w[key] if not o['id'].startswith('user-')]
-            BEngine._set_world(self, w)
+        elif kind in ENVIRONMENT_COMMANDS: edit_environment(self, kind, payload)
         else: raise ValueError('Unknown C command')
         self.event(kind, payload)
         return self.frame()
@@ -368,6 +373,9 @@ class CEngine:
                     last_command=copy.deepcopy(self.last_command), last_ports=copy.deepcopy(self.last_ports),
                     last_motor_rates=dict(self.last_motor_rates), pending=copy.deepcopy(self.pending),
                     active=copy.deepcopy(self.active), event_serial=self.event_serial, object_serial=self.object_serial,
+                    environment_history=copy.deepcopy(self.environment_history), environment_updated_tick=self.environment_updated_tick,
+                    intervention_history=copy.deepcopy(self.intervention_history),
+                    record_cohort_ids=[self.graph.nodes[int(i)]['id'] for i in self.record_indices],
                     motion_expected=self.motion_expected, stopped=self.stopped,
                     subscription=[self.graph.nodes[int(i)]['id'] for i in self.subscription],
                     subscription_epoch=self.subscription_epoch)
@@ -438,6 +446,7 @@ class CEngine:
                         last_order = order
             e.event_serial = bounded_int(s['event_serial'], 'event serial', max(serials, default=0))
             e.object_serial = bounded_int(s['object_serial'], 'object serial', 0, 1000000)
+            restore_workbench(e, s)
             e.last_command = copy.deepcopy(s['last_command'])
             for key in ('u_neural', 'u_final', 'u_assist', 'u_legacy'):
                 c = e.last_command.get(key)

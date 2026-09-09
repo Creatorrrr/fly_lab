@@ -2,6 +2,8 @@
 
 실제 뉴런 139,255개와 뉴런 쌍 연결 3,732,460개를 사용하는 희소 LIF 엔진을 추가했습니다. 실제 ID 기반 후각·하행 출력, B_COMPAT/C_SHADOW/C_ASSISTED/C_STRICT, 선택 신호 모니터, 개입 예약, 청크 기록·체크포인트·대조 비교·리플레이를 지원합니다.
 
+환경 편집기에서 먹이·위험 냄새원·장애물을 배치·수정·삭제하고 환경을 저장하거나 되돌릴 수 있습니다. 관측·개입·고정 기록 집단을 따로 지정하며 원시 발화 래스터, 개입별 취소, 기간·시드·반복 대조 비교를 제공합니다. 별도 좌우 먹이·geosmin 실험 프로파일과 실제 검증 범위는 [실험 도구 사용법과 결과](docs/C_WORKBENCH.md)에 정리했습니다.
+
 ```sh
 .venv/bin/python -m pip install -r requirements-c.txt
 .venv/bin/python run_c.py --doctor

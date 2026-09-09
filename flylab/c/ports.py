@@ -80,7 +80,9 @@ class PortBindings:
             raise ValueError('Mapping uncertainty must be explicit')
 
     def summary(self):
-        return dict(hash=self.hash, sensory_binding_hash=self.sensory_hash, motor_binding_hash=self.motor_hash,
+        return dict(hash=self.hash, profile=self.spec.get('profile', 'custom'),
+                    hazard_semantics=self.spec.get('hazard_semantics', 'unbound'),
+                    sensory_binding_hash=self.sensory_hash, motor_binding_hash=self.motor_hash,
                     sensory=[dict(name=p['name'], channel=p['channel'], input_kind=p['input_kind'],
                                   targets=len(ids), method=p['method'], review_status=p['review_status']) for p, ids in self.sensory],
                     motor={k: dict(targets=len(ids), gain=p['gain']) for k, (p, ids) in self.motor.items()},

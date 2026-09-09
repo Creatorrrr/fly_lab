@@ -71,6 +71,19 @@ class MetalLIF(ExpLIF):
         self._pending_advance = None
         self.submitted_event = torch.mps.Event()
         self._observed_tick = None
+        self.additional_readout = np.empty(0, dtype=np.int32)
+
+    def set_readout_cohort(self, indices):
+        """Cache required motor readouts with the next observation transfer.
+
+        Extra readouts are not display/record spike subscriptions and do not
+        change integration, weights, or the selected event stream.
+        """
+        values = np.asarray(indices)
+        if values.ndim != 1 or values.dtype.kind not in 'iu' or len(values)>512 or (len(values) and (values.min()<0 or values.max()>=self.n)):
+            raise ValueError('Invalid additional readout cohort')
+        if self._pending_advance is not None: raise RuntimeError('Finish neural period before changing readouts')
+        self.additional_readout = np.unique(values.astype(np.int32))
 
     def advance(self, drive, steps, capture=(), pulses=None):
         self.begin_advance(drive, steps, capture, pulses)
@@ -88,7 +101,8 @@ class MetalLIF(ExpLIF):
         if capture.ndim != 1 or len(capture) > 1024 or (len(capture) and (capture.min() < 0 or capture.max() >= self.n)):
             raise ValueError('Invalid bounded readout')
         # Keep duplicate capture indices legal, as in the CPU reference.
-        unique, inverse = np.unique(capture, return_inverse=True)
+        unique = np.union1d(capture, self.additional_readout)
+        inverse = np.searchsorted(unique, capture)
         if self.capture_cache != tuple(unique):
             mapping = np.full(self.n, -1, dtype=np.int32)
             mapping[unique] = np.arange(len(unique), dtype=np.int32)

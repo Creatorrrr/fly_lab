@@ -1,0 +1,4072 @@
+<!doctype html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>FLY LAB B · 초파리 신경 관찰실</title><style>:root{--bg:#080f16;--panel:#0d1921;--panel2:#101e28;--line:#213139;--text:#e0ecea;--muted:#829c9f;--teal:#7de2c4;--gold:#e9bf7e;--red:#ed9789;--radius:12px}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:13px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif}button,input,select{font:inherit;color:inherit}button{border:1px solid #2c424a;background:#152731;padding:7px 12px;border-radius:6px;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s}button:hover{background:#213e46;border-color:#58857e}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--teal);outline-offset:3px}button:disabled{opacity:.45;cursor:wait}button.primary{background:var(--teal);border-color:var(--teal);color:#12372f;font-weight:650}button.primary:hover{background:#a6edda}button.active{border-color:#80d7c1;color:var(--teal);background:#16362f}button.quiet{background:transparent;border-color:transparent;color:var(--muted)}button.text-btn{padding:0;background:none;border:none;color:var(--teal);font-size:10px}input,select{min-width:0;background:#0a151e;border:1px solid #2a3f49;border-radius:5px;padding:7px 9px;outline:none}input[type=range]{padding:0;accent-color:var(--teal)}input[type=checkbox]{accent-color:var(--teal);width:31px;height:17px;cursor:pointer}a{color:var(--teal)}.topbar{display:flex;align-items:center;gap:30px;padding:20px 28px 17px;border-bottom:1px solid var(--line)}.brand{color:var(--text);display:flex;align-items:center;gap:11px;text-decoration:none;font-size:23px;letter-spacing:2.5px;line-height:1.15}.brand b{font-weight:350;color:var(--teal)}.brand small{display:block;letter-spacing:2px;color:var(--muted);font-size:8px;margin-top:6px}.brand-icon{height:39px;width:39px;border:1px solid #3c7164;border-radius:11px;padding:4px;color:var(--teal)}.brand-icon svg{width:100%}.stage-badge{margin-left:3px;background:#234f41;border:1px solid #448771;padding:5px 7px;border-radius:4px;font-size:13px;letter-spacing:0}.top-description{font-size:14px;border-left:1px solid var(--line);padding-left:26px}.top-description span{display:block;font-size:10px;color:var(--muted);margin-top:1px}.topbar nav{display:flex;align-items:center;gap:8px;margin-left:auto}.topbar nav button{font-size:12px}.offline{display:flex;gap:6px;align-items:center;letter-spacing:1.2px;font-size:8px;color:var(--muted);margin-left:12px}.offline i,.live-dot{width:5px;height:5px;border-radius:50%;display:inline-block;background:var(--teal);box-shadow:0 0 10px #7de2c444}.scope-strip{padding:9px 28px;display:flex;gap:12px;align-items:center;background:#101e26;color:#a5bcbc;font-size:10px;border-bottom:1px solid var(--line)}.scope-tag{font:8px ui-monospace,monospace;letter-spacing:1px;color:var(--gold);border:1px solid #625236;border-radius:3px;padding:3px 5px}.scope-warning{margin-left:auto;color:#bfa786}main{max-width:1920px;margin:auto;padding:18px 24px}.commandbar{display:flex;align-items:center;gap:14px;margin-bottom:17px}.play-group{display:flex;align-items:center;gap:7px}.compact-label{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}.compact-label select{font-size:11px;color:var(--text);padding:7px}.control-divider{height:25px;width:1px;background:var(--line)}.spacer{flex:1}.timecode{display:flex;align-items:center;gap:12px}.timecode span{font:8px ui-monospace,monospace;letter-spacing:1.7px;color:var(--muted)}.timecode strong{font:19px ui-monospace,monospace;color:var(--teal)}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px}.scene-column{min-width:0}.view-card,.card{border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);overflow:hidden}.view-top{display:flex;justify-content:space-between;align-items:center;padding:10px 15px;background:#101d25;border-bottom:1px solid var(--line);height:49px}.view-top strong{margin-left:8px;font-size:12px}.view-top small{margin-left:10px;font-size:10px;color:var(--teal)}.view-controls{display:flex;gap:4px}.view-controls button{padding:4px 9px;font-size:10px;background:transparent}.view-controls button.active{background:#203a35}.world-wrap{height:435px;position:relative;overflow:hidden;background:#071019}#world,#world-overlay{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}#world-overlay{pointer-events:none}.scene-caption{position:absolute;top:16px;left:16px;display:flex;align-items:center;gap:9px;pointer-events:none}.scene-caption>span:last-child{color:#869d9e;font-size:9px}.model-pill{font:8px ui-monospace,monospace;letter-spacing:1px;border:1px solid #25414a;background:#0b1c24b8;padding:5px 7px;border-radius:4px;color:#aaccc6}.camera-hint{position:absolute;right:13px;bottom:14px;font-size:9px;color:#719491;pointer-events:none}.placement-banner{position:absolute;left:50%;top:62px;transform:translateX(-50%);padding:8px 14px;background:#142f2ded;border:1px solid var(--teal);border-radius:6px;font-size:11px;pointer-events:none}.render-error{position:absolute;inset:35%;min-width:240px;background:#2d2020;padding:15px;border:1px solid #a26b5f;z-index:5}.scene-metrics{display:grid;grid-template-columns:repeat(5,1fr);padding:13px 0 12px;border-top:1px solid var(--line);background:#0d1b22}.scene-metrics>div{border-right:1px solid var(--line);padding-left:18px}.scene-metrics>div:last-child{border:0}.scene-metrics span{display:block;font-size:10px;color:var(--muted)}.scene-metrics b{font:19px ui-monospace,monospace;font-weight:450;line-height:1.9}.scene-metrics small{font-size:10px;color:#7f9a9a}.sensory-row{display:grid;grid-template-columns:1.12fr 1fr;gap:14px;margin-top:14px}.section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.section-title h2{font-size:13px;font-weight:560;margin:0}.section-title h2 small{font-size:10px;font-weight:400;color:var(--muted);margin-left:12px}.section-title>span{font-size:9px;color:var(--muted)}.card{padding:16px}.eyebrow{display:block;font:8px ui-monospace,monospace;letter-spacing:1.8px;color:var(--muted);margin-bottom:5px}.heading-body{display:flex;align-items:center;gap:10px}#compass{width:138px;height:138px;flex-shrink:0}.heading-key{font-size:10px;flex:1;min-width:0}.heading-key p{margin:8px 0;display:flex;align-items:center;gap:7px}.heading-key p b{margin-left:auto;font:12px ui-monospace,monospace}.heading-key small{display:block;margin-top:12px;font-size:9px;color:var(--muted);line-height:1.7}.key-line{width:12px;height:2px;display:inline-block}.teal{background:var(--teal)}.gold{background:var(--gold)}.grey{background:#829aaf}.sensors-card canvas{width:100%;height:65px;display:block;margin-top:13px}.sensor-key{display:flex;justify-content:space-between;font-size:9px;margin-top:5px;color:var(--muted)}.sensor-key b{color:#bfd5d0;font-weight:450}.switch-line{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#b3c7c5;margin-top:8px}.neural-panel{padding:16px 15px}.counter{font:21px ui-monospace,monospace;color:var(--teal)!important}.neural-origin{display:flex;gap:15px;color:var(--muted);font-size:10px;margin:12px 0 4px}.neural-origin b{font-weight:450;color:var(--text)}.dot{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:4px}#network{width:100%;height:172px;display:block;cursor:crosshair}.network-foot{display:flex;justify-content:space-between;align-items:center;gap:5px;margin-top:0}.network-foot span{font-size:8px;color:#789397}.neuron-filters{display:flex;gap:6px;margin-top:15px}.neuron-filters input{width:60%;font-size:10px}.neuron-filters select{width:40%;font-size:10px}#heatmap{width:100%;height:103px;display:block;margin-top:10px;cursor:crosshair}.heat-legend{display:flex;justify-content:space-between;color:#789397;font-size:8px;margin-top:4px}.heat-legend i{display:inline-block;height:4px;width:55px;background:linear-gradient(90deg,#142b36,#349b85,#9cf2b6);margin:0 5px;vertical-align:middle}.selected-card{margin-top:14px;border:1px solid #2b4a4a;border-radius:8px;padding:12px;background:#10252b}.selected-heading{display:flex;align-items:center;justify-content:space-between}.mini-tag{font-size:8px;color:var(--teal);letter-spacing:.3px}.mini-tag.modeled{color:var(--gold)}.selected-heading h3{font-size:14px;font-weight:550;margin:3px 0}.selected-heading strong{font:24px ui-monospace,monospace;color:var(--teal)}#selected-id{font:9px ui-monospace,monospace;color:var(--muted);overflow-wrap:anywhere}#selected-info{font-size:9px;color:#8fa9aa;margin:6px 0 10px}.selected-actions{display:flex;gap:5px}.selected-actions button{flex:1;padding:6px;font-size:10px}.selected-actions button.suppressed{color:var(--red);border-color:var(--red)}.intervention-row{display:flex;justify-content:space-between;margin-top:12px}.intervention-row button{font-size:10px;padding:5px 8px}.panel-note{font-size:9px;color:#789397;line-height:1.7;margin-top:12px}.timeline-card{margin-top:16px;padding-bottom:8px}.timeline-actions{display:flex;gap:8px;align-items:center}.timeline-actions span{font:9px ui-monospace,monospace;color:var(--muted)}.timeline-actions button{font-size:10px;padding:6px 10px}.trace-legend{display:flex;flex-wrap:wrap;gap:9px 16px;min-height:24px;margin-top:10px}.trace-legend button{font:9px ui-monospace,monospace;padding:0;border:none;background:none;display:flex;align-items:center;gap:5px;max-width:210px;overflow:hidden;text-overflow:ellipsis}.trace-legend i{width:15px;height:2px}#timeline{width:100%;height:146px;display:block}.bottom-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:16px;margin-top:16px}.settings-row{display:flex;gap:16px;align-items:center;margin-top:14px}.settings-row>label{flex:1;font-size:10px;color:var(--muted)}.settings-row select,.settings-row input{display:block;width:100%;margin-top:5px;font-size:10px}.settings-row output{color:var(--teal);float:right}.placement-controls{display:flex;align-items:center;gap:6px;margin-top:15px;flex-wrap:wrap}.placement-controls button{font-size:10px;padding:5px 9px}.placement-controls label{font-size:9px;color:var(--muted);margin-left:4px}.placement-controls input{width:52px;padding:4px;font-size:10px}.muted{color:var(--muted);font-size:10px;line-height:1.8}.experiment-row{display:flex;gap:9px;margin:13px 0}.experiment-row select{flex:1;font-size:11px}.experiment-row button{font-size:11px}.utility-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:17px 2px 13px}.utility-row>div{display:flex;gap:7px;align-items:center}.utility-row button{font-size:10px;padding:5px 8px}.utility-row input{width:83px;font:10px ui-monospace,monospace;padding:5px 7px}.utility-row label{font:9px ui-monospace,monospace;color:var(--muted);letter-spacing:1px}.utility-row>span{font:9px ui-monospace,monospace;color:#829fa0}.event-strip{display:flex;gap:15px;border-top:1px solid var(--line);padding:12px 0 0;font-size:10px}.event-strip>span{font:8px ui-monospace,monospace;color:var(--muted);letter-spacing:1px;padding-top:3px;flex-shrink:0}#events{display:flex;flex-wrap:wrap;gap:8px 18px;color:#879fa2}footer{display:flex;justify-content:space-between;gap:10px;padding:17px 27px;border-top:1px solid var(--line);font:8px ui-monospace,monospace;letter-spacing:1px;color:#65858b}footer b{color:var(--teal);font-weight:450}footer i{font-style:normal;padding:0 10px;color:#456169}#toast{position:fixed;bottom:25px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;max-width:85vw;background:#15352feb;border:1px solid #427d68;color:#daf0e4;padding:10px 20px;border-radius:9px;transition:.2s;z-index:100;font-size:12px}#toast.show{opacity:1;transform:translate(-50%,0)}dialog{background:#0c1922;color:var(--text);border:1px solid #375652;border-radius:14px;padding:0;width:min(820px,92vw);max-height:88vh;box-shadow:0 30px 130px #0008}dialog::backdrop{background:#03080ddd;backdrop-filter:blur(5px)}.dialog-title{display:flex;justify-content:space-between;align-items:center;padding:24px 28px;border-bottom:1px solid var(--line)}.dialog-title h2{font-size:21px;font-weight:500;margin:3px 0}.dialog-title button{font-size:20px;padding:1px 9px;background:none}.dialog-body{padding:20px 28px 27px;overflow:auto}.dialog-body p{font-size:12px;color:#a0b8b7;line-height:1.95}.dialog-body strong{color:#e0d1ac}.dialog-body h3{font-size:14px;color:var(--teal);margin-top:24px}.dialog-body h3:first-child{margin-top:0}.dialog-body pre{padding:20px;border-radius:8px;background:#08121a;border:1px solid var(--line);font:12px/1.9 ui-monospace,monospace;color:#9fe3c9;overflow:auto}.roadmap{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.roadmap article{border:1px solid var(--line);border-radius:8px;padding:16px}.roadmap .current{border-color:#5d9f83;background:#142d29}.roadmap b{color:var(--teal);font-size:12px}.roadmap p{font-size:10px}#paired-chart{display:block;width:100%;height:300px}#paired-metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}#paired-metrics article{padding:12px;background:#142730;border-radius:6px}#paired-metrics b{display:block;font-size:13px}#paired-metrics p{font:11px/1.8 ui-monospace,monospace;margin:7px 0 0}.loading{opacity:.6}
+@media(min-width:1500px){.workspace{grid-template-columns:minmax(0,1fr) 395px}.world-wrap{height:485px}.neural-panel{padding:18px}#network{height:188px}#heatmap{height:112px}.sensory-row{grid-template-columns:1fr 1fr}.scene-metrics{padding:14px 0}.heading-key p{font-size:11px}}
+@media(max-width:1120px){.top-description{display:none}.scope-warning{max-width:280px}.workspace{grid-template-columns:minmax(0,1fr) 320px}.world-wrap{height:405px}.scene-caption>span:last-child{display:none}.camera-hint{display:none}.scene-metrics>div{padding-left:11px}.scene-metrics b{font-size:16px}.sensory-row{grid-template-columns:1fr}.heading-card .heading-body{height:110px}#compass{width:110px;height:110px}.sensors-card{display:none}.timecode span{display:none}.bottom-grid{grid-template-columns:1fr 1fr}.settings-row{flex-wrap:wrap}.settings-row>label:first-child{flex-basis:100%}.neural-panel{padding:13px}.topbar{padding:16px 23px}}
+@media(max-width:820px){.topbar{gap:10px;padding:15px}.brand{font-size:19px}.offline{display:none}.topbar nav{gap:1px}.topbar nav button{padding:5px;font-size:10px}.scope-strip{padding:8px 15px;flex-wrap:wrap;gap:5px 10px}.scope-warning{margin:0;max-width:none;flex-basis:100%;font-size:9px}main{padding:13px}.commandbar{flex-wrap:wrap;gap:7px}.compact-label{font-size:9px}.compact-label select{padding:6px;font-size:10px}.control-divider{display:none}.play-group .compact-label{gap:3px}.timecode strong{font-size:16px}.commandbar #reset-btn span{display:none}.workspace{grid-template-columns:1fr}.world-wrap{height:390px}.sensory-row{grid-template-columns:1fr 1fr}.sensors-card{display:block}.heading-card .heading-body{height:135px;gap:3px}#compass{width:110px;height:110px}.heading-key p{font-size:9px;gap:4px}.heading-key small{font-size:8px}.neural-panel{display:grid;grid-template-columns:1fr 1fr;gap:7px 15px}.neural-panel>.section-title,.neural-origin,.network-foot,.neuron-filters,.heat-legend,.intervention-row,.panel-note{grid-column:1/-1}#network{height:140px;grid-column:1/-1}#heatmap{height:170px;margin:0}.selected-card{margin:0;align-self:stretch} .neuron-filters{margin-top:5px}.network-foot{margin-bottom:4px}.neural-panel .section-title{margin:0}.neural-origin{margin:0}.timeline-actions{flex-wrap:wrap;gap:5px}.timeline-actions span{display:none}.timeline-actions button{font-size:9px}.bottom-grid{grid-template-columns:1fr}.utility-row{align-items:flex-start;justify-content:flex-start}.utility-row>div{flex-wrap:wrap}footer{padding:13px;font-size:7px}footer>span:nth-child(2){display:none}.dialog-title{padding:17px}.dialog-title h2{font-size:17px}.dialog-body{padding:16px 18px}.roadmap{grid-template-columns:1fr}.roadmap article{padding:12px}.roadmap p{margin:5px 0}}
+@media(max-width:460px){.topbar .brand-icon{width:31px;height:31px}.brand small{font-size:6px;letter-spacing:1.5px}.topbar nav button{font-size:9px}.topbar nav #about-btn{display:none}.stage-badge{font-size:10px;padding:4px}.world-wrap{height:310px}.view-top{padding:8px 9px}.view-top small{display:none}.view-controls button{font-size:9px;padding:4px 6px}.view-top strong{font-size:10px}.scene-metrics{grid-template-columns:repeat(3,1fr)}.scene-metrics>div:nth-child(n+4){display:none}.sensory-row{grid-template-columns:1fr}.sensors-card{display:block}.heading-card{display:none}.neural-panel{gap:8px}#heatmap{height:178px}.selected-card{padding:9px}.selected-heading strong{font-size:19px}.selected-heading h3{font-size:11px}.selected-actions{flex-wrap:wrap}.selected-actions button{font-size:9px;flex-basis:40%}#selected-info{font-size:8px}.timeline-card .section-title{align-items:flex-start}.section-title h2 small{display:block;margin:3px 0 0}.timeline-actions{max-width:145px;justify-content:flex-end}.timeline-actions button{padding:5px}.commandbar .compact-label>select{max-width:126px}.timecode{margin-left:auto}.commandbar>.spacer{display:none}.scene-caption{left:10px}.scope-tag{font-size:7px}#paired-metrics{grid-template-columns:1fr}}
+
+.trace-chip::before{content:"";display:inline-block;width:15px;height:2px;flex:0 0 15px;background:var(--trace-color)}
+.paired-metric{padding:12px;background:#142730;border-radius:6px}#paired-metrics>.muted{grid-column:1/-1}#toast.error{border-color:#cc776c;background:#42261feb}
+@media(max-width:820px){.neural-panel{grid-template-columns:1fr}.neural-panel>*{grid-column:1!important}#heatmap{height:115px}.selected-card{width:100%;margin-top:3px}.sensors-card{display:block}}
+@media(max-width:460px){.heading-card{display:block}.heading-card .heading-body{height:130px}.topbar nav #about-btn{display:inline-block}.topbar nav{gap:0}.topbar nav button{font-size:8px;padding:3px}.brand{gap:7px}.selected-heading h3{font-size:14px}.selected-heading strong{font-size:24px}.selected-actions{flex-wrap:nowrap}.selected-actions button{flex-basis:auto}}
+/* B telemetry extension: maintain the A observation workspace. */
+.verification-banner{padding:11px 16px;margin:0 0 15px;background:#22231a;border:1px solid #746344;color:#e4cca3;border-radius:9px;font-size:12px;line-height:1.6}.physical-panel{margin:18px 0}.physical-stats{display:flex;gap:28px;flex-wrap:wrap;font-size:13px;margin:10px 0 20px}.physical-stats b{color:#73d5c4;margin-left:8px;font-variant-numeric:tabular-nums}.feet-bars{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.feet-bars>div{background:#121e24;padding:12px;border:1px solid #273740;border-radius:8px;display:grid;gap:9px}.feet-bars>div.touching{border-color:#5ba991}.feet-bars b{font-size:11px;letter-spacing:.1em}.feet-bars span{font:13px monospace}.feet-bars meter{width:100%;height:14px;accent-color:#69ccbb}.physical-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:15px 0}.physical-actions .switch-line{gap:12px;margin:0}.physical-actions input[type=range]{width:100px}.joint-scroll{max-height:300px;overflow:auto;margin-top:14px}.joint-scroll table{width:100%;border-collapse:collapse;font:12px monospace}.joint-scroll th{position:sticky;top:0;background:#15212a;text-align:left;padding:9px}.joint-scroll td{padding:7px 9px;border-bottom:1px solid #25343a}.joint-scroll td:not(:first-child){text-align:right}.native-preview-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:18px}.native-preview-row span{font-size:12px;color:#9aaab1}.native-preview-row img{border-radius:8px;max-width:100%;border:1px solid #3d555e}.backend-gate{position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:36px;background:linear-gradient(120deg,#11252ef5,#09171bf2);line-height:1.7;overflow:auto}.backend-gate[hidden]{display:none}.backend-gate b{font-size:12px;color:#80d6c4;letter-spacing:.18em}.backend-gate h2{font-size:23px}.backend-gate p{max-width:680px;white-space:pre-wrap;color:#c0cdd0}.backend-gate code{font-size:15px;color:#e4cb9a}.test-fixture .verification-banner{background:#552819;color:#fff;border-color:#ef985d}details summary{cursor:pointer;color:#c4d6d8;margin:12px 0}#physics-status{font-size:11px}#physics-fault{margin-bottom:4px}@media(max-width:700px){.feet-bars{grid-template-columns:repeat(3,1fr)}.physical-stats{gap:12px}.backend-gate{padding:22px}.backend-gate h2{font-size:18px}.physical-actions{gap:10px}.joint-scroll td:first-child{max-width:180px;overflow:hidden;text-overflow:ellipsis}.verification-banner{font-size:11px}}
+</style></head><body>
+<header class="topbar"><a class="brand" href="#" aria-label="FLY LAB 홈"><span class="brand-icon"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 7v26M20 15C6-1 0 19 17 21M20 15C34-1 40 19 23 21M18 23L8 32m14-9 10 9" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="20" cy="23" rx="4" ry="9" fill="currentColor"/></svg></span><span>FLY <b>LAB</b><small>IN SILICO · NAVIGATION</small></span><span class="stage-badge">B</span></a><div class="top-description">초파리 신경 관찰실<span>감각 → 내부 상태 → 행동</span></div><nav aria-label="설계와 모델 안내"><button id="about-btn" class="quiet">데이터·모델</button><button id="architecture-btn" class="quiet">B 설계 · C 확장 <span>↗</span></button><span class="offline"><i></i> LOCAL BACKEND</span></nav></header>
+<div class="scope-strip"><span class="scope-tag">PARTIAL CIRCUIT</span><span id="scope-text">연결 데이터 읽는 중…</span><span class="scope-warning">활성도는 모델 출력입니다. 실측 신경 신호가 아닙니다.</span></div>
+<main><div id="verification-banner" class="verification-banner">B · 42관절 물리 보행 · 부분 신경 모델 + 설계한 회피 제어 · 생물학적 검증 아님</div>
+<section class="commandbar" aria-label="재생과 관찰 조작"><div class="play-group"><button id="play-btn" class="primary" aria-label="일시정지">Ⅱ <span>일시정지</span></button><button id="step-btn" title="일시정지 후 0.05초 전진" aria-label="0.05초 전진">▷│</button><label class="compact-label">속도<select id="speed-select"><option value=".25">0.25×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label></div><div class="control-divider"></div><label class="compact-label">몸 모델<select id="mode-select" aria-label="몸 모델"><option value="walk">B · NeuroMechFly 물리 보행</option></select></label><div class="spacer"></div><div class="timecode"><span>SIMULATION TIME</span><strong id="time">00:00.0</strong></div><button id="reset-btn" title="동일한 시드와 기본 환경으로 초기화">↺ <span>초기화</span></button></section>
+<section class="workspace">
+<div class="scene-column">
+<div class="view-card">
+<div class="view-top"><div><span class="live-dot"></span><strong>가상 환경</strong><small id="behavior">탐색 중</small></div><div class="view-controls"><button id="follow-btn" class="active">추적</button><button id="home-btn">전체</button><button id="top-btn">상단</button><button id="eye-btn">개체 시점</button><button id="photo-btn" title="3D 뷰포트 PNG 저장">사진 ↓</button></div></div>
+<div class="world-wrap"><canvas id="world" aria-label="회전과 확대가 가능한 3차원 초파리 관찰 공간"></canvas><canvas id="world-overlay" aria-hidden="true"></canvas><div class="scene-caption"><span class="model-pill">ARTICULATED BODY · B</span><span>몸 표면은 도식 · 다리 위치는 물리 관측</span></div><div class="camera-hint" id="camera-hint">드래그 회전 · 휠 확대 · F 추적 · Space 정지</div><div class="placement-banner" id="placement-banner" hidden>환경을 클릭해 배치하세요. Esc로 취소합니다.</div><div class="render-error" id="render-error" hidden></div><div id="backend-gate" class="backend-gate"><b>CONNECT TO PHYSICS</b><h2>Python 물리 서버를 연결합니다.</h2><p id="backend-state">ZIP을 풀고 의존성 설치 후 python run.py를 실행하세요.</p><code>http://127.0.0.1:8765</code><p>설치된 FlyGym + MuJoCo가 없으면 계산을 시작하지 않습니다.</p><button onclick="location.reload()">다시 연결</button></div></div>
+<div class="scene-metrics"><div><span>이동 거리</span><b id="distance">0.0 <small>mm</small></b></div><div><span>높이</span><b id="height">4.6 <small>mm</small></b></div><div><span>속도</span><b id="velocity">0.0 <small>mm/s</small></b></div><div><span>희망 조향</span><b id="yaw-output">0.00 <small>°/s</small></b></div><div><span>충돌 진입 횟수</span><b id="contacts">0</b></div></div>
+</div>
+<div class="sensory-row"><section class="card heading-card"><div class="section-title"><h2>방향 추정</h2><span id="confidence">신뢰도 —</span></div><div class="heading-body"><canvas id="compass" aria-label="실제 방향, EPG 추정 방향, 목표 방향 비교"></canvas><div class="heading-key"><p><i class="key-line teal"></i> EPG 추정 <b id="estimated-heading">0°</b></p><p><i class="key-line gold"></i> 목표 방향 <b id="goal-heading">0°</b></p><p><i class="key-line grey"></i> 실제 방향 <b id="true-heading">0°</b></p><small>실제 방향은 평가용입니다.<br>뇌 제어기에 직접 전달하지 않습니다.</small></div></div></section>
+<section class="card sensors-card"><div class="section-title"><h2>감각 입력</h2><span>물리 형상 광선 · 합성 후각</span></div><canvas id="sensors" aria-label="64방향 시각 입력과 9방향 근접 거리 광선"></canvas><div class="sensor-key"><span>시각 기준 <b id="cue-state">ON</b></span><span>냄새 L / R <b id="odor-state">0 / 0</b></span></div><label class="switch-line"><span>시각 기준 켜기</span><input id="cue-toggle" type="checkbox" checked role="switch"></label><label class="switch-line"><span>먹이 냄새 켜기</span><input id="food-toggle" type="checkbox" checked role="switch"></label></section></div>
+</div>
+<aside class="card neural-panel"><div class="section-title"><div><span class="eyebrow">LIVE NEURAL MONITOR</span><h2>신경 회로</h2></div><span id="node-count" class="counter">170</span></div>
+<div class="neural-origin"><span><i class="dot teal"></i> 실제 ID · <b id="real-count">98</b></span><span><i class="dot gold"></i> 설계 노드 · <b id="model-count">72</b></span></div>
+<canvas id="network" aria-label="뉴런 연결 도식. 클릭해서 뉴런 선택"></canvas><div class="network-foot"><span>배치는 도식적입니다. 실제 뇌 좌표가 아닙니다.</span><button id="graph-download" class="text-btn">연결 JSON ↓</button></div>
+<div class="neuron-filters"><input id="search" type="search" placeholder="뉴런 이름 또는 ID 검색" aria-label="뉴런 검색"><select id="group-select" aria-label="뉴런 그룹"><option value="all">전체 그룹</option><option value="anatomical">실제 ID만</option><option>EPG</option><option>PENa</option><option>PENb</option><option>PEG</option><option>HD</option><option>GOAL</option><option>PFL3-L</option><option>PFL3-R</option><option>DN</option><option>SENSE</option><option>ALT</option></select></div>
+<canvas id="heatmap" aria-label="개별 노드 활성도. 클릭해서 선택"></canvas><div class="heat-legend"><span id="visible-count">170개 표시</span><span>0 <i></i> 1</span></div>
+<div class="selected-card"><div class="selected-heading"><div><span id="selected-origin" class="mini-tag">실제 ID</span><h3 id="selected-name">EPG</h3></div><strong id="selected-value">0.000</strong></div><code id="selected-id"></code><p id="selected-info"></p><div class="selected-actions"><button id="stim-btn">+ 2초 자극</button><button id="suppress-btn">활성 억제</button><button id="pin-btn" title="시계열에 추가하거나 제거">핀 +</button></div></div>
+<div class="intervention-row"><button id="left-lesion-btn">PFL3-L 전체 억제</button><button id="release-btn" class="quiet">모두 해제</button></div>
+<div class="panel-note">HD·GOAL·PFL3·DN·SENSE·ALT는 설계한 계산 노드입니다. PFL3는 실제 개별 뉴런이 아닌 조향 모사입니다.</div>
+</aside>
+</section>
+<section class="card physical-panel"><div class="section-title"><div><span class="eyebrow">ARTICULATED BODY · LIVE TELEMETRY</span><h2>관절 · 접촉 물리</h2></div><span id="physics-status">연결 전</span></div>
+<div class="physical-stats"><span>물리 시간 <b id="physical-clock">—</b></span><span>좌/우 CPG 구동 <b id="descending-value">— / —</b></span><span id="native-count">42 active DOFs · 6 feet</span></div>
+<div id="feet-bars" class="feet-bars"></div><p class="muted">접촉력은 기준 체중 대비 BW입니다. 발 색상은 실제 접촉 계산에서 읽습니다. 외형은 도식적이며 다리 위치는 물리 모델의 분절 위치입니다.</p>
+<div class="physical-actions"><label class="switch-line">신경–운동 연결 <input id="motor-toggle" type="checkbox" checked role="switch"></label><button id="push-btn">측면 밀기 · 0.5 BW / 50 ms</button><label>마찰 배율 <output id="friction-output">1×</output> <input id="friction-slider" type="range" min="0.2" max="2" step="0.1" value="1"></label><button id="physics-csv-btn">물리 시계열 CSV ↓</button></div>
+<details><summary>42개 관절의 실제 각도 · 명령 각도 · 액추에이터 출력</summary><div class="joint-scroll"><table><thead><tr><th>JOINT</th><th>측정 rad</th><th>목표 rad</th><th>출력 · 엔진 단위</th></tr></thead><tbody id="joint-rows"></tbody></table></div></details>
+<div class="native-preview-row"><button id="native-preview-btn">MuJoCo 실제 메시 카메라 캡처</button><span id="native-preview-caption">선택 기능 · OpenGL 필요 · 신경 입력으로 사용하지 않는 진단 영상</span><img id="native-preview" alt="MuJoCo physical model camera capture" hidden></div><p id="physics-fault" class="muted">물리 상태 수신 전</p></section>
+<section class="card timeline-card"><div class="section-title"><div><span class="eyebrow">ACTIVITY OVER TIME</span><h2>활성도 시계열 <small>0–1 · 최근 120초</small></h2></div><div class="timeline-actions"><span id="recording-info">0 samples</span><button id="csv-btn">전체 활성도 CSV ↓</button><button id="checkpoint-btn">체크포인트 ↓</button></div></div><div id="trace-legend" class="trace-legend"></div><canvas id="timeline" aria-label="선택한 최대 8개 노드의 활성도 시계열"></canvas></section>
+<section class="bottom-grid"><section class="card"><div class="section-title"><h2>환경 · 행동 과제</h2><span>설계한 관찰 환경</span></div><div class="settings-row"><label>행동 과제<select id="task-select"><option value="explore">자율 탐색 · 국소 화학주성</option><option value="heading">고정 방향 유지</option></select></label><label>목표 방향 <output id="goal-output">57°</output><input id="goal-slider" type="range" min="-180" max="180" value="57"></label><label hidden>목표 높이 <output id="altitude-output">4.6 mm</output><input id="altitude-slider" type="range" min="1" max="14" step=".2" value="0.8"></label></div><div class="placement-controls"><button data-place="food">+ 먹이원</button><button data-place="hazard">+ 회피원</button><button data-place="obstacle">+ 장애물</button><label>배치 높이 <input id="place-height" type="number" min="0" max="14" step=".5" value="0.8"></label><button id="clear-added-btn" class="quiet">추가 객체 제거</button></div></section>
+<section class="card"><div class="section-title"><h2>개입 효과 비교</h2><span>같은 초기 상태 · 두 조건</span></div><p class="muted">현재 상태를 복제해 대조군과 개입군을 비교합니다. 원래 실험은 바뀌지 않습니다.</p><div class="experiment-row"><select id="experiment-kind" aria-label="비교 실험"><option value="left-suppression">PFL3-L 억제</option><option value="graph-off">실제 연결 전달 차단</option><option value="dark">시각 기준 제거</option><option value="motor-off">신경–운동 연결 차단</option></select><button id="paired-btn" class="primary">비교 실행</button></div><p id="paired-summary" class="muted">4초 물리 실험 · 1초 시점에 개입 · 생물학적 검증은 아닙니다.</p></section></section>
+<section class="utility-row"><div><label>SEED <input id="seed" type="number" min="0" max="4294967295" value="42"></label><button id="seed-btn">시드 적용</button></div><div><button id="replay-export-btn">리플레이 ↓</button><button id="load-state-btn">체크포인트 / 리플레이 열기</button><button id="load-graph-btn">연결망 교체</button><input id="state-file" type="file" accept=".json" hidden><input id="graph-file" type="file" accept=".json" hidden></div><span id="runtime">초기화 중…</span></section>
+<section class="event-strip"><span>EVENT LOG</span><div id="events">실험 시작</div></section>
+</main>
+<footer><span>FLY LAB <b>B</b> · v0.2.1</span><span>HEMIBRAIN EXCERPT + ENGINEERED CONTROLLER</span><span>A 관찰형 <i>→</i> B 몸 물리 <i>→</i> C 전체 뇌</span></footer>
+<div id="toast" role="status" aria-live="polite"></div>
+<dialog id="about-dialog"><div class="dialog-title"><div><span class="eyebrow">MODEL CARD</span><h2>실제 데이터와 가정을 분리합니다.</h2></div><button data-close="about-dialog" aria-label="닫기">×</button></div><div class="dialog-body"><h3>몸의 물리와 뇌의 모델을 구분합니다.</h3><p>FlyGym 2.1.0 NeuroMechFly 모델과 MuJoCo 3.9.x를 사용하는 Python 어댑터입니다. 42개 능동 관절의 목표각과 6개 발의 접착 입력은 공개 HybridTurningController가 계산합니다. 몸의 위치를 이동식으로 덮어쓰지 않습니다. 접촉·중력·관절 액추에이터가 이동을 만듭니다. 제작 환경에서 실제 물리 실행은 검증하지 못했습니다.</p><h3>신경 데이터 범위는 A와 같습니다.</h3><p>hemibrain 발췌 98개 실제 ID·177개 연결과 72개 설계 노드를 유지했습니다. 이들은 전체 뇌도 완전한 부분 회로도 아닙니다. 모든 활성도는 0–1 모델값이며 실측 신경 신호가 아닙니다. PFL3·DN·HD 등은 명시적인 보조 계산 노드입니다.</p><h3>감각과 제어의 한계</h3><p>64개 광선은 실제 MuJoCo 형상에서 밝은 벽 표식을 감지하며, 가림도 광선 충돌로 결정합니다. 복안 광학·영상 신경망은 아닙니다. 9개 근접 거리도 MuJoCo 광선이며, 후각은 가우시안 장, 자기 회전은 이상화한 운동 감각입니다. 상위 신경망에는 XYZ나 실제 yaw를 전달하지 않습니다.</p><p>저수준 HybridTurningController의 고유감각·반사에는 시뮬레이터의 자세와 접촉 값이 사용됩니다. 이는 알려진 공학적 제어 발판이며 뇌 전체로 보행이 자연 발생한다는 주장이 아닙니다. 고정 방향 과제와 목표 기준도 설계 요소입니다.</p><h3>표시와 단위</h3><p>프런트엔드 몸 표면은 도식적입니다. 다리 연쇄 위치와 실제 관절각은 물리 계산값입니다. 무차원 활성도와 접촉력(BW), 각도(rad), 시간(s), 거리(mm)를 분리합니다. 액추에이터 출력은 보정되지 않은 엔진 단위이며 SI 토크로 표시하지 않습니다.</p><h3>실행 수명과 현재 범위</h3><p>신경 5 ms, 물리 0.1 ms, 기록 10 Hz입니다. 이 설정은 실시간 성능 보장이 아닙니다. 브라우저 요청이 있을 때만 계산하며 숨겨진 탭에서 요청이 멈춥니다. 비행·공기역학·학습·전뇌 모델·24시간 서비스는 구현하지 않았습니다. 네이티브 카메라는 별도 OpenGL 기능이며 없어도 기본 관찰은 가능합니다.</p><p>세부 출처, 버전, 한계와 실기동 검증 스크립트는 ZIP의 docs/와 tools/에 있습니다.</p></div></dialog>
+<dialog id="architecture-dialog"><div class="dialog-title"><div><span class="eyebrow">UPGRADE PATH</span><h2>화면을 유지하고 계산기를 교체합니다.</h2></div><button data-close="architecture-dialog" aria-label="닫기">×</button></div><div class="dialog-body"><div class="roadmap"><article><b>A · 유지</b><p>브라우저 운동학<br>원본 실행 파일 별도 보관</p></article><article class="current"><b>B · 이번 통합</b><p>Python / MuJoCo<br>42관절 보행 · 접촉<br>물리 실행 검증 대기</p></article><article><b>C · 다음 단계</b><p>대규모 희소 신경 엔진<br>카탈로그·선택 신호·기록</p></article></div><pre>MuJoCo Body → SensorAdapter → NeuralBackend
+                                  ↓
+                             MotorCommand
+                                  ↓
+                       HybridTurningController
+                                  ↓
+                         42 joints + adhesion
+                                  ↓
+                          MuJoCo substeps
+
+flylab.protocol.v2 → subscribed signals / body telemetry</pre><p>신경 엔진, 감각 어댑터, 몸 어댑터와 WebSocket 서버는 별도 모듈입니다. C에서는 NeuralBackend와 신호 저장 방식을 교체합니다. hemibrain ID와 FlyWire ID는 자동으로 같은 뉴런으로 취급하지 않습니다.</p><p>체크포인트는 MuJoCo 적분 상태·CPG·반사·신경·감각·난수·환경을 저장합니다. A 상태는 직접 복원하지 않으며 실험 설정만 명시적으로 이전할 수 있습니다. 생성한 physics gate를 로컬에서 실행해야 물리 안정성을 평가할 수 있습니다.</p><p>인증 토큰·Host/Origin 검사·요청 직렬화·단일 계산 스레드·로컬 바인딩을 사용합니다. 외부 배포형 서비스는 아닙니다.</p></div></dialog>
+<dialog id="paired-dialog"><div class="dialog-title"><div><span class="eyebrow">PAIRED INTERVENTION</span><h2>같은 출발점, 다른 개입</h2></div><button data-close="paired-dialog" aria-label="닫기">×</button></div><div class="dialog-body"><p id="paired-title"></p><canvas id="paired-chart" aria-label="대조군과 개입군의 x-z 이동 경로"></canvas><div id="paired-metrics"></div><p class="muted">x–z 평면 투영입니다. 높이 변화는 결과 JSON에 포함합니다. 이 차이는 B 하이브리드 모델의 반응이지 실제 초파리의 실험 결과가 아닙니다.</p><button id="paired-export">비교 결과 JSON ↓</button></div></dialog>
+<script id="fly-data" type="application/json">{
+  "schema": "flylab.connectome.v1",
+  "manifest": {
+    "schema": "flylab.connectome.v1",
+    "name": "Hemibrain EPG–PEN–PEG excerpt",
+    "dataset": "hemibrain:v1.2.1",
+    "scope": "biased_excerpt_not_complete_induced_subgraph",
+    "sourceRepository": "https://github.com/aplbrain/seismic",
+    "commit": "1a789eefc2ca03c1f79e283069e41d20d12ed91f",
+    "sourcePath": "neuroaiengines/networks/hemibrain_conn_df_both.csv",
+    "sourceGitBlob": "9067c6cf66677c6f3bdda69daaf39385209ce620",
+    "sourceLineRanges": [
+      [
+        2,
+        65
+      ],
+      [
+        1000,
+        1063
+      ],
+      [
+        1500,
+        1563
+      ]
+    ],
+    "excerptSha256": "5da036a89b66fdfa5bb56695075fc3d3c95b71d19bc5a635f9bdfb491e895be8",
+    "sourceRows": 192,
+    "neurons": 98,
+    "directedPairs": 177,
+    "synapseCountSum": 3747,
+    "units": "ROI synapse counts; not fitted synaptic conductance",
+    "extraction": "Three 64-row source ranges transcribed from the pinned public CSV; source_record preserves the original pandas index. Header renamed from blank to source_record. Full upstream blob was NOT independently downloaded/verified in this build.",
+    "limitations": [
+      "Biased convenience excerpt, NOT complete EPG/PEN/PEG connectivity",
+      "Missing edges mean unobserved in excerpt, not anatomical absence",
+      "All anatomical effective signs are assumed excitatory in A; no receptor validation",
+      "IndexFix-to-angle mapping is a display/controller assumption, not measured tuning",
+      "Body geometry and neural graph layout are schematic",
+      "PFL3-like steering nodes and HD/GOAL scaffold are synthetic, not connectome neurons"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "hemibrain:387364605",
+      "bodyId": "387364605",
+      "type": "EPG",
+      "name": "EPG(PB08)_L3",
+      "hemisphere": "L",
+      "pbIndex": 3,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:416642425",
+      "bodyId": "416642425",
+      "type": "EPG",
+      "name": "EPG(PB08)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:449438847",
+      "bodyId": "449438847",
+      "type": "EPG",
+      "name": "EPG(PB08)_L3",
+      "hemisphere": "L",
+      "pbIndex": 3,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:478375456",
+      "bodyId": "478375456",
+      "type": "EPG",
+      "name": "EPG(PB08)_R3",
+      "hemisphere": "R",
+      "pbIndex": 3,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:541118908",
+      "bodyId": "541118908",
+      "type": "EPG",
+      "name": "EPG(PB08)_R3",
+      "hemisphere": "R",
+      "pbIndex": 3,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:541870397",
+      "bodyId": "541870397",
+      "type": "EPG",
+      "name": "EPG(PB08)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:572870540",
+      "bodyId": "572870540",
+      "type": "EPG",
+      "name": "EPG(PB08)_L1",
+      "hemisphere": "L",
+      "pbIndex": 1,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:632544268",
+      "bodyId": "632544268",
+      "type": "EPG",
+      "name": "EPG(PB08)_R2",
+      "hemisphere": "R",
+      "pbIndex": 2,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:633546217",
+      "bodyId": "633546217",
+      "type": "EPG",
+      "name": "EPG(PB08)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:634962055",
+      "bodyId": "634962055",
+      "type": "EPG",
+      "name": "EPG(PB08)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:665314820",
+      "bodyId": "665314820",
+      "type": "EPG",
+      "name": "EPG(PB08)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:694920753",
+      "bodyId": "694920753",
+      "type": "EPG",
+      "name": "EPG(PB08)_R5",
+      "hemisphere": "R",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:695629525",
+      "bodyId": "695629525",
+      "type": "EPG",
+      "name": "EPG(PB08)_R2",
+      "hemisphere": "R",
+      "pbIndex": 2,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:695956656",
+      "bodyId": "695956656",
+      "type": "EPG",
+      "name": "EPG(PB08)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:696362840",
+      "bodyId": "696362840",
+      "type": "EPG",
+      "name": "EPG(PB08)_L5",
+      "hemisphere": "L",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:697001770",
+      "bodyId": "697001770",
+      "type": "EPG",
+      "name": "EPG(PB08)_L2",
+      "hemisphere": "L",
+      "pbIndex": 2,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:725951521",
+      "bodyId": "725951521",
+      "type": "EPG",
+      "name": "EPG(PB08)_R5",
+      "hemisphere": "R",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:758419409",
+      "bodyId": "758419409",
+      "type": "EPG",
+      "name": "EPG(PB08)_L3",
+      "hemisphere": "L",
+      "pbIndex": 3,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:788794171",
+      "bodyId": "788794171",
+      "type": "EPG",
+      "name": "EPG(PB08)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:789126240",
+      "bodyId": "789126240",
+      "type": "EPG",
+      "name": "EPG(PB08)_L5",
+      "hemisphere": "L",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:819828986",
+      "bodyId": "819828986",
+      "type": "EPG",
+      "name": "EPG(PB08)_L5",
+      "hemisphere": "L",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:910438331",
+      "bodyId": "910438331",
+      "type": "EPG",
+      "name": "EPG(PB08)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:912545106",
+      "bodyId": "912545106",
+      "type": "EPG",
+      "name": "EPG(PB08)_L2",
+      "hemisphere": "L",
+      "pbIndex": 2,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:912601268",
+      "bodyId": "912601268",
+      "type": "EPG",
+      "name": "EPG(PB08)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:941132434",
+      "bodyId": "941132434",
+      "type": "EPG",
+      "name": "EPG(PB08)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:942491983",
+      "bodyId": "942491983",
+      "type": "EPG",
+      "name": "EPG(PB08)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1002507159",
+      "bodyId": "1002507159",
+      "type": "EPG",
+      "name": "EPG(PB08)_R7",
+      "hemisphere": "R",
+      "pbIndex": 7,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1002852791",
+      "bodyId": "1002852791",
+      "type": "EPG",
+      "name": "EPG(PB08)_R7",
+      "hemisphere": "R",
+      "pbIndex": 7,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1004017998",
+      "bodyId": "1004017998",
+      "type": "EPG",
+      "name": "EPG(PB08)_L7",
+      "hemisphere": "L",
+      "pbIndex": 7,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1034219901",
+      "bodyId": "1034219901",
+      "type": "EPG",
+      "name": "EPG(PB08)_R7",
+      "hemisphere": "R",
+      "pbIndex": 7,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1065410141",
+      "bodyId": "1065410141",
+      "type": "EPG",
+      "name": "EPG(PB08)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1125964814",
+      "bodyId": "1125964814",
+      "type": "EPG",
+      "name": "EPG(PB08)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1126647624",
+      "bodyId": "1126647624",
+      "type": "EPG",
+      "name": "EPG(PB08)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1127476096",
+      "bodyId": "1127476096",
+      "type": "EPG",
+      "name": "EPG(PB08)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1167995070",
+      "bodyId": "1167995070",
+      "type": "EPG",
+      "name": "EPG(PB08)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1168664495",
+      "bodyId": "1168664495",
+      "type": "EPG",
+      "name": "EPG(PB08)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1447576662",
+      "bodyId": "1447576662",
+      "type": "EPG",
+      "name": "EPG(PB08)_L1",
+      "hemisphere": "L",
+      "pbIndex": 1,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813012006",
+      "bodyId": "5813012006",
+      "type": "EPG",
+      "name": "EPG(PB08)_L7",
+      "hemisphere": "L",
+      "pbIndex": 7,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813014873",
+      "bodyId": "5813014873",
+      "type": "EPG",
+      "name": "EPG(PB08)_R1",
+      "hemisphere": "R",
+      "pbIndex": 1,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813022281",
+      "bodyId": "5813022281",
+      "type": "EPG",
+      "name": "EPG(PB08)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813027103",
+      "bodyId": "5813027103",
+      "type": "EPG",
+      "name": "EPG(PB08)_R5",
+      "hemisphere": "R",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813040233",
+      "bodyId": "5813040233",
+      "type": "EPG",
+      "name": "EPG(PB08)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813061251",
+      "bodyId": "5813061251",
+      "type": "EPG",
+      "name": "EPG(PB08)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813077544",
+      "bodyId": "5813077544",
+      "type": "EPG",
+      "name": "EPG(PB08)_R1",
+      "hemisphere": "R",
+      "pbIndex": 1,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813080838",
+      "bodyId": "5813080838",
+      "type": "EPG",
+      "name": "EPG(PB08)_R3",
+      "hemisphere": "R",
+      "pbIndex": 3,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:848761388",
+      "bodyId": "848761388",
+      "type": "PEG",
+      "name": "PEG(PB07)_R1",
+      "hemisphere": "R",
+      "pbIndex": 1,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:881898734",
+      "bodyId": "881898734",
+      "type": "PEG",
+      "name": "PEG(PB07)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:912147912",
+      "bodyId": "912147912",
+      "type": "PEG",
+      "name": "PEG(PB07)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:942173776",
+      "bodyId": "942173776",
+      "type": "PEG",
+      "name": "PEG(PB07)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:942587380",
+      "bodyId": "942587380",
+      "type": "PEG",
+      "name": "PEG(PB07)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:972555509",
+      "bodyId": "972555509",
+      "type": "PEG",
+      "name": "PEG(PB07)_R2",
+      "hemisphere": "R",
+      "pbIndex": 2,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:974300015",
+      "bodyId": "974300015",
+      "type": "PEG",
+      "name": "PEG(PB07)_L3",
+      "hemisphere": "L",
+      "pbIndex": 3,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1002848661",
+      "bodyId": "1002848661",
+      "type": "PEG",
+      "name": "PEG(PB07)_R7",
+      "hemisphere": "R",
+      "pbIndex": 7,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1065409934",
+      "bodyId": "1065409934",
+      "type": "PEG",
+      "name": "PEG(PB07)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1190171884",
+      "bodyId": "1190171884",
+      "type": "PEG",
+      "name": "PEG(PB07)_L2",
+      "hemisphere": "L",
+      "pbIndex": 2,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1199677638",
+      "bodyId": "1199677638",
+      "type": "PEG",
+      "name": "PEG(PB07)_L9",
+      "hemisphere": "L",
+      "pbIndex": 9,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813014882",
+      "bodyId": "5813014882",
+      "type": "PEG",
+      "name": "PEG(PB07)_R5",
+      "hemisphere": "R",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813059834",
+      "bodyId": "5813059834",
+      "type": "PEG",
+      "name": "PEG(PB07)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:508793049",
+      "bodyId": "508793049",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L7",
+      "hemisphere": "L",
+      "pbIndex": 7,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:509410587",
+      "bodyId": "509410587",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:570461892",
+      "bodyId": "570461892",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R3",
+      "hemisphere": "R",
+      "pbIndex": 3,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:634608104",
+      "bodyId": "634608104",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L2",
+      "hemisphere": "L",
+      "pbIndex": 2,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:663190769",
+      "bodyId": "663190769",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:664645558",
+      "bodyId": "664645558",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:757055317",
+      "bodyId": "757055317",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:847336755",
+      "bodyId": "847336755",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:849482511",
+      "bodyId": "849482511",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:910447075",
+      "bodyId": "910447075",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R5",
+      "hemisphere": "R",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:972892437",
+      "bodyId": "972892437",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R2",
+      "hemisphere": "R",
+      "pbIndex": 2,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1002507131",
+      "bodyId": "1002507131",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R7",
+      "hemisphere": "R",
+      "pbIndex": 7,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1125964630",
+      "bodyId": "1125964630",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1127471692",
+      "bodyId": "1127471692",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1220576923",
+      "bodyId": "1220576923",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L9",
+      "hemisphere": "L",
+      "pbIndex": 9,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1380495496",
+      "bodyId": "1380495496",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1508334312",
+      "bodyId": "1508334312",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L3",
+      "hemisphere": "L",
+      "pbIndex": 3,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813056953",
+      "bodyId": "5813056953",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813080979",
+      "bodyId": "5813080979",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L5",
+      "hemisphere": "L",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:387023620",
+      "bodyId": "387023620",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:539462336",
+      "bodyId": "539462336",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:569775058",
+      "bodyId": "569775058",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:663562172",
+      "bodyId": "663562172",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:664650297",
+      "bodyId": "664650297",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:693755250",
+      "bodyId": "693755250",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R7",
+      "hemisphere": "R",
+      "pbIndex": 7,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:724280817",
+      "bodyId": "724280817",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R2",
+      "hemisphere": "R",
+      "pbIndex": 2,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:849421763",
+      "bodyId": "849421763",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R5",
+      "hemisphere": "R",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:879183317",
+      "bodyId": "879183317",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:941123755",
+      "bodyId": "941123755",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:973566036",
+      "bodyId": "973566036",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R3",
+      "hemisphere": "R",
+      "pbIndex": 3,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1062526223",
+      "bodyId": "1062526223",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1197993940",
+      "bodyId": "1197993940",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1218728570",
+      "bodyId": "1218728570",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R9",
+      "hemisphere": "R",
+      "pbIndex": 9,
+      "indexFix": 9,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1220584946",
+      "bodyId": "1220584946",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L9",
+      "hemisphere": "L",
+      "pbIndex": 9,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1318109929",
+      "bodyId": "1318109929",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L7",
+      "hemisphere": "L",
+      "pbIndex": 7,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1353544607",
+      "bodyId": "1353544607",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1600083889",
+      "bodyId": "1600083889",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L9",
+      "hemisphere": "L",
+      "pbIndex": 9,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1601771527",
+      "bodyId": "1601771527",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R9",
+      "hemisphere": "R",
+      "pbIndex": 9,
+      "indexFix": 9,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813047157",
+      "bodyId": "5813047157",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L2",
+      "hemisphere": "L",
+      "pbIndex": 2,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813070465",
+      "bodyId": "5813070465",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L3",
+      "hemisphere": "L",
+      "pbIndex": 3,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    }
+  ],
+  "edges": [
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:387364605",
+      "count": 66,
+      "roiCounts": {
+        "EB": 66
+      },
+      "sourceRecords": [
+        0
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:449438847",
+      "count": 52,
+      "roiCounts": {
+        "EB": 52
+      },
+      "sourceRecords": [
+        1
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:539462336",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        2
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:697001770",
+      "count": 11,
+      "roiCounts": {
+        "EB": 11
+      },
+      "sourceRecords": [
+        3
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:757055317",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        4
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:758419409",
+      "count": 43,
+      "roiCounts": {
+        "EB": 43
+      },
+      "sourceRecords": [
+        5
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:910438331",
+      "count": 18,
+      "roiCounts": {
+        "EB": 18
+      },
+      "sourceRecords": [
+        6
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:912545106",
+      "count": 14,
+      "roiCounts": {
+        "EB": 14
+      },
+      "sourceRecords": [
+        7
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:941132434",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        8
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:942491983",
+      "count": 10,
+      "roiCounts": {
+        "EB": 10
+      },
+      "sourceRecords": [
+        9
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:1002507159",
+      "count": 40,
+      "roiCounts": {
+        "EB": 40
+      },
+      "sourceRecords": [
+        10
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:1002852791",
+      "count": 24,
+      "roiCounts": {
+        "EB": 24
+      },
+      "sourceRecords": [
+        11
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:1034219901",
+      "count": 54,
+      "roiCounts": {
+        "EB": 54
+      },
+      "sourceRecords": [
+        12
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:1062526223",
+      "count": 13,
+      "roiCounts": {
+        "EB": 13
+      },
+      "sourceRecords": [
+        13
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:1126647624",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        14
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:5813061251",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        15
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:387023620",
+      "count": 21,
+      "roiCounts": {
+        "EB": 21
+      },
+      "sourceRecords": [
+        16
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:449438847",
+      "count": 61,
+      "roiCounts": {
+        "EB": 61
+      },
+      "sourceRecords": [
+        17
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:539462336",
+      "count": 23,
+      "roiCounts": {
+        "EB": 23
+      },
+      "sourceRecords": [
+        18
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:757055317",
+      "count": 19,
+      "roiCounts": {
+        "EB": 19
+      },
+      "sourceRecords": [
+        20
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:758419409",
+      "count": 33,
+      "roiCounts": {
+        "EB": 33
+      },
+      "sourceRecords": [
+        21
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:849482511",
+      "count": 26,
+      "roiCounts": {
+        "EB": 26
+      },
+      "sourceRecords": [
+        22
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:910438331",
+      "count": 19,
+      "roiCounts": {
+        "EB": 19
+      },
+      "sourceRecords": [
+        27
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:941132434",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        44
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:942491983",
+      "count": 9,
+      "roiCounts": {
+        "EB": 9
+      },
+      "sourceRecords": [
+        48
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:942587380",
+      "count": 5,
+      "roiCounts": {
+        "PB": 5
+      },
+      "sourceRecords": [
+        49
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:974300015",
+      "count": 112,
+      "roiCounts": {
+        "PB": 102,
+        "EB": 10
+      },
+      "sourceRecords": [
+        51,
+        52
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1002507131",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        53
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1002507159",
+      "count": 36,
+      "roiCounts": {
+        "EB": 36
+      },
+      "sourceRecords": [
+        54
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1002848661",
+      "count": 14,
+      "roiCounts": {
+        "EB": 14
+      },
+      "sourceRecords": [
+        55
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1002852791",
+      "count": 17,
+      "roiCounts": {
+        "EB": 17
+      },
+      "sourceRecords": [
+        56
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1034219901",
+      "count": 49,
+      "roiCounts": {
+        "EB": 49
+      },
+      "sourceRecords": [
+        57
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1062526223",
+      "count": 27,
+      "roiCounts": {
+        "EB": 27
+      },
+      "sourceRecords": [
+        58
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1125964630",
+      "count": 47,
+      "roiCounts": {
+        "EB": 47
+      },
+      "sourceRecords": [
+        59
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1508334312",
+      "count": 33,
+      "roiCounts": {
+        "PB": 30,
+        "EB": 3
+      },
+      "sourceRecords": [
+        61,
+        62
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:5813070465",
+      "count": 29,
+      "roiCounts": {
+        "PB": 29
+      },
+      "sourceRecords": [
+        65
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:5813080979",
+      "count": 7,
+      "roiCounts": {
+        "EB": 7
+      },
+      "sourceRecords": [
+        66
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:478375456",
+      "count": 9,
+      "roiCounts": {
+        "EB": 9
+      },
+      "sourceRecords": [
+        67
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:508793049",
+      "count": 51,
+      "roiCounts": {
+        "EB": 51
+      },
+      "sourceRecords": [
+        68
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:509410587",
+      "count": 14,
+      "roiCounts": {
+        "PB": 13,
+        "EB": 1
+      },
+      "sourceRecords": [
+        69,
+        70
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:541870397",
+      "count": 31,
+      "roiCounts": {
+        "EB": 31
+      },
+      "sourceRecords": [
+        71
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:569775058",
+      "count": 9,
+      "roiCounts": {
+        "PB": 9
+      },
+      "sourceRecords": [
+        72
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:633546217",
+      "count": 34,
+      "roiCounts": {
+        "EB": 34
+      },
+      "sourceRecords": [
+        73
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:663562172",
+      "count": 21,
+      "roiCounts": {
+        "PB": 21
+      },
+      "sourceRecords": [
+        74
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:664645558",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        75
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:695956656",
+      "count": 28,
+      "roiCounts": {
+        "EB": 28
+      },
+      "sourceRecords": [
+        76
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:696362840",
+      "count": 12,
+      "roiCounts": {
+        "EB": 12
+      },
+      "sourceRecords": [
+        77
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:725951521",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        78
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:788794171",
+      "count": 28,
+      "roiCounts": {
+        "EB": 28
+      },
+      "sourceRecords": [
+        79
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:847336755",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        80
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:849421763",
+      "count": 32,
+      "roiCounts": {
+        "EB": 32
+      },
+      "sourceRecords": [
+        81
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:881898734",
+      "count": 9,
+      "roiCounts": {
+        "EB": 9
+      },
+      "sourceRecords": [
+        85
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:910447075",
+      "count": 37,
+      "roiCounts": {
+        "EB": 37
+      },
+      "sourceRecords": [
+        88
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:912601268",
+      "count": 24,
+      "roiCounts": {
+        "EB": 24
+      },
+      "sourceRecords": [
+        107
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:942173776",
+      "count": 85,
+      "roiCounts": {
+        "PB": 74,
+        "EB": 11
+      },
+      "sourceRecords": [
+        109,
+        110
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:1127471692",
+      "count": 9,
+      "roiCounts": {
+        "EB": 9
+      },
+      "sourceRecords": [
+        112
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:1318109929",
+      "count": 30,
+      "roiCounts": {
+        "EB": 30
+      },
+      "sourceRecords": [
+        114
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:5813056953",
+      "count": 20,
+      "roiCounts": {
+        "PB": 19,
+        "EB": 1
+      },
+      "sourceRecords": [
+        115,
+        116
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:5813080838",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        118
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:1447576662",
+      "count": 9,
+      "roiCounts": {
+        "EB": 8,
+        "PB": 1
+      },
+      "sourceRecords": [
+        3607,
+        3608
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:1508334312",
+      "count": 34,
+      "roiCounts": {
+        "EB": 34
+      },
+      "sourceRecords": [
+        3609
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:1601771527",
+      "count": 29,
+      "roiCounts": {
+        "EB": 29
+      },
+      "sourceRecords": [
+        3610
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:5813040233",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        3611
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:5813047157",
+      "count": 22,
+      "roiCounts": {
+        "PB": 22
+      },
+      "sourceRecords": [
+        3612
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:5813059834",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        3614
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:5813061251",
+      "count": 18,
+      "roiCounts": {
+        "EB": 18
+      },
+      "sourceRecords": [
+        3615
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:5813070465",
+      "count": 21,
+      "roiCounts": {
+        "EB": 21
+      },
+      "sourceRecords": [
+        3616
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:416642425",
+      "count": 13,
+      "roiCounts": {
+        "EB": 13
+      },
+      "sourceRecords": [
+        3617
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:478375456",
+      "count": 38,
+      "roiCounts": {
+        "EB": 38
+      },
+      "sourceRecords": [
+        3618
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:508793049",
+      "count": 14,
+      "roiCounts": {
+        "EB": 14
+      },
+      "sourceRecords": [
+        3619
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:509410587",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        3620
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:541118908",
+      "count": 24,
+      "roiCounts": {
+        "EB": 24
+      },
+      "sourceRecords": [
+        3621
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:541870397",
+      "count": 28,
+      "roiCounts": {
+        "EB": 26,
+        "PB": 2
+      },
+      "sourceRecords": [
+        3622,
+        3623
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:569775058",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        3624
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:633546217",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        3625
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:663562172",
+      "count": 18,
+      "roiCounts": {
+        "EB": 18
+      },
+      "sourceRecords": [
+        3626
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:664645558",
+      "count": 9,
+      "roiCounts": {
+        "PB": 9
+      },
+      "sourceRecords": [
+        3627
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:664650297",
+      "count": 16,
+      "roiCounts": {
+        "PB": 16
+      },
+      "sourceRecords": [
+        3628
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:695956656",
+      "count": 11,
+      "roiCounts": {
+        "EB": 11
+      },
+      "sourceRecords": [
+        3629
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:788794171",
+      "count": 17,
+      "roiCounts": {
+        "EB": 17
+      },
+      "sourceRecords": [
+        3630
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:849421763",
+      "count": 45,
+      "roiCounts": {
+        "EB": 45
+      },
+      "sourceRecords": [
+        3631
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:879183317",
+      "count": 13,
+      "roiCounts": {
+        "PB": 13
+      },
+      "sourceRecords": [
+        3632
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:881898734",
+      "count": 68,
+      "roiCounts": {
+        "PB": 54,
+        "EB": 14
+      },
+      "sourceRecords": [
+        3634,
+        3635
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:910447075",
+      "count": 16,
+      "roiCounts": {
+        "EB": 16
+      },
+      "sourceRecords": [
+        3638
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:1004017998",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        3654
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:1127471692",
+      "count": 12,
+      "roiCounts": {
+        "EB": 12
+      },
+      "sourceRecords": [
+        3655
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:1318109929",
+      "count": 42,
+      "roiCounts": {
+        "EB": 42
+      },
+      "sourceRecords": [
+        3656
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:1353544607",
+      "count": 7,
+      "roiCounts": {
+        "EB": 7
+      },
+      "sourceRecords": [
+        3657
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:1380495496",
+      "count": 15,
+      "roiCounts": {
+        "PB": 15
+      },
+      "sourceRecords": [
+        3658
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:5813056953",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        3659
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:5813080838",
+      "count": 10,
+      "roiCounts": {
+        "EB": 10
+      },
+      "sourceRecords": [
+        3661
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:416642425",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        3662
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:633546217",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        3663
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:634962055",
+      "count": 17,
+      "roiCounts": {
+        "EB": 17
+      },
+      "sourceRecords": [
+        3664
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:663190769",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        3665
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:664645558",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        3666
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:664650297",
+      "count": 9,
+      "roiCounts": {
+        "EB": 9
+      },
+      "sourceRecords": [
+        3667
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:665314820",
+      "count": 7,
+      "roiCounts": {
+        "EB": 7
+      },
+      "sourceRecords": [
+        3668
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:694920753",
+      "count": 30,
+      "roiCounts": {
+        "EB": 30
+      },
+      "sourceRecords": [
+        3669
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:695956656",
+      "count": 26,
+      "roiCounts": {
+        "EB": 26
+      },
+      "sourceRecords": [
+        3670
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:696362840",
+      "count": 18,
+      "roiCounts": {
+        "EB": 18
+      },
+      "sourceRecords": [
+        3671
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:725951521",
+      "count": 43,
+      "roiCounts": {
+        "EB": 43
+      },
+      "sourceRecords": [
+        3672
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:789126240",
+      "count": 36,
+      "roiCounts": {
+        "EB": 36
+      },
+      "sourceRecords": [
+        3673
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:819828986",
+      "count": 36,
+      "roiCounts": {
+        "EB": 36
+      },
+      "sourceRecords": [
+        3674
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:910438331",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        3675
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:1197993940",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        3676
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:5813014882",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        3677
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:5813022281",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        3678
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:5813027103",
+      "count": 45,
+      "roiCounts": {
+        "EB": 45
+      },
+      "sourceRecords": [
+        3679
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:634962055",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        3680
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:663190769",
+      "count": 12,
+      "roiCounts": {
+        "PB": 12
+      },
+      "sourceRecords": [
+        3681
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:665314820",
+      "count": 27,
+      "roiCounts": {
+        "EB": 27
+      },
+      "sourceRecords": [
+        3682
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:693755250",
+      "count": 35,
+      "roiCounts": {
+        "EB": 35
+      },
+      "sourceRecords": [
+        3683
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:758419409",
+      "count": 11,
+      "roiCounts": {
+        "EB": 11
+      },
+      "sourceRecords": [
+        3685
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:847336755",
+      "count": 11,
+      "roiCounts": {
+        "PB": 11
+      },
+      "sourceRecords": [
+        3686
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:849482511",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        3687
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:910438331",
+      "count": 25,
+      "roiCounts": {
+        "EB": 25
+      },
+      "sourceRecords": [
+        3689
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:912147912",
+      "count": 86,
+      "roiCounts": {
+        "PB": 66,
+        "EB": 20
+      },
+      "sourceRecords": [
+        3704,
+        3705
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:941123755",
+      "count": 27,
+      "roiCounts": {
+        "PB": 27
+      },
+      "sourceRecords": [
+        3707
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1065409934",
+      "count": 15,
+      "roiCounts": {
+        "EB": 15
+      },
+      "sourceRecords": [
+        4874
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1065410141",
+      "count": 32,
+      "roiCounts": {
+        "EB": 31,
+        "PB": 1
+      },
+      "sourceRecords": [
+        4875,
+        4876
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1127471692",
+      "count": 32,
+      "roiCounts": {
+        "PB": 27,
+        "EB": 5
+      },
+      "sourceRecords": [
+        4877,
+        4878
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1127476096",
+      "count": 30,
+      "roiCounts": {
+        "EB": 30
+      },
+      "sourceRecords": [
+        4879
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1168664495",
+      "count": 40,
+      "roiCounts": {
+        "EB": 37,
+        "PB": 3
+      },
+      "sourceRecords": [
+        4880,
+        4881
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1199677638",
+      "count": 5,
+      "roiCounts": {
+        "PB": 5
+      },
+      "sourceRecords": [
+        4882
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1220576923",
+      "count": 29,
+      "roiCounts": {
+        "EB": 29
+      },
+      "sourceRecords": [
+        4883
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1220584946",
+      "count": 23,
+      "roiCounts": {
+        "EB": 21,
+        "PB": 2
+      },
+      "sourceRecords": [
+        4884,
+        4885
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1353544607",
+      "count": 10,
+      "roiCounts": {
+        "PB": 10
+      },
+      "sourceRecords": [
+        4886
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1600083889",
+      "count": 19,
+      "roiCounts": {
+        "EB": 19
+      },
+      "sourceRecords": [
+        4887
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:5813012006",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        4888
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:5813014873",
+      "count": 13,
+      "roiCounts": {
+        "EB": 13
+      },
+      "sourceRecords": [
+        4889
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:5813077544",
+      "count": 35,
+      "roiCounts": {
+        "EB": 35
+      },
+      "sourceRecords": [
+        4892
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:570461892",
+      "count": 25,
+      "roiCounts": {
+        "EB": 25
+      },
+      "sourceRecords": [
+        4893
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:572870540",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        4894
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:632544268",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        4895
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:634608104",
+      "count": 15,
+      "roiCounts": {
+        "EB": 15
+      },
+      "sourceRecords": [
+        4896
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:695629525",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        4897
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:724280817",
+      "count": 21,
+      "roiCounts": {
+        "EB": 21
+      },
+      "sourceRecords": [
+        4898
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:972555509",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        4919
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:972892437",
+      "count": 11,
+      "roiCounts": {
+        "EB": 11
+      },
+      "sourceRecords": [
+        4920
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:973566036",
+      "count": 33,
+      "roiCounts": {
+        "EB": 33
+      },
+      "sourceRecords": [
+        4921
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1065409934",
+      "count": 55,
+      "roiCounts": {
+        "PB": 41,
+        "EB": 14
+      },
+      "sourceRecords": [
+        4923,
+        4924
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1065410141",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        4925
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1127471692",
+      "count": 5,
+      "roiCounts": {
+        "PB": 5
+      },
+      "sourceRecords": [
+        4926
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1127476096",
+      "count": 25,
+      "roiCounts": {
+        "EB": 25
+      },
+      "sourceRecords": [
+        4927
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1167995070",
+      "count": 43,
+      "roiCounts": {
+        "EB": 43
+      },
+      "sourceRecords": [
+        4929
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1220576923",
+      "count": 23,
+      "roiCounts": {
+        "EB": 23
+      },
+      "sourceRecords": [
+        4930
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1220584946",
+      "count": 29,
+      "roiCounts": {
+        "EB": 26,
+        "PB": 3
+      },
+      "sourceRecords": [
+        4931,
+        4932
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1353544607",
+      "count": 19,
+      "roiCounts": {
+        "PB": 19
+      },
+      "sourceRecords": [
+        4933
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1600083889",
+      "count": 13,
+      "roiCounts": {
+        "EB": 13
+      },
+      "sourceRecords": [
+        4934
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:5813012006",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        4935
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:5813014873",
+      "count": 14,
+      "roiCounts": {
+        "EB": 14
+      },
+      "sourceRecords": [
+        4936
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:5813047157",
+      "count": 11,
+      "roiCounts": {
+        "EB": 11
+      },
+      "sourceRecords": [
+        4937
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:5813077544",
+      "count": 56,
+      "roiCounts": {
+        "EB": 56
+      },
+      "sourceRecords": [
+        4939
+      ]
+    },
+    {
+      "pre": "hemibrain:1190171884",
+      "post": "hemibrain:1002852791",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        4940
+      ]
+    },
+    {
+      "pre": "hemibrain:1190171884",
+      "post": "hemibrain:1125964814",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        4941
+      ]
+    },
+    {
+      "pre": "hemibrain:1190171884",
+      "post": "hemibrain:1218728570",
+      "count": 27,
+      "roiCounts": {
+        "EB": 27
+      },
+      "sourceRecords": [
+        4942
+      ]
+    },
+    {
+      "pre": "hemibrain:1190171884",
+      "post": "hemibrain:1601771527",
+      "count": 35,
+      "roiCounts": {
+        "EB": 35
+      },
+      "sourceRecords": [
+        4943
+      ]
+    },
+    {
+      "pre": "hemibrain:1190171884",
+      "post": "hemibrain:5813070465",
+      "count": 31,
+      "roiCounts": {
+        "EB": 31
+      },
+      "sourceRecords": [
+        4944
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:633546217",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        4945
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:634962055",
+      "count": 15,
+      "roiCounts": {
+        "EB": 15
+      },
+      "sourceRecords": [
+        4946
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:663190769",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        4947
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:664650297",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        4948
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:665314820",
+      "count": 7,
+      "roiCounts": {
+        "EB": 7
+      },
+      "sourceRecords": [
+        4949
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:694920753",
+      "count": 32,
+      "roiCounts": {
+        "EB": 32
+      },
+      "sourceRecords": [
+        4950
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:695956656",
+      "count": 19,
+      "roiCounts": {
+        "EB": 19
+      },
+      "sourceRecords": [
+        4951
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:696362840",
+      "count": 18,
+      "roiCounts": {
+        "EB": 18
+      },
+      "sourceRecords": [
+        4952
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:725951521",
+      "count": 38,
+      "roiCounts": {
+        "EB": 38
+      },
+      "sourceRecords": [
+        4953
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:789126240",
+      "count": 48,
+      "roiCounts": {
+        "EB": 48
+      },
+      "sourceRecords": [
+        4954
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:819828986",
+      "count": 30,
+      "roiCounts": {
+        "EB": 30
+      },
+      "sourceRecords": [
+        4955
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:879183317",
+      "count": 7,
+      "roiCounts": {
+        "EB": 7
+      },
+      "sourceRecords": [
+        4956
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:941123755",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        4957
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:5813022281",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        4958
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:5813027103",
+      "count": 42,
+      "roiCounts": {
+        "EB": 42
+      },
+      "sourceRecords": [
+        4959
+      ]
+    },
+    {
+      "pre": "hemibrain:1199677638",
+      "post": "hemibrain:724280817",
+      "count": 11,
+      "roiCounts": {
+        "EB": 11
+      },
+      "sourceRecords": [
+        4960
+      ]
+    },
+    {
+      "pre": "hemibrain:1199677638",
+      "post": "hemibrain:848761388",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        4961
+      ]
+    },
+    {
+      "pre": "hemibrain:1199677638",
+      "post": "hemibrain:5813014873",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        4962
+      ]
+    }
+  ]
+}</script><script id="fly-worker" type="text/plain"></script><script>/* FLY LAB A — dependency-free core. Also runs unchanged in Node and Workers. */
+(function (root) {
+    'use strict';
+    const F = root.Fly = root.Fly || {};
+    F.VERSION = '0.1.0';
+    F.PROTOCOL = 'flylab.protocol.v1';
+    F.DT = 1 / 120;
+    F.clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+    F.wrap = x => Math.atan2(Math.sin(x), Math.cos(x));
+    F.mix = (a, b, t) => a + (b - a) * t;
+    F.TAU = 2 * Math.PI;
+    F.finite = (v, name = 'number') => { if (typeof v !== 'number' || !Number.isFinite(v))
+        throw Error(name + ' must be finite'); return v; };
+    F.clone = x => JSON.parse(JSON.stringify(x));
+    F.V = { add: (a, b) => a.map((x, i) => x + b[i]), sub: (a, b) => a.map((x, i) => x - b[i]), mul: (a, s) => a.map(x => x * s), dot: (a, b) => a.reduce((s, x, i) => s + x * b[i], 0), cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], len: a => Math.hypot(...a), norm: a => { let l = Math.hypot(...a); return l > 1e-10 ? a.map(x => x / l) : [1, 0, 0]; }, lerp: (a, b, t) => a.map((x, i) => F.mix(x, b[i], t)) };
+    class RNG {
+        constructor(seed = 42) { this.state = (seed >>> 0) || 1; }
+        next() { let x = this.state; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; this.state = x >>> 0; return this.state / 4294967296; }
+        signed() { return 2 * this.next() - 1; }
+    }
+    F.RNG = RNG;
+    class RingBuffer {
+        constructor(cap) { this.cap = cap; this.items = new Array(cap); this.cursor = 0; this.length = 0; }
+        push(v) { this.items[this.cursor] = v; this.cursor = (this.cursor + 1) % this.cap; this.length = Math.min(this.cap, this.length + 1); }
+        array() { let r = []; for (let i = 0; i < this.length; i++)
+            r.push(this.items[(this.cursor - this.length + i + this.cap) % this.cap]); return r; }
+        clear() { this.cursor = 0; this.length = 0; this.items.fill(undefined); }
+    }
+    F.RingBuffer = RingBuffer;
+})(globalThis);
+
+(function (F) {
+    'use strict';
+    // A uses receiver-normalized sqrt(synapse count), not an anatomical conductance.
+    function validateGraph(g) {
+        if (!g || g.schema !== 'flylab.connectome.v1' || !Array.isArray(g.nodes) || !Array.isArray(g.edges))
+            throw Error('연결망 형식이 flylab.connectome.v1이 아닙니다.');
+        if (g.nodes.length < 1 || g.nodes.length > 440 || g.edges.length > 100000)
+            throw Error('A 로더 한도: 실제 ID 440개 / 연결 100,000개 (보조 노드 포함 512개). C는 별도 계산기가 필요합니다.');
+        const ids = new Set();
+        for (const n of g.nodes) {
+            if (typeof n.id !== 'string' || n.id.length > 160 || ids.has(n.id) || !['EPG', 'PENa', 'PENb', 'PEG'].includes(n.type))
+                throw Error('노드 ID/형식 오류. A는 EPG/PENa/PENb/PEG를 지원합니다.');
+            if (!/^hemibrain:[0-9]+$/.test(n.id) || typeof n.bodyId !== 'string' || !/^\d+$/.test(n.bodyId) || n.id !== 'hemibrain:' + n.bodyId || typeof n.name !== 'string' || n.name.length > 200 || !['L', 'R'].includes(n.hemisphere) || !Number.isInteger(n.pbIndex) || n.pbIndex < 1 || n.pbIndex > 9)
+                throw Error('문자열 bodyId/hemibrain ID/좌우 분류 오류');
+            ids.add(n.id);
+            if (!Number.isInteger(n.indexFix) || n.indexFix < 1 || n.indexFix > 9)
+                throw Error('indexFix must be 1..9');
+            if (n.origin !== 'anatomical')
+                throw Error('해부학적 노드 origin 오류');
+        }
+        if (!g.nodes.some(n => n.type === 'EPG'))
+            throw Error('A 제어기에는 EPG 노드가 필요합니다.');
+        const seen = new Set();
+        for (const e of g.edges) {
+            if (!ids.has(e.pre) || !ids.has(e.post) || !Number.isFinite(e.count) || e.count <= 0)
+                throw Error('연결 대상/연결량 오류');
+            const k = e.pre + '|' + e.post;
+            if (seen.has(k))
+                throw Error('동일 뉴런 쌍의 ROI 연결은 먼저 합산해 주세요.');
+            seen.add(k);
+        }
+        return g;
+    }
+    class Circuit {
+        constructor(data) {
+            this.data = F.clone(validateGraph(data));
+            this.nodes = this.data.nodes.map(n => ({ ...n, angle: ((n.indexFix - 1) % 8) * F.TAU / 8, displayName: n.type + ' ' + n.hemisphere + n.pbIndex + ' · ' + n.bodyId.slice(-4) }));
+            this.realCount = this.nodes.length;
+            this.pop = {};
+            this.index = Object.create(null);
+            const add = (type, count, extra = {}) => { for (let k = 0; k < count; k++)
+                this.nodes.push({ id: 'model:' + type + ':' + k, name: type + ' ' + String(k + 1).padStart(2, '0'), displayName: type + ' ' + String(k + 1).padStart(2, '0'), type, origin: 'model', angle: k / count * F.TAU, ...extra }); };
+            add('HD', 16);
+            add('GOAL', 16);
+            add('PFL3-L', 16);
+            add('PFL3-R', 16);
+            add('DN', 2);
+            add('SENSE', 4);
+            add('ALT', 2);
+            this.nodes.forEach((n, i) => { this.index[n.id] = i; (this.pop[n.type] ??= []).push(i); });
+            this.N = this.nodes.length;
+            const incoming = Array.from({ length: this.N }, () => []);
+            for (const e of data.edges) {
+                incoming[this.index[e.post]].push([this.index[e.pre], Math.sqrt(e.count), e.count]);
+            }
+            this.rowPtr = new Uint32Array(this.N + 1);
+            const source = [], weight = [];
+            incoming.forEach((row, i) => { const sum = row.reduce((s, e) => s + e[1], 0) || 1; for (const e of row) {
+                source.push(e[0]);
+                weight.push(e[1] / sum);
+            } this.rowPtr[i + 1] = source.length; });
+            this.source = new Uint32Array(source);
+            this.weight = new Float64Array(weight);
+        }
+        propagate(a, gain = 1) { const r = new Float64Array(this.N); for (let j = 0; j < this.realCount; j++)
+            for (let k = this.rowPtr[j]; k < this.rowPtr[j + 1]; k++)
+                r[j] += this.weight[k] * a[this.source[k]] * gain; return r; }
+        catalog() { return this.nodes.map((n, i) => ({ ...n, index: i })); }
+    }
+    F.validateGraph = validateGraph;
+    F.Circuit = Circuit;
+})(globalThis.Fly);
+</script><script>/* Versioned, same-origin, one-request-at-a-time RPC. No local/mock fallback. */
+(function(F){
+'use strict';F.VERSION='0.2.0';F.DT=.005;F.PROTOCOL='flylab.protocol.v2';
+class BTransport{
+ constructor(){this.name='PYTHON · MuJoCo';this.next=1;this.pending=new Map();this.tail=Promise.resolve();this.closed=false;}
+ async connect(){
+  if(!['http:','https:'].includes(location.protocol)||!['127.0.0.1','localhost'].includes(location.hostname))throw Error('B는 Python 서버가 필요합니다. ZIP을 풀고 python run.py 실행 후 http://127.0.0.1:8765 에 접속하세요. HTML 더블클릭만으로 물리 계산을 실행하지 않습니다.');
+  const r=await fetch('/api/bootstrap',{cache:'no-store'});if(!r.ok)throw Error('로컬 서버 응답 오류 '+r.status);const config=await r.json();
+  if(config.protocol!==F.PROTOCOL)throw Error('서버/화면 프로토콜 버전이 다릅니다.');
+  if(!config.dependencies.ready&&!config.testDouble)throw Error(config.dependencies.hint+' 현재: '+JSON.stringify(config.dependencies.versions));
+  if(config.testDouble){document.body.classList.add('test-fixture');document.getElementById('verification-banner').textContent='UI TEST FIXTURE · 합성 테스트 상태 · 실제 물리 실행 화면 아님';this.name='TEST DOUBLE · NOT PHYSICS';}
+  await new Promise((resolve,reject)=>{
+   const ws=this.ws=new WebSocket((location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/ws');
+   const timer=setTimeout(()=>{ws.close();reject(Error('서버 연결 시간 초과'));},15000);
+   ws.onopen=()=>ws.send(JSON.stringify({protocol:F.PROTOCOL,token:config.token}));
+   ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data);}catch{return;}
+    if(m.authenticated){clearTimeout(timer);resolve();return;}
+    const p=this.pending.get(m.requestId);if(!p)return;this.pending.delete(m.requestId);clearTimeout(p.timer);
+    if(m.protocol!==F.PROTOCOL)p.reject(Error('프로토콜 불일치'));else if(m.ok)p.resolve(m.result);else p.reject(Error(m.error||'Server error'));
+   };
+   ws.onerror=()=>{clearTimeout(timer);reject(Error('WebSocket 연결 실패. 다른 관찰 창이 이미 연결되어 있는지 확인하세요.'));};
+   ws.onclose=()=>{clearTimeout(timer);this.closed=true;for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(Error('서버 연결이 끊겼습니다. 자동으로 A 계산기로 전환하지 않습니다.'));}this.pending.clear();reject(Error('서버 연결 종료'));};
+  });return config;
+ }
+ request(op,payload={}){const work=()=>new Promise((resolve,reject)=>{
+  if(this.closed||this.ws?.readyState!==WebSocket.OPEN){reject(Error('서버 미연결. 페이지를 다시 여세요.'));return;}
+  const id=this.next++;const timer=setTimeout(()=>{this.close();reject(Error('계산 응답 시간 초과. 서버 로그를 확인하세요.'));},300000);
+  this.pending.set(id,{resolve,reject,timer});this.ws.send(JSON.stringify({protocol:F.PROTOCOL,requestId:id,op,payload}));
+ });const p=this.tail.then(work);this.tail=p.catch(()=>{});return p;}
+ close(){this.closed=true;this.ws?.close();}
+}
+F.BTransport=BTransport;
+})(globalThis.Fly);
+
+(function (F) {
+    'use strict';
+    const { V, clamp, TAU } = F;
+    const M = { mul: (a, b) => { let o = new Float32Array(16); for (let c = 0; c < 4; c++)
+            for (let r = 0; r < 4; r++)
+                for (let k = 0; k < 4; k++)
+                    o[c * 4 + r] += a[k * 4 + r] * b[c * 4 + k]; return o; }, perspective: (f, a, n, z) => { let t = 1 / Math.tan(f / 2), m = new Float32Array(16); m[0] = t / a; m[5] = t; m[10] = (z + n) / (n - z); m[11] = -1; m[14] = 2 * z * n / (n - z); return m; }, look: (eye, target) => { const z = V.norm(V.sub(eye, target)), x = V.norm(V.cross([0, 1, 0], z)), y = V.cross(z, x); return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -V.dot(x, eye), -V.dot(y, eye), -V.dot(z, eye), 1]); }, transform: (m, p) => { let v = [...p, 1], r = [0, 0, 0, 0]; for (let i = 0; i < 4; i++)
+            for (let j = 0; j < 4; j++)
+                r[i] += m[j * 4 + i] * v[j]; return r; } };
+    function rgba(c, k = 1) { return `rgba(${c.slice(0, 3).map(x => Math.round(clamp(x * k) * 255)).join(',')},${c[3] ?? 1})`; }
+    class Geometry {
+        constructor() { this.triangles = []; this.lines = []; }
+        tri(a, b, c, color, normal = null) { const n = normal || V.norm(V.cross(V.sub(b, a), V.sub(c, a))); this.triangles.push({ p: [a, b, c], n, c: color }); }
+        line(a, b, c) { this.lines.push({ p: [a, b], c }); }
+        sphere(p, r, c, transform = x => x, U = 14, W = 8) { const at = (i, j) => { let v = i / W * Math.PI, u = j / U * TAU; return transform([p[0] + r[0] * Math.sin(v) * Math.cos(u), p[1] + r[1] * Math.cos(v), p[2] + r[2] * Math.sin(v) * Math.sin(u)]); }; const center = transform(p); for (let i = 0; i < W; i++)
+            for (let j = 0; j < U; j++) {
+                let a = at(i, j), b = at(i + 1, j), d = at(i, j + 1), e = at(i + 1, j + 1);
+                let n = V.norm(V.sub(V.mul(V.add(V.add(a, b), d), 1 / 3), center));
+                this.tri(a, b, d, c, n);
+                n = V.norm(V.sub(V.mul(V.add(V.add(d, b), e), 1 / 3), center));
+                this.tri(d, b, e, c, n);
+            } }
+        cylinder(a, b, r, c) { const d = V.norm(V.sub(b, a)), x = V.norm(V.cross(d, Math.abs(d[1]) > .9 ? [1, 0, 0] : [0, 1, 0])), y = V.cross(d, x); for (let j = 0; j < 6; j++) {
+            const n1 = V.add(V.mul(x, Math.cos(j * TAU / 6)), V.mul(y, Math.sin(j * TAU / 6))), n2 = V.add(V.mul(x, Math.cos((j + 1) * TAU / 6)), V.mul(y, Math.sin((j + 1) * TAU / 6))), p = V.add(a, V.mul(n1, r)), q = V.add(b, V.mul(n1, r)), s = V.add(a, V.mul(n2, r)), t = V.add(b, V.mul(n2, r));
+            this.tri(p, q, s, c, n1);
+            this.tri(s, q, t, c, n2);
+        } }
+        ring(p, r, color, axis = 'y') { let last = null; for (let i = 0; i <= 64; i++) {
+            let a = i / 64 * TAU, q = axis === 'y' ? [p[0] + Math.cos(a) * r, p[1], p[2] + Math.sin(a) * r] : [p[0] + Math.cos(a) * r, p[1] + Math.sin(a) * r, p[2]];
+            if (last)
+                this.line(last, q, color);
+            last = q;
+        } }
+    }
+    function addFly(g,b,mode){
+        if(!b.legs)return; // Never draw synthetic gait as measured physics.
+        const brown=[.51,.34,.16,1], dark=[.19,.15,.12,1], blue=[.21,.92,.79,1];
+        const basis=b.basis||[[1,0,0],[0,0,1],[0,-1,0]];
+        // Geometry is a schematic skin on the measured segment transforms.
+        const tr=p=>b.position.map((x,i)=>x+basis[i][0]*p[0]+basis[i][1]*p[1]+basis[i][2]*p[2]);
+        const seg=b.segments||{};
+        const at=center=>p=>center.map((x,i)=>x+basis[i][0]*p[0]+basis[i][1]*p[1]+basis[i][2]*p[2]);
+        g.sphere([0,0,0],[.63,.36,.34],brown,at(seg.c_thorax||b.position));
+        g.sphere([0,0,0],[.40,.31,.36],brown,at(seg.c_head||tr([.8,0,.1])));
+        g.sphere([0,0,0],[.81,.33,.32],brown,at(seg.c_abdomen||tr([-.95,0,-.02])));
+        const headAt=at(seg.c_head||tr([.8,0,.1]));
+        for(const side of [-1,1]){
+            g.sphere([.23,side*.26,.10],[.19,.22,.15],[.76,.20,.10,1],headAt);
+            g.cylinder(headAt([.30,side*.12,.15]),headAt([.60,side*.23,.22]),.023,dark);
+            const wing=[tr([.15,side*.25,.35]),tr([-.65,side*.8,.37]),tr([-1.70,side*.75,.28]),tr([-1.20,side*.28,.30])];
+            g.tri(wing[0],wing[1],wing[2],[.64,.86,.86,.35]);g.tri(wing[0],wing[2],wing[3],[.64,.86,.86,.35]);
+            for(let k=0;k<4;k++)g.line(wing[k],wing[(k+1)%4],[.55,.77,.75,.6]);
+        }
+        ['lf','lm','lh','rf','rm','rh'].forEach((leg,i)=>{
+            const chain=b.legs[leg]||[];for(let k=1;k<chain.length;k++){if(V.len(V.sub(chain[k],chain[k-1]))>.00001)g.cylinder(chain[k-1],chain[k],k<3?.04:.025,k<3?brown:dark);}
+            if(chain.length){const toe=chain[chain.length-1];g.sphere(toe,[.075,.055,.075],b.contactsBW[i]>.01?blue:[.6,.48,.3,1],x=>x,8,5);}
+        });
+    }
+    const vert = `attribute vec3 p;attribute vec3 n;attribute vec4 c;uniform mat4 vp;varying vec3 vn;varying vec3 pos;varying vec4 col;void main(){gl_Position=vp*vec4(p,1.);vn=n;pos=p;col=c;}`;
+    const frag = `precision mediump float;varying vec3 vn;varying vec3 pos;varying vec4 col;uniform vec3 eye;uniform float lit;void main(){vec3 cc=col.rgb;if(lit>.5){vec3 no=normalize(vn),l=normalize(vec3(-.4,.9,.6)),v=normalize(eye-pos);float s=pow(max(0.,dot(no,normalize(l+v))),30.);cc=cc*(.42+.65*max(0.,dot(no,l)))+vec3(.8,.9,.8)*s*.16;}float fog=smoothstep(28.,85.,distance(pos,eye))*.7;gl_FragColor=vec4(mix(cc,vec3(.026,.049,.061),fog),col.a);}`;
+    class WorldView {
+        constructor(canvas, overlay) {
+            this.canvas = canvas;
+            this.overlay = overlay;
+            this.theta = .82;
+            this.phi = .95;
+            this.distance = 15;
+            this.target = [-7, 3, -5];
+            this.follow = true;
+            this.firstPerson = false;
+            this.showTrail = true;
+            this.trail = new F.RingBuffer(1600);
+            this.lastTick = -1;
+            this.frame = null;
+            this.dpr = Math.min(devicePixelRatio || 1, 1.75);
+            this.engine = 'CANVAS 3D';
+            this.disposed = false;
+            let gl = null;
+            try {
+                if (!(globalThis.FLY_FORCE_SOFTWARE || location.search.includes('software=1')))
+                    gl = canvas.getContext('webgl', { alpha: false, antialias: true, preserveDrawingBuffer: true });
+            }
+            catch { }
+            if (gl) {
+                try {
+                    this.initGL(gl);
+                    this.engine = 'WEBGL';
+                }
+                catch (e) {
+                    console.warn('WebGL fallback', e);
+                    this.gl = null;
+                    canvas.replaceWith(canvas.cloneNode());
+                    this.canvas = document.querySelector('#world');
+                    this.ctx = this.canvas.getContext('2d');
+                }
+            }
+            else
+                this.ctx = canvas.getContext('2d');
+            this.resizeObserver = new ResizeObserver(() => this.resize());
+            this.resizeObserver.observe(this.canvas.parentElement);
+            this.resize();
+        }
+        initGL(gl) { this.gl = gl; const shader = (t, s) => { const x = gl.createShader(t); gl.shaderSource(x, s); gl.compileShader(x); if (!gl.getShaderParameter(x, gl.COMPILE_STATUS))
+            throw Error(gl.getShaderInfoLog(x)); return x; }; this.program = gl.createProgram(); gl.attachShader(this.program, shader(gl.VERTEX_SHADER, vert)); gl.attachShader(this.program, shader(gl.FRAGMENT_SHADER, frag)); gl.linkProgram(this.program); if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
+            throw Error('Shader link failure'); this.loc = { p: gl.getAttribLocation(this.program, 'p'), n: gl.getAttribLocation(this.program, 'n'), c: gl.getAttribLocation(this.program, 'c'), vp: gl.getUniformLocation(this.program, 'vp'), eye: gl.getUniformLocation(this.program, 'eye'), lit: gl.getUniformLocation(this.program, 'lit') }; this.buffer = gl.createBuffer(); gl.enable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); this.canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); this.lost = true; window.dispatchEvent(new CustomEvent('fly-render-error', { detail: 'WebGL 컨텍스트가 중단되었습니다. 체크포인트를 저장하고 다시 여세요.' })); }); }
+        resize() { const r = this.canvas.getBoundingClientRect(); this.width = Math.max(1, r.width); this.height = Math.max(1, r.height); for (const c of [this.canvas, this.overlay]) {
+            c.width = Math.round(this.width * this.dpr);
+            c.height = Math.round(this.height * this.dpr);
+        } if (this.gl)
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height); }
+        setFrame(f) { if (f.tick < this.lastTick)
+            this.trail.clear(); if (f.tick !== this.lastTick && (this.lastTick < 0 || f.tick % 12 < 4))
+            this.trail.push([...f.body.position]); this.frame = f; this.lastTick = f.tick; }
+        home() { this.follow = false; this.firstPerson = false; this.theta = .85; this.phi = .86; this.distance = 57; this.target = [0, 2.5, 0]; }
+        track() { this.follow = true; this.firstPerson = false; this.distance = 19; this.phi = .91; }
+        top() { this.firstPerson = false; this.follow = false; this.target = [0, 0, 0]; this.phi = .035; this.distance = 57; }
+        camera() { if (this.follow && this.frame)
+            this.target = V.lerp(this.target, this.frame.body.position, .12); if (this.firstPerson && this.frame) {
+            const b = this.frame.body;
+            this.eye = V.add(b.position, [Math.cos(b.yaw) * 1.6, .22, Math.sin(b.yaw) * 1.6]);
+            this.lookAt = V.add(this.eye, [Math.cos(b.yaw) * 10, -.4, Math.sin(b.yaw) * 10]);
+        }
+        else {
+            this.eye = V.add(this.target, [this.distance * Math.sin(this.phi) * Math.sin(this.theta), this.distance * Math.cos(this.phi), this.distance * Math.sin(this.phi) * Math.cos(this.theta)]);
+            this.lookAt = this.target;
+        } this.vp = M.mul(M.perspective(.78, this.width / this.height, .10, 180), M.look(this.eye, this.lookAt)); }
+        project(p) { const r = M.transform(this.vp, p); return { x: (r[0] / r[3] * .5 + .5) * this.width, y: (.5 - r[1] / r[3] * .5) * this.height, z: r[3], visible: r[3] > .15 }; }
+        pointOnPlane(x, y, h) { const f = V.norm(V.sub(this.lookAt, this.eye)), s = V.norm(V.cross(f, [0, 1, 0])), u = V.cross(s, f), t = Math.tan(.39), d = V.norm(V.add(f, V.add(V.mul(s, (x / this.width * 2 - 1) * t * this.width / this.height), V.mul(u, (1 - y / this.height * 2) * t)))); if (Math.abs(d[1]) < 1e-5)
+            return null; const k = (h - this.eye[1]) / d[1]; return k > 0 ? V.add(this.eye, V.mul(d, k)) : null; }
+        geometry() {
+            const f = this.frame, w = f.world, b = f.body, g = new Geometry(), X = w.bounds[0], Z = w.bounds[2], floor = [.04, .082, .095, 1];
+            g.tri([-X, 0, -Z], [X, 0, -Z], [-X, 0, Z], floor, [0, 1, 0]);
+            g.tri([-X, 0, Z], [X, 0, -Z], [X, 0, Z], floor, [0, 1, 0]);
+            for (let x = -X; x <= X; x += 2)
+                g.line([x, .02, -Z], [x, .02, Z], [.16, .31, .34, x % 8 === 0 ? .42 : .16]);
+            for (let z = -Z; z <= Z; z += 2)
+                g.line([-X, .02, z], [X, .02, z], [.16, .31, .34, z % 8 === 0 ? .42 : .16]);
+            const corners = [[-X, 0, -Z], [X, 0, -Z], [X, 0, Z], [-X, 0, Z]];
+            for (let i = 0; i < 4; i++) {
+                g.line(corners[i], corners[(i + 1) % 4], [.37, .60, .59, .45]);
+                const j=(i+1)%4, upA=V.add(corners[i],[0,4,0]),upB=V.add(corners[j],[0,4,0]);
+                g.line(corners[i],upA,[.24,.46,.47,.3]);g.line(upA,upB,[.24,.46,.47,.3]);
+                g.tri(corners[i],corners[j],upA,[.16,.24,.29,.09]);g.tri(upA,corners[j],upB,[.16,.24,.29,.09]);
+            }
+            for (const o of w.obstacles)
+                g.sphere(o.p, [o.r, o.r, o.r], [.16, .25, .29, 1], x => x, 12, 7);
+            for (const s of w.sources) {
+                const active = s.kind === 'hazard' || w.foodOn, c = s.kind === 'food' ? [.90, .66, .32] : [.85, .35, .34];
+                g.line([s.p[0], .06, s.p[2]], s.p, [...c, .2]);
+                g.ring(s.p, 1.1 + [Math.sin(f.simTime * .8) * .1], [...c, active ? .34 : .1]);
+                g.ring([s.p[0], .06, s.p[2]], .65, [...c, .30]);
+                g.sphere(s.p, [.23, .23, .23], [...c, active ? .9 : .25], x => x, 10, 6);
+                for (let j = 0; j < 12; j++) {
+                    let a = j * 2.4 + f.simTime * .3, q = V.add(s.p, [Math.cos(a) * (.5 + j * .035), Math.sin(a * .8) * .5, Math.sin(a) * (.5 + j * .035)]);
+                    g.line(q, V.add(q, [0, .08, 0]), [...c, active ? .4 : .1]);
+                }
+            }
+            // Same inner-wall stripe geometry used by the ray-receptor adapter.
+            const lc=w.cueOn?[.12,.83,.72,.9]:[.16,.21,.26,.5], lx=X-.20;
+            g.tri([lx,0,-2.8],[lx,6,-2.8],[lx,0,2.8],lc);
+            g.tri([lx,0,2.8],[lx,6,-2.8],[lx,6,2.8],lc);
+            if (this.showTrail) {
+                const ps = this.trail.array();
+                for (let i = 1; i < ps.length; i++)
+                    g.line(ps[i - 1], ps[i], [.35, .91, .79, .08 + .45 * i / ps.length]);
+            }
+            // Projected soft footprint is illustrative, not an optical shadow solver.
+            g.sphere([b.position[0], .035, b.position[2]], [1.55, .015, .72], [0, .02, .025, .32], x => x, 18, 3);
+            if (!this.firstPerson)
+                addFly(g, b, f.config.mode);
+            return g;
+        }
+        drawGL(g) {
+            const gl = this.gl;
+            if (this.lost)
+                return;
+            gl.clearColor(.026, .049, .061, 1);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.useProgram(this.program);
+            gl.uniformMatrix4fv(this.loc.vp, false, this.vp);
+            gl.uniform3fv(this.loc.eye, this.eye);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+            for (const [n, size, off] of [['p', 3, 0], ['n', 3, 12], ['c', 4, 24]]) {
+                gl.enableVertexAttribArray(this.loc[n]);
+                gl.vertexAttribPointer(this.loc[n], size, gl.FLOAT, false, 40, off);
+            }
+            const tris = [];
+            for (const t of g.triangles)
+                for (const p of t.p)
+                    tris.push(...p, ...t.n, ...t.c);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tris), gl.DYNAMIC_DRAW);
+            gl.uniform1f(this.loc.lit, 1);
+            gl.drawArrays(gl.TRIANGLES, 0, tris.length / 10);
+            const ls = [];
+            for (const l of g.lines)
+                for (const p of l.p)
+                    ls.push(...p, 0, 1, 0, ...l.c);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ls), gl.DYNAMIC_DRAW);
+            gl.uniform1f(this.loc.lit, 0);
+            gl.drawArrays(gl.LINES, 0, ls.length / 10);
+        }
+        drawSoftware(g) { const ctx = this.ctx; ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); ctx.fillStyle = '#071019'; ctx.fillRect(0, 0, this.width, this.height); const jobs = []; const light = V.norm([-.4, .9, .6]); for (const t of g.triangles) {
+            const p = t.p.map(v => this.project(v));
+            if (p.some(v => !v.visible))
+                continue;
+            const center = V.mul(t.p.reduce((a, b) => V.add(a, b), [0, 0, 0]), 1 / 3);
+            if (t.c[3] >= 1 && V.dot(t.n, V.sub(this.eye, center)) < 0)
+                continue;
+            jobs.push({ p, c: rgba(t.c, .42 + .65 * Math.max(0, V.dot(t.n, light))), z: p.reduce((s, v) => s + v.z, 0) / 3, tri: true });
+        } for (const l of g.lines) {
+            const p = l.p.map(v => this.project(v));
+            if (p.some(v => !v.visible))
+                continue;
+            jobs.push({ p, c: rgba(l.c), z: (p[0].z + p[1].z) / 2, tri: false });
+        } jobs.sort((a, b) => b.z - a.z); for (const j of jobs) {
+            ctx.beginPath();
+            ctx.moveTo(j.p[0].x, j.p[0].y);
+            for (let i = 1; i < j.p.length; i++)
+                ctx.lineTo(j.p[i].x, j.p[i].y);
+            if (j.tri) {
+                ctx.closePath();
+                ctx.fillStyle = j.c;
+                ctx.fill();
+                ctx.strokeStyle = j.c;
+                ctx.lineWidth = .35;
+                ctx.stroke();
+            }
+            else {
+                ctx.strokeStyle = j.c;
+                ctx.lineWidth = .75;
+                ctx.stroke();
+            }
+        } }
+        hud() { const ctx = this.overlay.getContext('2d'); ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); ctx.clearRect(0, 0, this.width, this.height); ctx.font = '10px ui-monospace,monospace'; for (const s of this.frame.world.sources) {
+            const p = this.project(s.p);
+            if (!p.visible || p.x < 0 || p.x > this.width)
+                continue;
+            ctx.fillStyle = s.kind === 'food' ? '#ddb980' : '#d98c88';
+            ctx.fillText(s.kind === 'food' ? 'ODOR +' : 'AVERSIVE', p.x + 10, p.y - 9);
+        } const p = this.project(this.frame.body.position); if (!this.firstPerson && p.visible) {
+            ctx.strokeStyle = '#79d6c944';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 6, 0, TAU);
+            ctx.stroke();
+            ctx.fillStyle = '#a1bcb9';
+            ctx.fillText('D. melanogaster · B', p.x + 15, p.y - 28);
+        } ctx.fillStyle = '#618583'; ctx.fillText('x / z: mm   y: height   •   MODEL SPACE', 18, this.height - 18); }
+        draw() { if (!this.frame || this.disposed)
+            return; this.camera(); const g = this.geometry(); this.gl ? this.drawGL(g) : this.drawSoftware(g); this.hud(); }
+        dispose() { this.disposed = true; this.resizeObserver.disconnect(); if (this.gl) {
+            this.gl.deleteBuffer(this.buffer);
+            this.gl.deleteProgram(this.program);
+        } }
+    }
+    F.WorldView = WorldView;
+    F.Geometry = Geometry;
+})(globalThis.Fly);
+
+(function (F) {
+    'use strict';
+    const palette = ['#7de2c4', '#e9bf7e', '#91b7ef', '#ed9789', '#d1b8e0', '#78c9dc', '#c6db94', '#ecb0c6'];
+    function setup(canvas) { const r = canvas.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2); if (!r.width || !r.height)
+        return null; const w = Math.round(r.width * d), h = Math.round(r.height * d); if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+    } const ctx = canvas.getContext('2d'); ctx.setTransform(d, 0, 0, d, 0, 0); ctx.clearRect(0, 0, r.width, r.height); return { ctx, w: r.width, h: r.height }; }
+    const heat = a => { a = F.clamp(a); const lo = [19, 43, 52], hi = [149, 235, 187], m = [34, 133, 113]; const c = a < .55 ? lo.map((x, i) => F.mix(x, m[i], a / .55)) : m.map((x, i) => F.mix(x, hi[i], (a - .55) / .45)); return 'rgb(' + c.map(Math.round).join(',') + ')'; };
+    function compass(canvas, f) {
+        const d = setup(canvas);
+        if (!d)
+            return;
+        const { ctx, w, h } = d, cx = w / 2, cy = h / 2, r = Math.min(w, h) * .40;
+        ctx.strokeStyle = '#29424a';
+        ctx.lineWidth = 1;
+        for (const radius of [r, r * .72]) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, F.TAU);
+            ctx.stroke();
+        }
+        ctx.font = '8px ui-monospace,monospace';
+        ctx.fillStyle = '#779599';
+        ctx.textAlign = 'center';
+        for (let k = 0; k < 8; k++) {
+            const a = k * F.TAU / 8, x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(cx + Math.cos(a) * (r - 4), cy + Math.sin(a) * (r - 4));
+            ctx.stroke();
+        }
+        ctx.fillText('0°', cx + r + 9, cy + 3);
+        ctx.fillText('90°', cx, cy + r + 10);
+        const bins = f.neural.headingBins;
+        for (let k = 0; k < 8; k++) {
+            const a = k / 8 * F.TAU;
+            ctx.strokeStyle = heat(bins[k]);
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r * .73, a - .25, a + .25);
+            ctx.stroke();
+        }
+        const arrow = (a, color, len, dash = false) => { ctx.strokeStyle = color; ctx.lineWidth = dash ? 1 : 1.8; ctx.setLineDash(dash ? [3, 3] : []); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * r * len, cy + Math.sin(a) * r * len); ctx.stroke(); ctx.setLineDash([]); if (!dash) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(cx + Math.cos(a) * r * len, cy + Math.sin(a) * r * len, 2.3, 0, F.TAU);
+            ctx.fill();
+        } };
+        arrow(f.body.yaw, '#829aaf', 1, true);
+        arrow(f.neural.goal, '#e9bf7e', .91);
+        arrow(f.neural.heading, '#7de2c4', .94);
+        ctx.fillStyle = '#d8e6dc';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 2, 0, F.TAU);
+        ctx.fill();
+    }
+    function sensors(canvas, f) { const d = setup(canvas); if (!d)
+        return; const { ctx, w, h } = d, s = f.sensors; if (!s)
+        return; ctx.fillStyle = '#729499'; ctx.font = '8px ui-monospace,monospace'; ctx.fillText('CUE', 0, 10); ctx.fillText('NEAR', 0, 44); const pad = 37, width = w - pad; for (let i = 0; i < 64; i++) {
+        ctx.fillStyle = heat(s.panorama[i]);
+        ctx.fillRect(pad + i * width / 64, 0, width / 64 - .6, 20);
+    } for (let i = 0; i < 9; i++) {
+        const v = 1 - s.nearRanges[i] / 10;
+        ctx.fillStyle = heat(v);
+        ctx.fillRect(pad + i * width / 9, 31, width / 9 - 3, 20);
+    } ctx.strokeStyle = '#3d5960'; ctx.beginPath(); ctx.moveTo(pad + width / 2, 22); ctx.lineTo(pad + width / 2, 27); ctx.stroke(); }
+    class NeuralMonitor {
+        constructor(catalog, graph) { this.setCatalog(catalog, graph); this.hits = []; this.cells = []; }
+        setCatalog(catalog, graph) { this.catalog = catalog; this.graph = graph; this.byId = Object.fromEntries(catalog.map(n => [n.id, n])); }
+        network(canvas, f, selected) {
+            const d = setup(canvas);
+            if (!d)
+                return;
+            const { ctx, w, h } = d, vals = Object.fromEntries(f.neural.ids.map((id, i) => [id, f.neural.values[i]]));
+            const layout = { EPG: [.38, .45, .255], PENa: [.79, .24, .105], PENb: [.79, .76, .105], PEG: [.13, .78, .090] }, pos = {};
+            this.hits = [];
+            for (const [type, [cx, cy, rr]] of Object.entries(layout)) {
+                const ns = this.catalog.filter(n => n.type === type);
+                const r = Math.min(w, h) * rr;
+                ns.forEach((n, i) => { const a = i / ns.length * F.TAU, p = { id: n.id, x: cx * w + r * Math.cos(a), y: cy * h + r * Math.sin(a) }; pos[n.id] = p; this.hits.push(p); });
+                ctx.fillStyle = '#8faeac';
+                ctx.font = '9px ui-monospace,monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(type, cx * w, cy * h + 3);
+                ctx.fillStyle = '#4e7177';
+                ctx.font = '7px ui-monospace,monospace';
+                ctx.fillText(ns.length + ' IDs', cx * w, cy * h + 14);
+            }
+            for (const e of this.graph.edges) {
+                const a = pos[e.pre], b = pos[e.post];
+                if (!a || !b)
+                    continue;
+                const relevant = e.pre === selected || e.post === selected;
+                ctx.strokeStyle = relevant ? '#7fe4c978' : '#39796b13';
+                ctx.lineWidth = relevant ? Math.min(1.6, .5 + e.count / 70) : .5;
+                ctx.beginPath();
+                ctx.moveTo(a.x, a.y);
+                const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+                ctx.quadraticCurveTo(mx, my - 7, b.x, b.y);
+                ctx.stroke();
+            }
+            const lesions = new Set(f.neural.lesions);
+            for (const p of this.hits) {
+                ctx.fillStyle = lesions.has(p.id) ? '#a76e68' : heat(vals[p.id] || 0);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.id === selected ? 4 : 2.2, 0, F.TAU);
+                ctx.fill();
+                if (p.id === selected) {
+                    ctx.strokeStyle = '#daf9e5';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+            ctx.textAlign = 'left';
+            ctx.font = '7px ui-monospace,monospace';
+            ctx.fillStyle = '#527c7a';
+            ctx.fillText('EB / PB · ' + this.graph.edges.length + ' PAIRS', 4, 10);
+            if (selected.startsWith('model:')) {
+                ctx.fillStyle = '#d7b884';
+                ctx.fillText('선택: 설계 노드 (아래 활성도 맵)', w * .33, h - 3);
+            }
+        }
+        heatmap(canvas, f, selected, filtered) {
+            const d = setup(canvas);
+            if (!d)
+                return;
+            const { ctx, w, h } = d, cols = 20, rows = Math.max(1, Math.ceil(filtered.length / cols)), gap = 2, cw = (w - gap * (cols - 1)) / cols, ch = Math.min(17, (h - gap * (rows - 1)) / rows), vals = Object.fromEntries(f.neural.ids.map((id, i) => [id, f.neural.values[i]])), lesions = new Set(f.neural.lesions);
+            this.cells = [];
+            filtered.forEach((n, i) => { const x = (i % cols) * (cw + gap), y = Math.floor(i / cols) * (ch + gap); ctx.fillStyle = heat(vals[n.id] || 0); ctx.fillRect(x, y, cw, ch); if (n.origin === 'model') {
+                ctx.fillStyle = '#c2a16c';
+                ctx.fillRect(x, y + ch - 1, cw, 1);
+            } if (lesions.has(n.id)) {
+                ctx.strokeStyle = '#e98c7c';
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + cw, y + ch);
+                ctx.stroke();
+            } if (n.id === selected) {
+                ctx.strokeStyle = '#e4f7dc';
+                ctx.lineWidth = 1.2;
+                ctx.strokeRect(x + .5, y + .5, cw - 1, ch - 1);
+            } this.cells.push({ id: n.id, x, y, w: cw, h: ch }); });
+            if (!filtered.length) {
+                ctx.fillStyle = '#7f9da0';
+                ctx.font = '11px sans-serif';
+                ctx.fillText('일치하는 노드가 없습니다.', 8, 27);
+            }
+        }
+        pickNetwork(x, y) { let best = null, d = 10; for (const p of this.hits) {
+            const k = Math.hypot(x - p.x, y - p.y);
+            if (k < d) {
+                best = p.id;
+                d = k;
+            }
+        } return best; }
+        pickHeat(x, y) { return this.cells.find(p => x >= p.x && x <= p.x + p.w && y >= p.y && y <= p.y + p.h)?.id; }
+    }
+    function timeline(canvas, history, pins, catalog, f) {
+        const d = setup(canvas);
+        if (!d)
+            return;
+        const { ctx, w, h } = d, pad = 29, right = 8, top = 10, bottom = 23, end = Math.max(12, f.simTime), start = Math.max(0, end - 120), iw = w - pad - right, ih = h - top - bottom;
+        ctx.font = '8px ui-monospace,monospace';
+        ctx.textAlign = 'right';
+        for (const v of [0, .25, .5, .75, 1]) {
+            const y = top + (1 - v) * ih;
+            ctx.strokeStyle = '#20343b';
+            ctx.beginPath();
+            ctx.moveTo(pad, y);
+            ctx.lineTo(w - right, y);
+            ctx.stroke();
+            ctx.fillStyle = '#729197';
+            ctx.fillText(v.toFixed(2), pad - 6, y + 3);
+        }
+        ctx.textAlign = 'center';
+        for (let i = 0; i <= 6; i++) {
+            const t = start + i * (end - start) / 6, x = pad + i * iw / 6;
+            ctx.fillStyle = '#6f8d95';
+            ctx.fillText(t.toFixed(0) + 's', x, h - 5);
+        }
+        pins.forEach((id, k) => { ctx.strokeStyle = palette[k % palette.length]; ctx.lineWidth = 1.5; ctx.beginPath(); let moved = false; for (const row of history) {
+            if (row.t < start)
+                continue;
+            const value = row.values[id];
+            if (value === undefined)
+                continue;
+            const x = pad + (row.t - start) / (end - start) * iw, y = top + (1 - value) * ih;
+            if (!moved) {
+                ctx.moveTo(x, y);
+                moved = true;
+            }
+            else
+                ctx.lineTo(x, y);
+        } ctx.stroke(); });
+    }
+    function pairedChart(canvas, r) { const d = setup(canvas); if (!d)
+        return; const { ctx, w, h } = d, pad = 33, iw = w - pad * 2, ih = h - pad * 2; ctx.font = '9px ui-monospace,monospace'; ctx.fillStyle = '#819da2'; ctx.textAlign = 'center'; const xy = p => [pad + (p[0] + 24) / 48 * iw, pad + (18 - p[2]) / 36 * ih]; for (let x = -24; x <= 24; x += 8) {
+        const [a, b] = xy([x, 0, -18]), [c, e] = xy([x, 0, 18]);
+        ctx.strokeStyle = '#223b43';
+        ctx.beginPath();
+        ctx.moveTo(a, b);
+        ctx.lineTo(c, e);
+        ctx.stroke();
+        ctx.fillText(String(x), a, h - 15);
+    } for (let z = -18; z <= 18; z += 6) {
+        const [a, b] = xy([-24, 0, z]), [c, e] = xy([24, 0, z]);
+        ctx.beginPath();
+        ctx.moveTo(a, b);
+        ctx.lineTo(c, e);
+        ctx.stroke();
+        ctx.fillText(String(z), 14, b + 3);
+    } r.runs.forEach((run, k) => { ctx.strokeStyle = palette[k]; ctx.lineWidth = 2; ctx.beginPath(); run.trace.forEach((s, i) => { const [x, y] = xy(s.p); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); const [x, y] = xy(run.trace.at(-1).p); ctx.fillStyle = palette[k]; ctx.beginPath(); ctx.arc(x, y, 3, 0, F.TAU); ctx.fill(); ctx.textAlign = 'left'; ctx.fillText(k ? '개입군' : '대조군', w - 120, 16 + k * 15); }); ctx.textAlign = 'center'; ctx.fillStyle = '#819da2'; ctx.fillText('x (mm)', w / 2, h - 1); }
+    F.Monitor = { NeuralMonitor, compass, sensors, timeline, pairedChart, heat, palette };
+})(globalThis.Fly);
+
+(function (F) {
+    'use strict';
+    const $ = id => document.getElementById(id), DEG = 180 / Math.PI;
+    const baseGraph = JSON.parse($('fly-data').textContent);
+    let transport = null, frame = null, catalog = [], graph = baseGraph, monitor = null, view = null;
+    let paused = false, busy = false, locked = false, speed = 1, accumulator = 0, lastWall = 0, lastHUD = 0, lastSample = -1, history = [], selected = '', pins = [], placement = null, paired = null, rafId = 0;
+    let selectedFilter = [], lastValues = {}, toastTimer = 0, fps = 0, fpsFrames = 0, fpsStart = performance.now();
+    const text = (id, s) => { $(id).textContent = s; }, button = (id, active) => $(id).classList.toggle('active', !!active);
+    function toast(s, error = false) { const e = $('toast'); e.textContent = s; e.classList.toggle('error', error); e.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => e.classList.remove('show'), 6000); }
+    function download(name, content, type = 'application/json') { const blob = content instanceof Blob ? content : new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+    const stamp = () => `seed${frame?.seed ?? $('seed').value}_tick${frame?.tick ?? 0}`;
+    function jsonDownload(name, data) { download(name, JSON.stringify(data, null, 2), 'application/json;charset=utf-8'); }
+    function setPaused(value) { paused = !!value; accumulator = 0; $('play-btn').textContent = paused ? '▶ 재생' : 'Ⅱ 일시정지'; $('play-btn').setAttribute('aria-pressed', String(paused)); button('play-btn', paused); }
+    function accept(f) { frame = f; if(f.physics?.fault){setPaused(true);toast(f.physics.fault,true);} updatePhysics(f); view.setFrame(f); lastValues = Object.fromEntries(f.neural.ids.map((id, i) => [id, f.neural.values[i]])); const s = Math.floor(f.simTime * 10 + 1e-5); if (s !== lastSample) {
+        history.push({ t: f.simTime, values: { ...lastValues } });
+        lastSample = s;
+        while (history.length > 1201 || history.length && history[0].t < f.simTime - 120)
+            history.shift();
+    } updateHUD(); return f; }
+    function configureReady(r) {
+        catalog = r.catalog;
+        graph = r.graph;
+        monitor = new F.Monitor.NeuralMonitor(catalog, graph);
+        history = [];
+        lastSample = -1;
+        view.trail.clear();
+        view.lastTick = -1;
+        const all = new Set(catalog.map(n => n.id));
+        selected = all.has(selected) ? selected : (catalog.find(n => n.type === 'EPG') || catalog[0]).id;
+        pins = pins.filter(id => all.has(id));
+        if (!pins.length)
+            pins = [selected, 'model:HD:0', 'model:PFL3-L:0', 'model:PFL3-R:0', 'model:DN:0', 'model:DN:1'].filter(id => all.has(id));
+        selectedFilter = catalog;
+        $('seed').value = String(r.frame.seed);
+        const real = catalog.filter(n => n.origin === 'anatomical').length, model = catalog.length - real;
+        text('node-count', String(catalog.length));
+        text('real-count', String(real));
+        text('model-count', String(model));
+        text('scope-text', `${graph.manifest?.userImport ? '사용자 자료 · 출처 미검증' : 'hemibrain 발췌'}  ${real} IDs · ${graph.edges.length} 연결  +  ${model} 설계 노드`);
+        text('selected-origin', '');
+        filterCatalog();
+        accept(r.frame);
+        syncControls();
+        renderLegend();
+        text('runtime', `${transport.name} · ${view.engine || '3D'} · 신경 5 ms · 물리 0.1 ms`);
+        return r;
+    }
+    function syncControls() { if (!frame)
+        return; const c = frame.config; $('mode-select').value = c.mode; $('task-select').value = c.task; $('goal-slider').value = String(Math.round(F.wrap(c.goalAngle) * DEG)); $('altitude-slider').value = String(c.altitude); text('goal-output', Math.round(c.goalAngle * DEG) + '°'); text('altitude-output', c.altitude.toFixed(1) + ' mm'); $('cue-toggle').checked = frame.world.cueOn; $('food-toggle').checked = frame.world.foodOn; $('motor-toggle').checked=c.motorCoupled; $('friction-slider').value=String(c.friction); text('friction-output',c.friction+'×'); }
+    async function command(type, payload = {}) { const f = await transport.request('command', { type, payload }); accept(f); syncControls(); return f; }
+    async function exclusive(fn) { if (locked)
+        throw Error('다른 파일/실험 작업이 진행 중입니다.'); locked = true; try {
+        while (busy)
+            await new Promise(resolve => setTimeout(resolve, 5));
+        return await fn();
+    }
+    finally {
+        locked = false;
+        accumulator = 0;
+        lastWall = performance.now();
+    } }
+    async function reset() { return exclusive(async () => { const seed = Number($('seed').value); if (!Number.isInteger(seed) || seed < 0 || seed > 4294967295)
+        throw Error('seed는 0~4294967295 정수여야 합니다.'); const r = await transport.request('init', { graph, seed, config: frame?.config || {} }); configureReady(r); view.track(); toast('동일한 seed와 기본 환경에서 다시 시작했습니다.'); return r; }); }
+    function choose(id) { if (!catalog.some(n => n.id === id))
+        return; selected = id; updateSelection(); drawMonitors(); }
+    function filterCatalog() { const q = $('search').value.trim().toLowerCase(), group = $('group-select').value; selectedFilter = catalog.filter(n => (group === 'all' || group === 'anatomical' && n.origin === 'anatomical' || n.type === group) && (!q || (n.id + ' ' + n.displayName + ' ' + n.name).toLowerCase().includes(q))); text('visible-count', `${selectedFilter.length} / ${catalog.length}`); drawMonitors(); }
+    function updateSelection() { if (!frame)
+        return; const n = catalog.find(n => n.id === selected); if (!n)
+        return; const real = n.origin === 'anatomical'; text('selected-origin', real ? 'ACTUAL ID · 계산된 활성도' : 'ENGINEERED · 설계 계산 노드'); $('selected-origin').classList.toggle('modeled', !real); text('selected-name', n.displayName || n.name); text('selected-id', n.id); text('selected-value', (lastValues[selected] ?? 0).toFixed(3)); const ins = graph.edges.filter(e => e.post === selected).length, outs = graph.edges.filter(e => e.pre === selected).length; text('selected-info', real ? `${n.name} · 발췌 입력 ${ins} / 출력 ${outs}` : `${n.type} · 해부학적 ID 아님 · 모델 내부 연산`); const lesion = frame.neural.lesions.includes(selected); $('suppress-btn').textContent = lesion ? '억제 해제' : '활성 억제'; button('suppress-btn', lesion); $('pin-btn').textContent = pins.includes(selected) ? '고정 해제' : '그래프 고정'; button('pin-btn', pins.includes(selected)); button('left-lesion-btn', frame.neural.lesions.some(id => id.startsWith('model:PFL3-L:'))); }
+    function updateHUD() { if (!frame)
+        return; const f = frame; const t = f.simTime; text('time', `${Math.floor(t / 60).toString().padStart(2, '0')}:${(t % 60).toFixed(1).padStart(4, '0')}`); text('behavior', f.neural.recoveryActive ? 'BACK OFF · 접촉 후진' : f.neural.avoidanceActive ? 'AVOID · 회피 회전' : f.neural.behavior === 'dwell' ? 'DWELL · 머무름' : f.config.task === 'heading' ? 'HEADING · 방향 유지' : 'EXPLORE · 탐색'); text('distance', f.body.travel.toFixed(1)); text('height', f.body.position[1].toFixed(2)); text('velocity', f.body.speed.toFixed(2)); text('yaw-output', (f.neural.output.yawRate * DEG).toFixed(1)); text('contacts', String(f.body.collisions)); text('confidence', (f.neural.confidence * 100).toFixed(0) + '%'); text('estimated-heading', Math.round(F.wrap(f.neural.heading) * DEG) + '°'); text('goal-heading', Math.round(F.wrap(f.neural.goal) * DEG) + '°'); text('true-heading', Math.round(F.wrap(f.body.yaw) * DEG) + '°'); text('cue-state', f.world.cueOn ? 'ON · 시각 기준' : 'OFF · 암전'); text('odor-state', f.world.foodOn ? (f.sensors?.odor?.reduce((a, b) => a + b, 0) / 2 || 0).toFixed(2) : 'OFF'); text('recording-info', `계산기 기록 10 Hz · 최근 ${Math.min(120, t).toFixed(0)} s · ${f.recording.samples} samples`); text('events', f.events.slice(-4).map(e => `[${e.time.toFixed(1)}s] ${e.message}`).reverse().join('   /   ') || '실험이 시작되었습니다. 뉴런을 선택하거나 환경을 변경해 보세요.'); updateSelection(); }
+    function updatePhysics(f){
+      if(!f.physics)return;const p=f.physics;
+      text('physics-status',p.testDouble?'TEST FIXTURE':p.backend);
+      text('physical-clock',p.physicsTime.toFixed(3)+' s');
+      text('descending-value',p.descending.map(x=>x.toFixed(3)).join(' / '));
+      text('native-count','42 active DOFs · 6 feet');
+      text('physics-fault',p.fault || (f.body.contact ? '벽·장애물 또는 몸통 접촉 감지' : f.neural.avoidanceActive ? '회피 회전 중 · 전방 여유 공간 확인' : '수치 이상 감지 없음 · 행동 성공 판정은 아님'));
+      const feet=$('feet-bars');if(!feet.children.length){['LF','LM','LH','RF','RM','RH'].forEach(n=>{const cell=document.createElement('div');cell.innerHTML='<b>'+n+'</b><meter min="0" max="3" value="0"></meter><span>0.00 BW</span>';feet.append(cell);});}
+      Array.from(feet.children).forEach((c,i)=>{const v=p.contactsBW[i];c.querySelector('meter').value=Math.min(3,v);c.querySelector('span').textContent=v.toFixed(2)+' BW';c.classList.toggle('touching',v>.01);});
+      const rows=$('joint-rows');if(rows.children.length!==p.jointNames.length){rows.replaceChildren();p.jointNames.forEach((name)=>{const r=document.createElement('tr');for(let k=0;k<4;k++)r.append(document.createElement('td'));r.children[0].textContent=name;rows.append(r);});}
+      Array.from(rows.children).forEach((r,i)=>{r.children[1].textContent=p.jointAngles[i].toFixed(3);r.children[2].textContent=p.jointTargets[i].toFixed(3);r.children[3].textContent=p.actuatorForces[i].toFixed(3);});
+    }
+    function drawMonitors() { if (!frame || !monitor)
+        return; F.Monitor.compass($('compass'), frame); F.Monitor.sensors($('sensors'), frame); monitor.network($('network'), frame, selected); monitor.heatmap($('heatmap'), frame, selected, selectedFilter); F.Monitor.timeline($('timeline'), history, pins, catalog, frame); if ($('paired-dialog').open && paired)
+        F.Monitor.pairedChart($('paired-chart'), paired); }
+    function renderLegend() { const parent = $('trace-legend'); parent.replaceChildren(); pins.forEach((id, i) => { const n = catalog.find(n => n.id === id), b = document.createElement('button'); b.type = 'button'; b.className = 'trace-chip'; b.style.setProperty('--trace-color', F.Monitor.palette[i]); b.textContent = n?.displayName || id; b.title = '클릭: 이 노드 선택'; b.onclick = () => choose(id); parent.append(b); }); }
+    function on(id, event, fn) { $(id).addEventListener(event, async (e) => { try {
+        await fn(e);
+    }
+    catch (err) {
+        toast(err.message || String(err), true);
+    } }); }
+    function openDialog(id) { const d = $(id); if (!d.open)
+        d.showModal(); requestAnimationFrame(drawMonitors); }
+    function initControls() {
+        on('push-btn','click',()=>command('push',{bw:.5,duration:.05}));
+        on('motor-toggle','change',()=>command('configure',{motorCoupled:$('motor-toggle').checked}));
+        on('friction-slider','input',()=>text('friction-output',$('friction-slider').value+'×'));
+        on('friction-slider','change',()=>command('configure',{friction:Number($('friction-slider').value)}));
+        on('physics-csv-btn','click',()=>exclusive(async()=>download(`FLY_LAB_B_physics_${stamp()}.csv`,await transport.request('physicsCsv'),'text/csv;charset=utf-8')));
+        on('native-preview-btn','click',()=>exclusive(async()=>{const r=await transport.request('preview');$('native-preview').src=r.image;$('native-preview').hidden=false;text('native-preview-caption',r.label+' · tick '+r.tick);}));
+
+        on('play-btn', 'click', () => setPaused(!paused));
+        on('step-btn', 'click', () => exclusive(async () => { setPaused(true); accept(await transport.request('advance', { steps: 10 })); drawMonitors(); }));
+        on('speed-select', 'change', () => { speed = Number($('speed-select').value); accumulator = 0; });
+        on('mode-select', 'change', () => command('configure', { mode: $('mode-select').value }));
+        on('reset-btn', 'click', reset);
+        on('seed-btn', 'click', reset);
+        on('follow-btn', 'click', () => { view.track(); view.firstPerson = false; button('eye-btn', false); button('follow-btn', true); });
+        on('home-btn', 'click', () => { view.home(); view.firstPerson = false; button('eye-btn', false); button('follow-btn', false); });
+        on('top-btn', 'click', () => { view.top(); view.firstPerson = false; button('eye-btn', false); button('follow-btn', false); });
+        on('eye-btn', 'click', () => { view.firstPerson = !view.firstPerson; button('eye-btn', view.firstPerson); text('camera-hint', view.firstPerson ? '개체 시점 · 실제 복안 영상 아님' : '드래그 회전 · 휠 확대 · F 추적'); });
+        on('cue-toggle', 'change', () => command('cue', { enabled: $('cue-toggle').checked }));
+        on('food-toggle', 'change', () => command('food', { enabled: $('food-toggle').checked }));
+        on('task-select', 'change', () => command('configure', { task: $('task-select').value }));
+        on('goal-slider', 'input', () => text('goal-output', $('goal-slider').value + '°'));
+        on('goal-slider', 'change', () => command('configure', { goalAngle: Number($('goal-slider').value) / DEG }));
+        on('altitude-slider', 'input', () => text('altitude-output', Number($('altitude-slider').value).toFixed(1) + ' mm'));
+        on('altitude-slider', 'change', () => command('configure', { altitude: Number($('altitude-slider').value) }));
+        on('search', 'input', filterCatalog);
+        on('group-select', 'change', filterCatalog);
+        for (const [id, method] of [['network', 'pickNetwork'], ['heatmap', 'pickHeat']])
+            on(id, 'click', e => { const r = $(id).getBoundingClientRect(), hit = monitor[method](e.clientX - r.left, e.clientY - r.top); if (hit)
+                choose(hit); });
+        on('stim-btn', 'click', () => command('intervene', { kind: 'stimulate', ids: [selected], amplitude: .65, duration: 2 }));
+        on('suppress-btn', 'click', () => command('intervene', { kind: frame.neural.lesions.includes(selected) ? 'release' : 'suppress', ids: [selected] }));
+        on('left-lesion-btn', 'click', () => command('intervene', { kind: frame.neural.lesions.some(id => id.startsWith('model:PFL3-L:')) ? 'release' : 'suppress', ids: catalog.filter(n => n.type === 'PFL3-L').map(n => n.id) }));
+        on('release-btn', 'click', () => command('releaseAll'));
+        on('pin-btn', 'click', () => { if (pins.includes(selected))
+            pins = pins.filter(id => id !== selected);
+        else {
+            if (pins.length >= 8)
+                throw Error('그래프는 최대 8개입니다. 다른 고정을 해제해 주세요.');
+            pins.push(selected);
+        } renderLegend(); updateSelection(); drawMonitors(); });
+        document.querySelectorAll('[data-place]').forEach(b => b.addEventListener('click', () => { placement = placement === b.dataset.place ? null : b.dataset.place; document.querySelectorAll('[data-place]').forEach(x => x.classList.toggle('active', x.dataset.place === placement)); $('placement-banner').hidden = !placement; text('placement-banner', placement ? `${b.textContent.trim()} · 3D 공간을 클릭해 배치 / Esc 취소` : ''); }));
+        on('clear-added-btn', 'click', () => command('clearAdded'));
+        const canvas = view.canvas;
+        let drag = null;
+        canvas.style.touchAction = 'none';
+        canvas.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY, moved: false }; canvas.setPointerCapture(e.pointerId); });
+        canvas.addEventListener('pointermove', e => { if (!drag)
+            return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > 5)
+            drag.moved = true; if (!placement) {
+            view.theta -= dx * .006;
+            view.phi = F.clamp(view.phi + dy * .005, .035, 1.52);
+            view.firstPerson = false;
+            button('eye-btn', false);
+        } drag.x = e.clientX; drag.y = e.clientY; });
+        canvas.addEventListener('pointerup', async (e) => { const d = drag; drag = null; if (!d || d.moved || !placement)
+            return; try {
+            const r = canvas.getBoundingClientRect(), h = Number($('place-height').value);
+            if (!Number.isFinite(h) || h < .2 || h > 14)
+                throw Error('배치 높이는 0.2~14 mm여야 합니다.');
+            view.camera();
+            const p = view.pointOnPlane(e.clientX - r.left, e.clientY - r.top, h);
+            if (!p)
+                throw Error('이 시점에서는 배치 평면을 볼 수 없습니다. 전체 보기를 사용해 주세요.');
+            await command('place', { kind: placement, position: p });
+            toast('환경에 배치했습니다. Esc로 배치 모드를 종료합니다.');
+        }
+        catch (err) {
+            toast(err.message, true);
+        } });
+        canvas.addEventListener('pointercancel', () => drag = null);
+        canvas.addEventListener('wheel', e => { e.preventDefault(); view.distance = F.clamp(view.distance * Math.exp(e.deltaY * .001), 5, 125); }, { passive: false });
+        on('csv-btn', 'click', () => exclusive(async () => download(`FLY_LAB_B_${stamp()}.csv`, await transport.request('csv'), 'text/csv;charset=utf-8')));
+        on('checkpoint-btn', 'click', () => exclusive(async () => jsonDownload(`FLY_LAB_B_checkpoint_${stamp()}.json`, await transport.request('checkpoint'))));
+        on('graph-download', 'click', () => exclusive(async () => jsonDownload('FLY_LAB_B_connectome.json', await transport.request('graph'))));
+        on('replay-export-btn', 'click', () => exclusive(async () => jsonDownload(`FLY_LAB_B_replay_${stamp()}.json`, await transport.request('exportReplay'))));
+        on('photo-btn', 'click', () => { view.draw(); const c = document.createElement('canvas'); c.width = view.canvas.width; c.height = view.canvas.height; const x = c.getContext('2d'); x.drawImage(view.canvas, 0, 0); x.drawImage(view.overlay, 0, 0); c.toBlob(b => { if (b)
+            download(`FLY_LAB_B_view_${stamp()}.png`, b);
+        else
+            toast('이미지 저장 실패', true); }, 'image/png'); });
+        on('load-state-btn', 'click', () => $('state-file').click());
+        on('load-graph-btn', 'click', () => $('graph-file').click());
+        async function readJSON(input) { const file = input.files[0]; input.value = ''; if (!file)
+            return null; if (file.size > 10 * 1024 * 1024)
+            throw Error('B의 가져오기 한도는 파일당 10 MB입니다.'); return JSON.parse(await file.text()); }
+        on('state-file', 'change', () => exclusive(async () => { const s = await readJSON($('state-file')); if (!s)
+            return; const op = s.schema === 'flylab.checkpoint.v2' ? 'restore' : s.schema === 'flylab.replay.v2' ? 'replay' : s.schema === 'flylab.experiment.v2' ? 'initExperiment' : null; if (!op)
+            throw Error('체크포인트 또는 리플레이 파일이 아닙니다.'); const r = await transport.request(op, s); configureReady(r); $('seed').value = String(s.seed ?? s.initial?.seed ?? 42); setPaused(true); toast('파일을 복원했습니다. 재생을 누르면 이어서 계산합니다.'); }));
+        on('graph-file', 'change', () => exclusive(async () => { const s = await readJSON($('graph-file')); if (!s)
+            return; F.validateGraph(s); s.manifest = { ...(s.manifest || {}), userImport: true, scope: 'user_import_unverified', neurons: s.nodes.length, directedPairs: s.edges.length }; const r = await transport.request('init', { graph: s, seed: Number($('seed').value), config: frame.config }); configureReady(r); toast('사용자 연결망을 적용하고 기록을 초기화했습니다. 출처는 인증되지 않았습니다.'); }));
+        on('paired-btn', 'click', () => exclusive(async () => { const wasPaused = paused; setPaused(true); $('paired-btn').disabled = true; try {
+            paired = await transport.request('paired', { kind: $('experiment-kind').value, seconds: 4 });
+            text('paired-summary', `대조군 대비 평균 경로 차이 ${paired.meanPathSeparation.toFixed(2)} mm`);
+            text('paired-title', '같은 시작 상태 · 두 개의 경로');
+            const box = $('paired-metrics');
+            box.replaceChildren();
+            for (const run of paired.runs) {
+                const card = document.createElement('div');
+                card.className = 'paired-metric';
+                const title = document.createElement('strong');
+                title.textContent = run.variant === 'control' ? '대조군' : '개입군';
+                const p = document.createElement('p');
+                p.textContent = `이동 ${run.metrics.distance.toFixed(2)} mm · 방향 오차 ${run.metrics.meanHeadingErrorDeg.toFixed(1)}° · 접촉 ${run.metrics.collisions}`;
+                card.append(title, p);
+                box.append(card);
+            }
+            const note = document.createElement('p');
+            note.className = 'muted';
+            note.textContent = `시뮬레이션 4초, 1초 시점 개입. 평균 경로 차이 ${paired.meanPathSeparation.toFixed(3)} mm. 현재 실험 상태는 변경되지 않습니다. 실제 초파리의 실험 결과가 아닙니다.`;
+            box.append(note);
+            openDialog('paired-dialog');
+        }
+        finally {
+            $('paired-btn').disabled = false;
+            setPaused(wasPaused);
+        } }));
+        on('paired-export', 'click', () => { if (paired)
+            jsonDownload(`FLY_LAB_B_paired_${paired.kind}.json`, paired); });
+        on('about-btn', 'click', () => openDialog('about-dialog'));
+        on('architecture-btn', 'click', () => openDialog('architecture-dialog'));
+        document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => $(b.dataset.close).close()));
+        document.addEventListener('keydown', e => { if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || document.querySelector('dialog[open]'))
+            return; if (e.code === 'Space') {
+            e.preventDefault();
+            setPaused(!paused);
+        }
+        else if (e.key.toLowerCase() === 'f')
+            view.track();
+        else if (e.key.toLowerCase() === 'r')
+            reset().catch(err => toast(err.message, true));
+        else if (e.key === 'Escape') {
+            placement = null;
+            $('placement-banner').hidden = true;
+            document.querySelectorAll('[data-place]').forEach(b => b.classList.remove('active'));
+        } });
+        document.addEventListener('visibilitychange', () => { accumulator = 0; lastWall = performance.now(); });
+        window.addEventListener('resize', drawMonitors);
+        window.addEventListener('fly-render-error', () => { text('render-error', '그래픽 컨텍스트가 중단되었습니다. 파일을 다시 열어 주세요.'); $('render-error').hidden = false; });
+    }
+    function animate(now) {
+        rafId = requestAnimationFrame(animate);
+        if (!frame)
+            return;
+        const elapsed = Math.min((now - lastWall) / 1000, .1);
+        lastWall = now;
+        if (document.hidden) {
+            accumulator = 0;
+            return;
+        }
+        if (!paused && !locked) {
+            accumulator = Math.min(accumulator + elapsed * speed, .3 * speed);
+            if (!busy) {
+                const n = Math.min(10, Math.floor(accumulator / F.DT));
+                if (n > 0) {
+                    busy = true;
+                    accumulator -= n * F.DT;
+                    transport.request('advance', { steps: n }).then(accept).catch(e => { setPaused(true); toast(e.message, true); }).finally(() => busy = false);
+                }
+            }
+        }
+        view.draw();
+        fpsFrames++;
+        if (now - fpsStart > 1000) {
+            fps = fpsFrames * 1000 / (now - fpsStart);
+            fpsFrames = 0;
+            fpsStart = now;
+            text('runtime', `${transport.name} · ${view.engine} · ${fps.toFixed(0)} FPS · 신경 5 ms · 물리 0.1 ms`);
+        }
+        if (now - lastHUD > 100) {
+            drawMonitors();
+            lastHUD = now;
+        }
+    }
+    async function start() { try {
+        view = new F.WorldView($('world'), $('world-overlay'));
+        text('backend-state','로컬 물리 서버 연결 중…');
+        transport = new F.BTransport();
+        await transport.connect();
+        text('backend-state','모델 구성·접촉 안정화 중…');
+        const ready=await transport.request('init',{graph:baseGraph,seed:42});
+        $('backend-gate').hidden=true;
+        configureReady(ready);
+        initControls();
+        setPaused(false);
+        lastWall = performance.now();
+        requestAnimationFrame(animate);
+        window.flyLab.ready = true;
+        return ready;
+    }
+    catch (err) {
+        toast('시작 실패: ' + err.message, true);text('backend-state',err.message);$('backend-gate').hidden=false;
+        $('render-error').hidden = false;
+        text('render-error', '실행할 수 없습니다: ' + err.message);
+        throw err;
+    } }
+    window.flyLab = { ready: false, get frame() { return frame; }, get catalog() { return catalog; }, get transport() { return transport; }, get view() { return view; }, get selected() { return selected; }, get paused() { return paused; }, get paired() { return paired; }, command, choose, setPaused, reset, async advanceSteps(n) { return exclusive(async () => { setPaused(true); while (n > 0) {
+            const m = Math.min(n, 10);
+            accept(await transport.request('advance', { steps: m }));
+            n -= m;
+        } view.draw(); drawMonitors(); return frame; }); }, async checkpoint() { return exclusive(() => transport.request('checkpoint')); }, async restore(s) { return exclusive(async () => { configureReady(await transport.request('restore', s)); setPaused(true); return frame; }); }, dispose() { cancelAnimationFrame(rafId); transport?.close(); view?.dispose(); } };
+    window.flyLab.readyPromise = start(); window.flyLab.readyPromise.catch(()=>{});
+})(globalThis.Fly);
+</script></body></html>

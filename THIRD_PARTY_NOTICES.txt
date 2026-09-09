@@ -1,0 +1,49 @@
+FLY LAB A — third-party attribution
+
+Data excerpt:
+  SEISMIC: State Estimation/Integration of Sensors from Miniature Insect Connectome
+  https://github.com/aplbrain/seismic
+  Commit: 1a789eefc2ca03c1f79e283069e41d20d12ed91f
+  Source: neuroaiengines/networks/hemibrain_conn_df_both.csv
+  The source repository uses the hemibrain v1.2.1 dataset from Janelia/neuPrint.
+  Only 192 selected ROI rows are redistributed. This is not a complete connectome.
+  See docs/DATA_PROVENANCE.md for scope, transformations, original row references.
+
+Upstream repository license:
+
+MIT License
+
+Copyright (c) 2022 The Johns Hopkins University Applied Physics Laboratory
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+The FLY LAB A application is a separate, engineered demonstrator. It is not
+an official SEISMIC, Janelia, FlyWire, OpenWorm, or NeuroMechFly release.
+No third-party JavaScript runtime, model weights, fonts, or 3D scan meshes
+are bundled in this build. System fonts are referenced, not distributed.
+
+B extension dependencies (installed separately, not bundled):
+  FlyGym / NeuroMechFly: Apache-2.0
+  https://github.com/NeLy-EPFL/flygym
+  Pinned source commit: ca65a510c2afe6ac61c51df4f274c8d190c2f95f (v2.1.0)
+  Public HybridTurningController and model assets are provided by upstream.
+  MuJoCo: Apache-2.0, https://github.com/google-deepmind/mujoco
+
+The B application's synthetic UI fixtures and screenshots are NOT physical
+simulation results. They test interfaces and layout only.

@@ -1,0 +1,1011 @@
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,7 @@
++.venv/
++__pycache__/
++*.py[cod]
++.DS_Store
++__MACOSX/
++verification/
++*.log
+--- a/README.md
++++ b/README.md
+@@ -1,3 +1,25 @@
++# FLY LAB B · fix_2 보완판
++
++고착 검증의 감시 공백, 장애물 ±135도 후보 누락, 체크포인트 복원 범위/원자성을 수정했습니다. 기존 v0.2.1의 보행·신경 동역학, 데이터, 의존성, UI는 유지했습니다. 따라서 유효한 v0.2.1 체크포인트를 사용할 수 있습니다.
++
++**현재 확인 범위:** 회귀 95개 PASS, 제공된 실제 물리 기록의 재분석. 탐색 8개와 캠페인 33조건의 원자료를 새 기준/일관성 검사로 확인했습니다. **fix_2의 새로운 FlyGym/MuJoCo 물리 실행은 이번 턴에서 수행하지 않았습니다.** 아래에 남긴 v0.2.1 로컬 검증은 과거 원자료이며 새 실행 결과가 아닙니다.
++
++전체 설명: [docs/REASSESSMENT_FIX2.md](docs/REASSESSMENT_FIX2.md)
++
++ZIP에는 원시 `verification/wall_fix_20260909/`, 변경 전 코드 ZIP, 새 회귀 로그/재평가 결과가 함께 들어 있습니다. 입력 파일의 FAIL/PASS를 덮어쓰지 않았습니다.
++
++```bash
++cd FLY_LAB_B_fix_2
++# 기존 Python 가상환경에서 실행; 의존성 변경 없음
++python -m unittest tests.test_core tests.test_server tests.test_validation tests.test_avoidance tests.test_fix2 -v
++python tools/reevaluate_evidence.py --out verification/fix2_recheck/reevaluation.json
++python run.py
++```
++
++새 물리 실험의 결과는 `verification/fix2_native/` 등 새 디렉터리에 저장하세요. 복원 범위를 넘는 타이머는 조용히 보정하지 않고 거절합니다. 원래 버전의 UI/설치/모델 설명은 아래에 보존했습니다.
++
++---
++
+ # FLY LAB B · 물리 보행 통합본
+ 
+ **v0.2.1 · Python / FlyGym 2.1.0 / MuJoCo 3.9.x · C 확장을 위한 B 단계**
+--- /dev/null
++++ b/docs/FIX1_CHECKSUMS.sha256
+@@ -0,0 +1,54 @@
++a62866ebc90eef5e81556cee753dad4a02ebac4e0bdb35d2d26f0d5c4af7f73c  .gitignore
++39f71e6b42bfc985dfe99fc0ce7437b7048c8b50d21fa863a8a958f9f5dffa02  FLY_LAB_B.html
++4a1490ef1a57093948b7797fcfc2726a6845b52808bb3b36aec8c4cfc113dd71  LICENSE
++71951005699ac5eddeafdcaf09aea62858b3903ca87b256419bd91c1e605bc47  README.md
++cda06b74ad8e7f1f1e17f54e07a5199c0beb30c4f6dfa8bee668adc06aa442cf  THIRD_PARTY_NOTICES.txt
++63ba0b87940df54c35ca7dc9fbf28d49978070d26593a7daa7f5fbc5dfbe519d  build.py
++17106a01737f00f2c854ccbc4aabab0948114679c9b190b3682e384f0464d59b  contracts/protocol.d.ts
++97c3e50ae469f99a62137924027500ca1d02eb88dfbea19604de7dbf95663b2a  data/circuit.json
++5da036a89b66fdfa5bb56695075fc3d3c95b71d19bc5a635f9bdfb491e895be8  data/hemibrain_excerpt.csv
++4d11afa0b526bb5b2de60eb778faf6dea50d7e0360ea2eb16ba476c50b47ead2  data/provenance.json
++a9f2536a482477e2832e4c3e2def15fd89b96bd53455cf3c1aa317f77541204c  docs/ARCHITECTURE.md
++1b7b9bd58ced4dfa0ab1d98f015fc80a5078345f25ecfb7e30c5b211a8e2e853  docs/DATA_PROVENANCE.md
++fe20089b18f41aff69e36f08b3c3b52475fea13751a5b2bcec41c3a5054f3ee3  docs/LOCAL_VALIDATION.md
++42e2520c81eed7d0030a5dd3aae84506779ef36202b8f0a7401354d674082e80  docs/MODEL_CARD.md
++9b4711f92e87dbf79d2d94addfe19e1b7871c56d86283493c2d42adc928d00e8  docs/TESTING.md
++92ae09dfc5c95b37226c939133e5c43cb1484b505e0dc6f8725dd420bf88560d  flylab/__init__.py
++5a192dfb2500a7caa433c1e2bb3b293d414d9ce82577679ea930f926b8bd36dd  flylab/body.py
++efb644d8ec1a04a430ac47db4ce402368f3a954b723ec7638fd6c502e219d5ab  flylab/brain.py
++26cb360b626880bcaa84d7dcdb21b2c359544ba09a75026f42e9e00f76f78e86  flylab/common.py
++d6ac94ef9b71b08a829a842f42fdd7394229f7aa3e8169e56ed2a028f1970fde  flylab/contracts.py
++f4ebfd0bf782c20d30fc6d93f69db588406b7e95ed60288d5e63e9647b6ac6c2  flylab/dependencies.py
++5ad19d9c55086b59e237e42a5f27781e81092597465614ccb4d998a9b097a737  flylab/engine.py
++e25caa9d140ce83d22005bad89b080051edb9ed130c2de7d54435b3f4c7996b8  flylab/sensors.py
++af28177391c749f012e50c29675b2d13cda596fe3023a8f66cbcb0bd04ba525c  flylab/server.py
++842d0744eab085ff17575ec4c0f22d895a6bd7fadeacbcd97ea09287c613a7bf  launch.bat
++67fc3d8ae9acd9e03a1290291530e9f1d06c04501bafd183284a86de54af3dd0  launch.sh
++1b7b9bd58ced4dfa0ab1d98f015fc80a5078345f25ecfb7e30c5b211a8e2e853  legacy_a/DATA_PROVENANCE.md
++205f7c9860f5b5405e6726d6a07c3f547c1d4b27f74ffbd6a3061d3a5062216a  legacy_a/FLY_LAB_A.html
++4ccb1a78c5aa60e10968bfe4343ca326f8e2913456c3d66df97373ae023fff97  legacy_a/MODEL_CARD.md
++1ff46733f697c440ba094400b4812394ba31979fb454f1ccd326cf9a2958c94b  requirements-test.txt
++221e8c46a545101c1d19bf694955ed27507dbbecc28b78cf1eea5d5ea7dffaaa  requirements.txt
++d5787ec626a6e3de3615a7167d2614cc37eb22ea1a01418563cd3e86c824aebc  run.py
++94986f4fe36b6f9d32b0c93e8e17cc9bdcb4ae68ce91df5ce0f6ee91e319898a  src/core/brain.js
++8875caf62b2e3a27b4dec80821189812d9e17f53f4d4bba016ce0af6f7f45c1c  src/core/connectome.js
++3e24cca0f4a6a913c8b151094fe37da99ebc90d853d6ed3e4fbebf4a69d08842  src/core/math.js
++52d4e82c556a198acccd786a051c665773d5f3fb67d09580fdb8684fdcac5641  src/runtime/b-transport.js
++ba500ffb7f3a89117f59de2a1483e684cb3a6ec63c9e3704588d95f547bc50b0  src/style.css
++7aacfbb3e1767bc142b85d01d55a8624e1eea9a28a19df3315bbae457ab93a4c  src/template.html
++d42a24c8cca538ae0a8d2c232478f85b86cbe258847335b15b812418ab7c09e2  src/ui/app.js
++5c81d50761d3bceeeeb6ceccbefc9b3fab4817560049e3a46b0fdbd8475b0479  src/ui/monitor.js
++b93691e8f90899fcc35975b8204fe2dd77b96a7c2ccf3b551937765e0b2accf7  src/ui/world-view.js
++e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  tests/__init__.py
++736731b7da944d6129c156d3ae7037381c79f436f3fcff0aac313efe1ba07aa0  tests/browser_smoke.py
++cd6355b33aa1cfa69a8e3c3806026cabc1745cc5716155ab362cad6ee6ac0131  tests/fixture_body.py
++67a47f630f6ce3740fec7216b1a1e84965835d7eada662c2e5bca664ce21b15f  tests/fixture_server.py
++4364a0e09830a9553e1bae7a936d44fc60bb876490126d36854f31f65a135c60  tests/parity.cjs
++57ff6f5451ef470be309d637cf576160adc683213c85a92fa467c6d43f139a8e  tests/test_avoidance.py
++de422de288a3cb9624be4d83ce21ed3e75190d283f353541a5136522b3be2a02  tests/test_core.py
++37b0419b9691e3fff70129a530be07c24c05542394180e3f881f5d3b9310b4e5  tests/test_server.py
++6835313935106752b63224aab2a12d7391f7826f7d5f3b6e5a169071e181ecb8  tests/test_validation.py
++733349f887aaaf33fb29ce72562c268992c6daf8a44f3e519e3ee0e886c99c16  tools/migrate_a.py
++50cf1240d88e00d0c563a923e72edd8b0f55ac8d3add3ecc2812a7640ba891cc  tools/run_physics_campaign.py
++727aad247ac61481dcee32a43c3217d376523062bf634c53cb60cc82166a3211  tools/verify_navigation.py
++865b8b1c5d4547dda0c045acaed2c0a8fdebaf20282cb7737ec286647c888c61  tools/verify_physics.py
+--- a/docs/LOCAL_VALIDATION.md
++++ b/docs/LOCAL_VALIDATION.md
+@@ -1,3 +1,5 @@
++> 이 문서는 fix_1에서 제공된 v0.2.1 로컬 실행 기록입니다. fix_2의 변경 및 원자료 재평가는 [REASSESSMENT_FIX2.md](REASSESSMENT_FIX2.md)를 보세요. 아래 수치를 fix_2의 새 물리 실행으로 해석하지 마세요.
++
+ # v0.2.1 로컬 수정·검증 기록
+ 
+ 2026-09-09 macOS arm64, Python 3.12.7, FlyGym 2.1.0 (고정 커밋 일치), MuJoCo 3.9.0.
+--- /dev/null
++++ b/docs/REASSESSMENT_FIX2.md
+@@ -0,0 +1,182 @@
++# FLY LAB B fix_2 · 수정 및 원자료 재평가
++
++검토일: 2026-09-09. 대상은 사용자가 제공한 `FLY_LAB_B_fix_1.zip`와 추가 `verification.zip`이다.
++
++## 결론
++
++요청한 세 코드 문제를 수정했다. **비물리 회귀 테스트 95개가 통과**했고, 첨부된 실제 물리 기록을 새 판정으로 다시 분석했다. **8개 탐색 기록이 강화한 고착·보행 재개 검사를 통과**했으며, **33개 고유 조건의 최종 결과와 30쌍 비교가 원자료와 일치**했다. 따라서 이전 검토의 “로컬 물리 검증 원자료 누락” 지적은 해소한다.
++
++이는 새 물리 실험을 실행했다는 뜻이 아니다. **이번 턴의 새로운 FlyGym/MuJoCo 실행은 0건**이다. 코드 회귀, 첨부 원자료 검증, 원자료에 대한 새 규칙 적용을 명확히 분리했다. Sprite의 Python 3.13.7 응답과 준비용 체크포인트 `v2`는 확인했지만, 수정 프로젝트의 원격 네이티브 실행은 수행하지 않았다. 원격 설치 실패를 새로 주장하거나 기존 기록을 이번 실행으로 바꾸지 않는다.
++
++판정: **첨부된 범위의 B 검증 근거는 확인되었으며 C 개발의 기준선으로 사용할 수 있다.** 다만 fix_2를 신규 네이티브 검증 완료판, 모든 환경에서 고착이 없는 모델, 생물학적 디지털 트윈 또는 전체 뇌 검증판으로 표현하지 않는다.
++
++## 1. 정확히 바꾼 것
++
++### R1 — 고착 감시 공백 및 전진 재개 판정
++
++`tools/navigation_checks.py`를 신설하고 `tools/verify_navigation.py`에서 사용한다. 표본 개수 31에 의존하던 코드를 **모델 시간 3.0초의 이동 창**으로 바꿨다. 기존의 `all(front < 3.5 or contact)` 조건은 제거했다.
++
++- 실험에서 이동이 요구되고 `motorCoupled=True`인 동안에는 거리·접촉·회피 플래그가 잠깐 바뀌어도 계속 감시한다.
++- 3초 창의 x-z 위치 범위 대각선이 **1mm 미만**이면 FAIL이다. 1mm 자체는 이전 기준 그대로다.
++- 제자리 회전량이 커도 작은 위치 범위에 머물면 FAIL이다. 짧은 후진의 반복도 실제 범위를 넓히지 못하면 FAIL이다.
++- 구동값 0을 “의도적인 정지”라고 추측하지 않는다. 고장 난 제어기가 0을 출력할 수도 있기 때문이다.
++- 의도적인 정지는 `motorCoupled=False` 또는 명시적인 `motionExpected=False`로만 제외한다. 다시 켜면 3초의 새 관찰 창을 쌓는다.
++- 표본 간격이 0.15초를 넘는 구간은 연속 감시를 입증하지 못하므로 `INCOMPLETE`로 기록한다. 짧은 기록에서 평가할 창이 없으면 `NOT_EVALUATED`이며 PASS가 아니다.
++- 새 궤적에는 회피, 후진 복구, 운동 연결, 운동 명령을 추가로 저장한다. 캠페인도 후속 분석용으로 이 필드들을 저장한다.
++
++`walking resumes after avoidance`는 이제 플래그 해제만으로 통과하지 않는다. 회피/복구가 해제된 뒤 **최대 2초 이내**, 회피가 다시 시작하기 전 구간에서 **수평 순변위 ≥1mm, 몸 방향으로의 부호 있는 누적 이동 ≥1mm**를 함께 요구한다. 순수 후진과 작은 왕복 진동만으로는 통과하지 못한다. 이는 명시적인 공학적 검증 기준이지 생물학적 상수는 아니다.
++
++내비게이션 시험의 “보행 재개”는 적어도 한 번의 실제 재개가 입증되어야 통과한다. 모든 개별 회피 에피소드가 항상 성공했다는 뜻은 아니며, 중단·관측 종료 에피소드도 결과 JSON에 남긴다. 전체 이동 고착 검사는 이와 별개로 계속 적용한다.
++
++**중요:** 회피 상태기를 새로 튜닝한 것이 아니다. 전방 4mm에서 영구 회전하는 합성 반례는 이제 검증기가 잡지만, 그 상황 자체를 새로운 제어법으로 해결한 것은 아니다.
++
++### R2 — 장애물 후보 누락
++
++`tools/run_physics_campaign.py`에서 후보를 `0, ±45, ±90, ±135, 180도`로 완성했다. 가장 가까운 각도부터 고르는 우선순위와 실제 선택 각도 기록을 유지한다. 후보를 전부 거절했을 때의 오류는 “8개 후보에서 찾지 못함”으로 한정하여 연속 공간 전체에서 불가능하다고 과장하지 않는다.
++
++반례 `[23.35, 0.8, 17.35]`, yaw 93.9도는 +135도에서 합법적인 위치를 찾는다. 대칭 반례는 -135도에서 해결한다. 네 코너 × 72방향 검사도 추가했다. **측면 배치를 전방 충돌 회피 실험으로 재분류하지 않는다.**
++
++### R3 — 복원 범위와 원자적 실패 처리
++
++`flylab/brain.py`의 `restore()`와 JavaScript 참조 모델의 `restore()`에 다음 범위를 적용했다.
++
++| 상태 | 허용 범위 |
++|---|---|
++| `contactTime` | 0~1 |
++| `recoveryTime` | 0~0.4초 + 1e-12 수치 허용치 |
++| `turnMemory` | −2π~+2π |
++| `avoidSide` | 정확히 −1 또는 +1 |
++| `prevContact` | 정확히 0 또는 1 |
++
++각도·시계·활성도·RNG·자극 배열도 대입 전에 검증한다. 문자열·불리언을 활성도 숫자로 암묵 변환하지 않고, 중복 자극도 거절한다. **뒤쪽 필드 검증이 실패해도 기존 활동 배열·RNG·타이머는 변경하지 않는다.**
++
++정상 0.2.1 체크포인트와 활성 회피·활성 후진 상태는 유지한다. 새 형식으로 임의 변환하거나 잘못된 타이머를 조용히 잘라 넣지 않는다. 이번 패치는 동적 상태 형식을 바꾸지 않으므로 `appVersion=0.2.1`을 유지하고 패키지 이름/문서로 fix_2를 식별한다. 이전 0.2.0 상태를 받아들이는 변경은 하지 않았다.
++
++### R5 — 패키지 무결성
++
++fix_1에 없던 `.gitignore`를 새로 추가했다. 이것은 분실된 원본의 바이트를 복원했다고 주장하는 것이 아니라 fix_2용 설정 파일이다. 새로운 체크섬 목록을 생성해 패키지에 실제로 포함된 파일과 대조한다. 원래 ZIP은 `verification/source_inputs/FLY_LAB_B_fix_1.zip`에 그대로 보존했다.
++
++## 2. 무엇을 바꾸지 않았나
++
++- `NeuralController.step()`의 AST가 fix_1과 동일하다.
++- `flylab/body.py`, `flylab/engine.py`, 실제 연결 데이터의 바이트가 동일하다.
++- 물리 모델, CPG 이득, 신경 전달 및 후진 복구 정책은 조정하지 않았다.
++- 의존성 파일과 관찰 UI를 변경하지 않았다. 재빌드 HTML도 fix_1과 동일하다.
++- 기존 검증 JSON의 FAIL/PASS나 원시 CSV를 덮어쓰지 않았다.
++
++이러한 보존 검사는 과거 자료가 동일한 보행·신경 동역학을 설명한다는 근거지만, 새로운 물리 환경에서의 재실행을 대신하는 것은 아니다.
++
++## 3. 첨부 원자료의 추적성
++
++원자료는 `verification/wall_fix_20260909/` 아래 371개 파일이며, ZIP의 Finder/캐시 메타데이터는 추출 대상에서 제외했다. 실제 증빙 파일은 바이트 동일하게 보존했다.
++
++- `source_manifest.json`의 attachment SHA는 이전 `FLY_LAB_B_validation_patch.zip`의 SHA와 일치한다.
++- manifest의 source-checksum-list SHA는 fix_1의 `CHECKSUMS.sha256`과 일치한다.
++- 원본 체크섬 목록의 존재하는 파일 53개가 모두 일치한다. 알려진 원본 누락은 `.gitignore` 하나다.
++- 최종 캠페인 보고서의 각 `resultFiles` 경로와 개별 result의 요약이 모두 일치한다.
++- 캠페인의 initial checkpoint SHA와 리플레이의 initial state가 일치한다.
++- 원자료 내 신경 상태 75개가 새 복원 검사를 통과하고 동일하게 round-trip된다. **MuJoCo 적분 상태 75개를 새로 복원·실행했다는 의미가 아니다.**
++
++첨부 기록과 해시의 내부 일관성을 확인한 것이며, 실행 자체에 대한 암호학적 서명이나 독립 제3자의 물리 실험을 제공하는 것은 아니다.
++
++## 4. 기본 물리 기록
++
++`campaign/gate.json`은 원래 macOS arm64 / Python 3.12.7 / FlyGym 2.1.0 / MuJoCo 3.9.0 환경에서 기록된 PASS다. 고정 FlyGym 커밋 일치가 기록되어 있고 14개 검사가 모두 통과로 남아 있다.
++
++| 기록 지표 | 값 |
++|---|---:|
++| 모델 시간 | 3.0초 |
++| 수평 순변위 | 7.399986 mm |
++| 체크포인트 후 100ms 적분 상태 최대 차이 | 0 |
++
++위 값은 업로드된 기본 gate의 기록 값이다. 이번 턴의 새 시뮬레이션 측정값이 아니다.
++
++## 5. 강화한 탐색 판정을 원래 궤적에 적용
++
++총 1,120개 위치 표본, 880개 이동 창을 다시 검사했다.
++
++| 조건 / seed | 회피 해제 후보 | 실제 전진 재개 확인 | 최소 3초 위치 범위(mm) | 새 판정 |
++|---|---:|---:|---:|---|
++| east / 42 | 4 | 4 | 14.2847 | PASS |
++| explore / 19 | 9 | 8 | 14.1413 | PASS |
++| explore / 42 | 6 | 6 | 18.2088 | PASS |
++| explore / 43 | 9 | 9 | 15.9467 | PASS |
++| explore / 7 | 7 | 6 | 13.0359 | PASS |
++| north / 42 | 4 | 4 | 19.5149 | PASS |
++| south / 42 | 4 | 4 | 16.4500 | PASS |
++| west / 42 | 4 | 4 | 19.7213 | PASS |
++
++8/8이 PASS다. 실제 전진 재개는 총 45회 확인되었고, 2회는 회피가 다시 시작되어 재개 에피소드가 중단됐다. 중단을 성공으로 바꾸지 않았으며 이후 실제 재개와 전체 고착 검사를 분리해서 판정했다. 최소 이동 창 범위는 13.0359mm로 1mm 임계값보다 크다.
++
++이전 `navigation_candidate1/explore-19/result.json`의 실패도 다시 확인했다. **14.3~17.3초, 위치 범위 0.9181mm**에서 새 검사도 FAIL을 낸다. 알려진 실패를 새 정책이 놓치지 않는 실제 기록 기반 음성 대조다.
++
++과거 navigation 궤적에는 별도 `recovering` 플래그가 없다. 당시 코드의 복구가 회피 상태 내부에 속함을 명시하고, 저장된 `avoiding`을 사용했다. 고착 검사는 이 플래그에 의존하지 않으며, 없는 필드를 실제 측정값인 것처럼 표시하지 않는다.
++
++## 6. 33조건·30쌍의 재평가
++
++최종적으로 3개 seed × 11조건 = 33개 고유 조건이다. **최초 33회 + 장애물 seed 7의 1회 재시도 = 34회**라는 이력이 맞다.
++
++- 원래 `campaign/report.json`은 FAIL이다. 전방 5mm 장애물이 허용 범위를 벗어나던 seed 7 기록이 남아 있다.
++- `obstacle_retry_seed7/`의 별도 기록은 +45도 방향으로 배치해 성공한 시험이다.
++- `campaign_final_report.json`은 원래 32개 성공과 이 재시도 1개를 연결한다. 원래 실패 파일을 바꾸지 않았다.
++- 개별 신경 CSV(177열)와 물리 CSV(135열)는 각각 101행이며, 100개 궤적 표본의 시간·좌표·좌우 구동값과 일치한다. 유한성, 신경 상태 범위, 최종 tick, 초기 상태 해시, 개입 tick도 검사했다.
++- 30쌍의 동일 초기 조건과 개입 전/후 경로·yaw 차이를 재계산했고 최종 보고서와 일치한다. 개입 전 분리는 전부 0이다.
++- 운동 차단 세 조건은 3초 이후 좌우 구동값이 모두 0이며, PFL3-L 억제 세 조건은 해당 16개 열이 모두 0인 것을 CSV에서 확인했다.
++- 강화한 위치 기반 고착 검사는 운동 연결을 유지한 30개 궤적에서 모두 PASS다. motor-off 3개는 의도적인 정지를 고착으로 오판하지 않도록 제외했고, 그 조건의 목적에 맞는 운동 차단 검사로 다뤘다.
++
++**제약:** 원래 일부 metrics는 5ms 간격으로 집계되고 CSV/궤적은 100ms 표본이다. 따라서 모든 연속시간 최대·최소 지표를 CSV만으로 독립 재현했다고 주장하지 않는다. 기존 캠페인은 개입 전달/물리 안정성 검사이지 모든 조건의 목표 방향 정확도를 보장하는 시험은 아니다.
++
++## 7. 브라우저 관찰 원자료
++
++- 체크포인트/프레임은 73.415모델초, 이력은 0~73.4초의 735표본이다.
++- 4.115초 운동 차단, 6.215초 재개 명령이 이벤트에 기록되어 있다.
++- 차단 구간의 21개 표본에서 좌우 CPG 구동이 0이다.
++- 명시적 차단 구간을 제외한 654개 창에서 1mm 미만 고착은 없었다. 최소 범위는 9.1017mm이다.
++- 복원 UI와 콘솔 확인 기록도 존재한다. 이는 **제공된 기록의 확인**이며 이번에 새 브라우저 세션을 실행한 결과는 아니다.
++
++## 8. 이번 턴의 테스트
++
++`python -m unittest tests.test_core tests.test_server tests.test_validation tests.test_avoidance tests.test_fix2 -v`
++
++**95개 PASS = 기존 63개 + 추가 32개.** 코너 각도 sweep의 반복 수를 별도 테스트 수로 부풀리지 않았다. 신경 Python/JavaScript 수치 대조도 기존 테스트 수에 포함된다.
++
++추가 항목: 전방 4mm 고착, 한 표본의 근접 조건 해제, 제자리 회전, 반복 후진, 구동값 0 고착, 의도적 정지 제외, 재개 후 관찰 창, 시간 기반 창, 샘플 누락, 전진 재개/후진 구분, ±135도 코너, 네 코너 방향 sweep, 타이머 범위, 복원 원자성, 활성 복구 연속성, JS 복원 검사 등.
++
++원시 회귀 로그: `verification/fix2_review/regression.log`.
++원자료 재평가: `verification/fix2_review/reevaluation.json`.
++기계 판독 요약: `verification/fix2_review/summary.json`.
++
++## 9. 재현과 다음 기준선
++
++기존 가상환경을 그대로 사용할 수 있으며 의존성은 바뀌지 않았다. ZIP을 풀고 fix_2 프로젝트 디렉터리에서 실행한다.
++
++```bash
++python -m unittest tests.test_core tests.test_server tests.test_validation tests.test_avoidance tests.test_fix2 -v
++python tools/reevaluate_evidence.py --out verification/fix2_recheck/reevaluation.json
++python run.py
++```
++
++수정본의 새 물리 실험을 실행할 때는 원래 기록 폴더를 재사용하지 않는다.
++
++```bash
++python tools/verify_physics.py --seconds 3 --output verification/fix2_native/gate.json
++python tools/verify_navigation.py --jobs 4 --out verification/fix2_native/navigation
++python tools/run_physics_campaign.py --out verification/fix2_native/campaign
++```
++
++각 명령의 종료 코드와 결과 파일을 확인한다. `reevaluate_evidence.py`의 성공은 **과거 기록의 재평가**이며 위 세 명령의 새로운 실행 결과가 아니다.
++
++## 10. C 확장 판단
++
++이전의 원자료 부재 문제는 해소했다. 동일한 보행/신경 동역학에 대해 자료의 추적성, 개입의 전달, 알려진 고착 실패와 개선 후 탐색을 확인했다. **C 설계·구현을 시작할 B 기준선으로는 사용할 수 있다.**
++
++그러나 C에서 신경 계산기나 물리/감각 경계를 바꾸면 그 C 구성으로 다시 시험해야 한다. 특히 후진은 여전히 설계한 보조 복구 상태기에서 나온다. 그 기여를 전뇌 모델의 자발적 판단으로 혼동하지 말고 향후 on/off 조건과 출력 출처를 구분해야 한다. 전체 뇌, 무제한 장시간 안정성, 실제 생체 타당성, 물리 비행, GPU 성능은 이번 승인의 범위가 아니다.
++
++## 입력 SHA-256
++
++```text
++FLY_LAB_B_fix_1.zip
++2931abb6047fee907c09522420c855e1ed60e11d4fa844159d1088abd3a70a18
++verification.zip
++726bccb1dfe311919b2644a224795ab85738ed558db6e3e287d10a70f24af75d
++```
+--- a/docs/TESTING.md
++++ b/docs/TESTING.md
+@@ -1,3 +1,5 @@
++> **fix_2 추가 검증:** 새 회귀 95개 PASS, 첨부 실제 물리 원자료 재분석. 상세 내용과 새/과거 결과의 구분은 [REASSESSMENT_FIX2.md](REASSESSMENT_FIX2.md)에 있습니다. 아래는 기존 이력입니다.
++
+ # 현재 로컬 검증
+ 
+ 실제 물리·벽 회피·다조건·브라우저 검증은 [LOCAL_VALIDATION.md](LOCAL_VALIDATION.md)를 참고합니다.
+--- a/flylab/brain.py
++++ b/flylab/brain.py
+@@ -151,20 +151,61 @@
+         scalar=['phaseEstimate','heading','confidence','goal','clock','nextGoal','avoidSide','prevContact','odorMode','turnMemory','contactTime','recoveryTime','output','lastCue','error','recNorm','headingBins']
+         return dict(a=self.a.tolist(),adapt=self.adapt.tolist(),lesions=sorted(self.lesions),stim=[[i,clone(x)] for i,x in self.stim.items()],rng=self.rng.state,**{k:clone(getattr(self,k)) for k in scalar})
+     def restore(self,s):
+-        if not isinstance(s,dict) or set(s)!=set(self.snapshot()): raise ValueError('Unknown neural state fields')
+-        if s['odorMode'] not in ('explore','heading','chemotaxis','dwell'): raise ValueError('Invalid neural mode')
+-        if not isinstance(s['output'],dict) or set(s['output'])!={'yawRate','forwardSpeed','verticalSpeed'}: raise ValueError('Invalid motor command state')
++        """Validate the entire state before committing it (atomic on rejection).
++
++        fix_2 changes validation only, not the forward dynamics or checkpoint
++        schema. Valid v0.2.1 snapshots, including active recovery, remain valid.
++        """
++        if not isinstance(s,dict) or set(s)!=set(self.snapshot()):
++            raise ValueError('Unknown neural state fields')
++        if s['odorMode'] not in ('explore','heading','chemotaxis','dwell'):
++            raise ValueError('Invalid neural mode')
++        if not isinstance(s['output'],dict) or set(s['output'])!={'yawRate','forwardSpeed','verticalSpeed'}:
++            raise ValueError('Invalid motor command state')
+         for v in s['output'].values(): number(v,'motor',-20,20)
+         if s['lastCue'] is not None: number(s['lastCue'],'lastCue',-math.pi,math.pi)
+-        if len(s['headingBins'])!=8: raise ValueError('Invalid heading bins')
++        if not isinstance(s['headingBins'],list) or len(s['headingBins'])!=8:
++            raise ValueError('Invalid heading bins')
+         for v in s['headingBins']: number(v,'headingBin',0,1)
++        arrays={}
+         for k in ('a','adapt'):
++            if not isinstance(s[k],list): raise ValueError('Neural array must be a list')
++            for v in s[k]: number(v,k,0,1)
+             arr=np.asarray(s[k],dtype=float)
+-            if arr.shape!=(self.circuit.N,) or not np.isfinite(arr).all() or (arr<0).any() or (arr>1).any(): raise ValueError('Invalid neural state')
+-        for i in s['lesions']: integer(i,'lesion',0,self.circuit.N-1)
+-        for i,v in s['stim']:
+-            integer(i,'stim',0,self.circuit.N-1); number(v['amplitude'],'amplitude',-1,1); number(v['remaining'],'remaining',1e-12,60)
+-        self.a=np.array(s['a']); self.adapt=np.array(s['adapt']); self.lesions=set(s['lesions']); self.stim={i:clone(v) for i,v in s['stim']}; self.rng.state=integer(s['rng'],'rng',1,2**32-1)
+-        for k in ('phaseEstimate','heading','confidence','goal','clock','nextGoal','avoidSide','prevContact','turnMemory','contactTime','recoveryTime','error','recNorm'): number(s[k],k)
++            if arr.shape!=(self.circuit.N,) or not np.isfinite(arr).all() or (arr<0).any() or (arr>1).any():
++                raise ValueError('Invalid neural state')
++            arrays[k]=arr.copy()
++        if not isinstance(s['lesions'],list) or not isinstance(s['stim'],list):
++            raise ValueError('Invalid intervention state')
++        lesions=[]
++        for i in s['lesions']: lesions.append(integer(i,'lesion',0,self.circuit.N-1))
++        if len(set(lesions))!=len(lesions): raise ValueError('Duplicate lesion')
++        stimuli={}
++        for pair in s['stim']:
++            if not isinstance(pair,list) or len(pair)!=2: raise ValueError('Invalid stimulus pair')
++            i,v=pair; integer(i,'stim',0,self.circuit.N-1)
++            if i in stimuli: raise ValueError('Duplicate stimulus')
++            if not isinstance(v,dict) or set(v)!={'amplitude','remaining'}:
++                raise ValueError('Invalid stimulus state')
++            number(v['amplitude'],'amplitude',-1,1)
++            number(v['remaining'],'remaining',1e-12,60)
++            stimuli[i]=clone(v)
++        rng=integer(s['rng'],'rng',1,2**32-1)
++        # State domains follow step(); a tiny time tolerance accommodates JSON
++        # floating-point round trips, not seconds-long extra recovery periods.
++        for k,lo,hi in (
++            ('phaseEstimate',-math.pi,math.pi),('heading',-math.pi,math.pi),
++            ('confidence',0,1+1e-12),('goal',-math.pi,math.pi),
++            ('clock',0,1e12),('nextGoal',0,1e12),
++            ('turnMemory',-TAU,TAU),('contactTime',0,1),
++            ('recoveryTime',0,.4+1e-12),('error',-math.pi,math.pi),('recNorm',0,2+1e-12)):
++            number(s[k],k,lo,hi)
++        number(s['avoidSide'],'avoidSide',-1,1)
++        if s['avoidSide'] not in (-1,1): raise ValueError('avoidSide must be -1 or 1')
++        number(s['prevContact'],'prevContact',0,1)
++        if s['prevContact'] not in (0,1): raise ValueError('prevContact must be 0 or 1')
++        # No self mutation above this point, including RNG and activity buffers.
++        self.a=arrays['a']; self.adapt=arrays['adapt']; self.lesions=set(lesions)
++        self.stim=stimuli; self.rng.state=rng
+         for k,v in s.items():
+             if k not in ('a','adapt','lesions','stim','rng'): setattr(self,k,clone(v))
+--- a/src/core/brain.js
++++ b/src/core/brain.js
+@@ -172,7 +172,48 @@
+                 this.lesions.delete(i);
+         } }
+         snapshot() { return { a: Array.from(this.a), adapt: Array.from(this.adapt), lesions: [...this.lesions], stim: [...this.stim], rng: this.rng.state, phaseEstimate: this.phaseEstimate, heading: this.heading, confidence: this.confidence, goal: this.goal, clock: this.clock, nextGoal: this.nextGoal, avoidSide: this.avoidSide, prevContact: this.prevContact, odorMode: this.odorMode, turnMemory: this.turnMemory, contactTime: this.contactTime, recoveryTime: this.recoveryTime, output: { ...this.output }, lastCue: this.lastCue, error: this.error, recNorm: this.recNorm, headingBins: this.headingBins || Array(8).fill(0) }; }
+-        restore(s) { const { a, adapt, lesions, stim, rng, ...rest } = s; this.a = Float64Array.from(a); this.adapt = Float64Array.from(adapt); this.lesions = new Set(lesions); this.stim = new Map(stim); this.rng.state = rng >>> 0; Object.assign(this, F.clone(rest)); }
++        restore(s) {
++            const keys = Object.keys(this.snapshot()).sort().join('|');
++            if (!s || typeof s !== 'object' || Array.isArray(s) || Object.keys(s).sort().join('|') !== keys)
++                throw Error('Unknown neural state fields');
++            const num = (v, name, lo = -1e12, hi = 1e12) => {
++                if (typeof v !== 'number' || !Number.isFinite(v) || v < lo || v > hi)
++                    throw Error('Invalid neural state: ' + name);
++            };
++            const idx = v => { num(v, 'index', 0, this.circuit.N - 1); if (!Number.isInteger(v)) throw Error('Integer index required'); };
++            for (const k of ['a', 'adapt']) {
++                if (!Array.isArray(s[k]) || s[k].length !== this.circuit.N) throw Error('Invalid neural shape');
++                s[k].forEach(v => num(v, k, 0, 1));
++            }
++            if (!['explore','heading','chemotaxis','dwell'].includes(s.odorMode)) throw Error('Invalid neural mode');
++            if (!s.output || Object.keys(s.output).sort().join('|') !== 'forwardSpeed|verticalSpeed|yawRate') throw Error('Invalid output');
++            Object.values(s.output).forEach(v => num(v,'motor',-20,20));
++            if (s.lastCue !== null) num(s.lastCue,'lastCue',-Math.PI,Math.PI);
++            if (!Array.isArray(s.headingBins) || s.headingBins.length !== 8) throw Error('Invalid heading bins');
++            s.headingBins.forEach(v => num(v,'headingBin',0,1));
++            if (!Array.isArray(s.lesions) || !Array.isArray(s.stim)) throw Error('Invalid intervention state');
++            s.lesions.forEach(idx);
++            if (new Set(s.lesions).size !== s.lesions.length) throw Error('Duplicate lesion');
++            const used = new Set();
++            for (const pair of s.stim) {
++                if (!Array.isArray(pair) || pair.length !== 2) throw Error('Invalid stimulus pair');
++                const [i,v] = pair; idx(i);
++                if (used.has(i)) throw Error('Duplicate stimulus'); used.add(i);
++                if (!v || Object.keys(v).sort().join('|') !== 'amplitude|remaining') throw Error('Invalid stimulus');
++                num(v.amplitude,'amplitude',-1,1); num(v.remaining,'remaining',1e-12,60);
++            }
++            num(s.rng,'rng',1,4294967295); if (!Number.isInteger(s.rng)) throw Error('Integer RNG required');
++            for (const [k,lo,hi] of [
++                ['phaseEstimate',-Math.PI,Math.PI],['heading',-Math.PI,Math.PI],
++                ['confidence',0,1+1e-12],['goal',-Math.PI,Math.PI],['clock',0,1e12],['nextGoal',0,1e12],
++                ['turnMemory',-2*Math.PI,2*Math.PI],['contactTime',0,1],['recoveryTime',0,.4+1e-12],
++                ['error',-Math.PI,Math.PI],['recNorm',0,2+1e-12]]) num(s[k],k,lo,hi);
++            if (![-1,1].includes(s.avoidSide) || ![0,1].includes(s.prevContact)) throw Error('Invalid discrete state');
++            const { a, adapt, lesions, stim, rng, ...rest } = s;
++            this.a = Float64Array.from(a); this.adapt = Float64Array.from(adapt);
++            this.lesions = new Set(lesions); this.stim = new Map(F.clone(stim));
++            this.rng.state = rng >>> 0; Object.assign(this, F.clone(rest));
++        }
+     }
+     F.NeuralController = NeuralController;
+ })(globalThis.Fly);
+--- /dev/null
++++ b/tests/test_fix2.py
+@@ -0,0 +1,159 @@
++"""Regression coverage for fix_2. Synthetic tests are NOT native physics runs."""
++from pathlib import Path
++from types import SimpleNamespace
++import copy
++import json
++import math
++import subprocess
++import unittest
++import numpy as np
++from flylab.brain import Circuit,NeuralController
++from flylab.engine import default_graph,config_values,Engine
++from tests.fixture_body import FixtureBody
++from tools.navigation_checks import NavigationMonitor,audit_trajectory
++from tools.run_physics_campaign import apply_intervention
++from flylab.sensors import default_world,validate_world
++
++ROOT=Path(__file__).resolve().parents[1]
++
++def rows(n=61,step=.1,speed=0.,**override):
++    return [dict(t=i*step,p=[speed*i*step,1.,0.],yaw=0.,front=4.,contact=0,
++                 avoiding=True,recovering=False,motorCoupled=True,motionExpected=True,
++                 **override) for i in range(n)] if not override else [
++        {**r,**override} for r in rows(n,step,speed)]
++
++
++class NavigationFixTests(unittest.TestCase):
++    def test_4mm_gap_stationary_detected(self):
++        a=audit_trajectory(rows(31));self.assertEqual(a['status'],'FAIL');self.assertEqual(a['stationaryWindows'][0]['spanMM'],0)
++    def test_one_clear_sample_does_not_disable_monitor(self):
++        rs=rows(31);rs[15].update(front=8.,contact=0,avoiding=False)
++        self.assertEqual(audit_trajectory(rs)['status'],'FAIL')
++    def test_pure_spin_is_stuck(self):
++        rs=rows(31)
++        for r in rs:r['yaw']=2*r['t']
++        a=audit_trajectory(rs);self.assertEqual(a['status'],'FAIL');self.assertAlmostEqual(a['stationaryWindows'][0]['yawSweepRad'],6.)
++    def test_oscillating_retreat_stays_in_small_envelope(self):
++        rs=rows(61)
++        for r in rs:r.update(p=[.2*math.sin(r['t']*20),1,0],recovering=True)
++        self.assertEqual(audit_trajectory(rs)['status'],'FAIL')
++    def test_zero_drive_is_not_assumed_intentional_stop(self):
++        self.assertEqual(audit_trajectory(rows(31,drive=[0,0],avoiding=False))['status'],'FAIL')
++    def test_explicit_motor_off_excluded(self):
++        a=audit_trajectory(rows(61,motorCoupled=False));self.assertEqual(a['status'],'NOT_EVALUATED');self.assertEqual(a['evaluatedWindows'],0)
++    def test_explicit_motion_not_expected_excluded(self):
++        self.assertEqual(audit_trajectory(rows(61,motionExpected=False))['evaluatedWindows'],0)
++    def test_resume_gets_full_3sec_window(self):
++        rs=rows(61)
++        for r in rs[:20]:r['motorCoupled']=False
++        a=audit_trajectory(rs);self.assertEqual(a['stationaryWindows'][0]['startTime'],2.);self.assertEqual(a['stationaryWindows'][0]['endTime'],5.)
++    def test_translation_passes(self):self.assertEqual(audit_trajectory(rows(speed=2))['status'],'PASS')
++    def test_window_is_time_based(self):
++        a=audit_trajectory(rows(61,step=.05));self.assertEqual(len(a['stationaryWindows']),1);self.assertEqual(a['stationaryWindows'][0]['endTime'],3)
++    def test_missing_samples_not_silently_pass(self):
++        rs=rows(81,speed=2);del rs[20:24]
++        self.assertEqual(audit_trajectory(rs)['status'],'INCOMPLETE')
++    def test_nonmonotone_rejected(self):
++        rs=rows(5);rs[3]['t']=rs[2]['t']
++        with self.assertRaises(ValueError):audit_trajectory(rs)
++    def test_nonfinite_rejected(self):
++        rs=rows(5);rs[2]['p'][0]=float('nan')
++        with self.assertRaises(ValueError):audit_trajectory(rs)
++    def test_flags_must_be_explicit(self):
++        rs=rows(5);del rs[0]['motorCoupled']
++        with self.assertRaises(ValueError):audit_trajectory(rs)
++    def test_flag_change_alone_not_walking(self):
++        rs=rows(61)
++        for r in rs[10:]:r['avoiding']=False
++        a=audit_trajectory(rs);self.assertFalse(a['walkingResumed']);self.assertTrue(any(e['status']=='FAILED_NO_RESUMPTION' for e in a['resumptionEpisodes']))
++    def test_actual_forward_net_movement_resumes(self):
++        rs=rows(61,speed=2)
++        for r in rs[10:]:r['avoiding']=False
++        a=audit_trajectory(rs);self.assertTrue(a['walkingResumed'])
++    def test_reverse_only_not_forward_resume(self):
++        rs=rows(61,speed=-2)
++        for r in rs[10:]:r['avoiding']=False
++        self.assertFalse(audit_trajectory(rs)['walkingResumed'])
++    def test_closed_jitter_not_resume(self):
++        rs=rows(61)
++        for r in rs:
++            r['p'][0]=.2*math.sin(r['t']*30)
++            if r['t']>=1:r['avoiding']=False
++        self.assertFalse(audit_trajectory(rs)['walkingResumed'])
++    def test_recovery_flag_keeps_episode_active(self):
++        rs=rows(61,speed=2)
++        for r in rs[10:]:r.update(avoiding=False,recovering=True)
++        self.assertFalse(audit_trajectory(rs)['walkingResumed'])
++    def test_end_of_record_is_censored(self):
++        rs=rows(12,speed=2);rs[-1]['avoiding']=False
++        a=audit_trajectory(rs);self.assertFalse(a['walkingResumed']);self.assertEqual(a['resumptionEpisodes'][-1]['status'],'CENSORED_END_OF_RECORD')
++
++class ObstacleFixTests(unittest.TestCase):
++    def place(self,p,yaw):
++        world=default_world();world['obstacles']=[]
++        def command(msg):
++            point=msg['payload']['position'];self.assertGreater(math.dist(p,point),3.8)
++            world['obstacles'].append(dict(id='test',p=point,r=.8));validate_world(world)
++        fake=SimpleNamespace(frame=lambda:dict(body=dict(position=p,yaw=yaw)),command=command)
++        return apply_intervention(fake,'obstacle')
++    def test_reported_corner_plus135(self):
++        d=self.place([23.35,.8,17.35],math.radians(93.9))
++        self.assertAlmostEqual(d['angleOffsetDegrees'],135);self.assertAlmostEqual(math.hypot(d['position'][0]-23.35,d['position'][2]-17.35),5)
++    def test_mirrored_corner_minus135(self):
++        self.assertAlmostEqual(self.place([23.35,.8,-17.35],math.radians(-93.9))['angleOffsetDegrees'],-135)
++    def test_front_priority_unchanged(self):self.assertEqual(self.place([0,.8,0],0)['angleOffsetDegrees'],0)
++    def test_corner_sweep(self):
++        for x in [-23.9,23.9]:
++            for z in [-17.9,17.9]:
++                for deg in range(0,360,5):
++                    d=self.place([x,.8,z],math.radians(deg));self.assertLessEqual(abs(d['position'][0]),23);self.assertLessEqual(abs(d['position'][2]),17)
++
++class RestoreFixTests(unittest.TestCase):
++    def setUp(self):
++        self.brain=NeuralController(Circuit(default_graph()),42)
++        self.config=config_values();self.sensor=dict(panorama=[0]*64,nearRanges=[1]*9,contact=1,odor=[0,0],odorChange=0,danger=0,angularVelocity=.5,forwardSpeed=0,clearanceDown=1,clearanceUp=10)
++    def test_timer_range_and_atomicity(self):
++        original=self.brain.snapshot()
++        for k,v in [('contactTime',-1e-6),('contactTime',2),('recoveryTime',-.01),('recoveryTime',10),('recoveryTime',.40001),('turnMemory',math.tau+.01),('avoidSide',0),('avoidSide',.5),('prevContact',.3),('clock',-1),('rng',0)]:
++            with self.subTest(k=k,v=v):
++                s=copy.deepcopy(original);s[k]=v;s['a'][0]=.8
++                with self.assertRaises(ValueError):self.brain.restore(s)
++                self.assertEqual(original,self.brain.snapshot())
++    def test_neural_array_coercions_rejected(self):
++        for v in [True,'0.1']:
++            s=self.brain.snapshot();s['a'][0]=v
++            with self.assertRaises(ValueError):self.brain.restore(s)
++    def test_nonfinite_and_boolean_rejected(self):
++        for k in ['contactTime','recoveryTime','turnMemory','avoidSide']:
++            for v in [float('nan'),float('inf'),True]:
++                s=self.brain.snapshot();s[k]=v
++                with self.assertRaises(ValueError):self.brain.restore(s)
++    def test_exact_valid_boundaries(self):
++        for c in [0,1]:
++            for r in [0,.4,.4+5e-13]:
++                s=self.brain.snapshot();s.update(contactTime=c,recoveryTime=r,turnMemory=math.tau,avoidSide=-1)
++                self.brain.restore(s);self.assertEqual(self.brain.snapshot(),s)
++    def test_restores_active_recovery_and_continues(self):
++        for _ in range(65):self.brain.step(self.sensor,.005,self.config)
++        self.assertGreater(self.brain.recoveryTime,0)
++        other=NeuralController(self.brain.circuit,100);other.restore(json.loads(json.dumps(self.brain.snapshot())))
++        for _ in range(160):
++            self.brain.step(self.sensor,.005,self.config);other.step(self.sensor,.005,self.config)
++        self.assertEqual(self.brain.snapshot(),other.snapshot())
++    def test_malformed_intervention_atomic(self):
++        s=self.brain.snapshot();s['stim']=[[0,dict(amplitude=.1,remaining=1)],[0,dict(amplitude=.2,remaining=2)]];old=self.brain.snapshot()
++        with self.assertRaises(ValueError):self.brain.restore(s)
++        self.assertEqual(self.brain.snapshot(),old)
++    def test_engine_failed_restore_keeps_live_state(self):
++        e=Engine(body_factory=FixtureBody)
++        try:
++            original=e.checkpoint();bad=copy.deepcopy(original);bad['brain']['recoveryTime']=10
++            with self.assertRaises(ValueError):Engine.from_checkpoint(bad,body_factory=FixtureBody)
++            self.assertEqual(e.checkpoint(),original)
++        finally:e.close()
++    def test_js_restore_rejects_and_preserves(self):
++        js="""const fs=require('fs'),vm=require('vm');for(const k of ['math','connectome','brain'])vm.runInThisContext(fs.readFileSync('src/core/'+k+'.js','utf8'));const b=new Fly.NeuralController(new Fly.Circuit(JSON.parse(fs.readFileSync('data/circuit.json'))),42);const saved=JSON.stringify(b.snapshot());let n=0;for(const [k,v] of [['contactTime',2],['recoveryTime',10],['turnMemory',7],['avoidSide',0],['rng',0]]){const s=JSON.parse(saved);s[k]=v;s.a[0]=.8;try{b.restore(s);}catch(e){n++;}if(JSON.stringify(b.snapshot())!==saved)throw Error('not atomic');}const s=JSON.parse(saved);s.recoveryTime=.4;s.contactTime=1;b.restore(s);console.log(JSON.stringify({rejected:n,valid:b.snapshot().recoveryTime}));"""
++        p=subprocess.run(['node','-e',js],cwd=ROOT,capture_output=True,text=True,check=True)
++        self.assertEqual(json.loads(p.stdout),dict(rejected=5,valid=.4))
++
++if __name__=='__main__':unittest.main()
+--- /dev/null
++++ b/tools/navigation_checks.py
+@@ -0,0 +1,145 @@
++"""Versioned, pure trajectory checks used both online and on recorded evidence.
++
++No simulator, no dataset-specific thresholds. Millimetres/radians/model seconds.
++Enabled motion is an explicit experiment contract: a zero drive is NOT inferred
++as intentional stopping, because a stuck controller may output zero forever.
++"""
++from __future__ import annotations
++from collections import deque
++from dataclasses import asdict, dataclass
++import math
++
++
++@dataclass(frozen=True)
++class NavigationPolicy:
++    version: str = 'flylab.navigation-checks.v2'
++    stuck_seconds: float = 3.0
++    envelope_mm: float = 1.0
++    max_sample_gap_seconds: float = .15
++    resume_seconds: float = 2.0
++    resume_net_mm: float = 1.0
++    resume_forward_mm: float = 1.0
++
++    def __post_init__(self):
++        for k,v in asdict(self).items():
++            if k != 'version' and (isinstance(v,bool) or not math.isfinite(v) or v<=0):
++                raise ValueError('Positive finite policy parameter required: '+k)
++
++
++def _number(x,name):
++    if isinstance(x,bool) or not isinstance(x,(int,float)) or not math.isfinite(x):
++        raise ValueError('Finite trajectory value required: '+name)
++    return float(x)
++
++
++def _sample(row):
++    """One normalized row. Callers must label any reconstructed fields explicitly."""
++    if not isinstance(row,dict): raise ValueError('Trajectory row must be a dict')
++    r=dict(row)
++    r['t']=_number(r['t'],'t')
++    if r['t']<0: raise ValueError('Negative model time')
++    if not isinstance(r.get('p'),(list,tuple)) or len(r['p'])!=3: raise ValueError('XYZ required')
++    r['p']=[_number(x,'p') for x in r['p']]
++    r['yaw']=_number(r['yaw'],'yaw')
++    for k in ('avoiding','recovering','motorCoupled','motionExpected'):
++        if type(r.get(k)) is not bool: raise ValueError('Explicit boolean required: '+k)
++    return r
++
++
++def _distance(a,b):
++    return math.hypot(a['p'][0]-b['p'][0],a['p'][2]-b['p'][2])
++
++
++def _span(rows):
++    return math.hypot(max(r['p'][0] for r in rows)-min(r['p'][0] for r in rows),
++                      max(r['p'][2] for r in rows)-min(r['p'][2] for r in rows))
++
++
++class NavigationMonitor:
++    """Time-based rolling stationary and measured walking-resumption checks.
++
++    A motor-off or explicitly unexpected-motion period resets the rolling window.
++    Missing time samples make the record INCOMPLETE, not silently PASS. Avoidance,
++    recovery, contact and command values describe a failure; none gates it away.
++    """
++    def __init__(self,policy=None):
++        self.policy=policy or NavigationPolicy()
++        self.rows=deque();self.previous=None;self.samples=0;self.windows=0
++        self.min_span=None;self.stationary=[];self.sampling_gaps=[]
++        self.disabled_samples=0;self.resumptions=[];self.pending=None
++
++    @staticmethod
++    def _enabled(r): return r['motorCoupled'] and r['motionExpected']
++
++    @staticmethod
++    def _avoiding(r): return r['avoiding'] or r['recovering']
++
++    def _close_resume(self,status,t):
++        if self.pending is not None:
++            self.pending.update(status=status,endTime=t)
++            self.resumptions.append(self.pending)
++            self.pending=None
++
++    def add(self,row):
++        r=_sample(row);p=self.policy;prev=self.previous;self.samples+=1
++        if prev is not None and r['t']<=prev['t']: raise ValueError('Times must strictly increase')
++        gap=prev is not None and r['t']-prev['t']>p.max_sample_gap_seconds+1e-9
++        if gap:
++            self.sampling_gaps.append(dict(start=prev['t'],end=r['t']))
++            self.rows.clear();self._close_resume('INCOMPLETE_SAMPLING',r['t'])
++        enabled=self._enabled(r)
++        if not enabled:
++            self.disabled_samples+=1;self.rows.clear();self._close_resume('CENSORED_MOTOR_OFF',r['t'])
++        else:
++            self.rows.append(r)
++            # Retain the left endpoint at or immediately before t-window.
++            while len(self.rows)>1 and self.rows[1]['t']<=r['t']-p.stuck_seconds+1e-9:
++                self.rows.popleft()
++            if r['t']-self.rows[0]['t']>=p.stuck_seconds-1e-9:
++                self.windows+=1;span=_span(self.rows)
++                self.min_span=span if self.min_span is None else min(self.min_span,span)
++                if span<p.envelope_mm:
++                    sweep=sum(abs(math.atan2(math.sin(b['yaw']-a['yaw']),math.cos(b['yaw']-a['yaw'])))
++                              for a,b in zip(self.rows,list(self.rows)[1:]))
++                    self.stationary.append(dict(startTime=self.rows[0]['t'],endTime=r['t'],
++                        spanMM=span,netMM=_distance(self.rows[0],r),yawSweepRad=sweep,
++                        avoidingSamples=sum(x['avoiding'] for x in self.rows),
++                        recoveringSamples=sum(x['recovering'] for x in self.rows),
++                        samples=len(self.rows)))
++            # A flag transition is a candidate, not evidence of resumed walking.
++            if (not gap and prev is not None and self._enabled(prev)
++                    and self._avoiding(prev) and not self._avoiding(r)):
++                self._close_resume('INTERRUPTED',r['t'])
++                self.pending=dict(startTime=r['t'],startPosition=r['p'][:],
++                                  forwardMM=0.,maxNetMM=0.,status='PENDING')
++            elif self.pending is not None:
++                elapsed=r['t']-self.pending['startTime']
++                if self._avoiding(r): self._close_resume('INTERRUPTED_BY_AVOIDANCE',r['t'])
++                elif elapsed>p.resume_seconds+1e-9: self._close_resume('FAILED_NO_RESUMPTION',r['t'])
++                else:
++                    # Signed body-forward projection; a pure reverse retreat does
++                    # not satisfy walking resumed. Also require NET displacement.
++                    dx=r['p'][0]-prev['p'][0];dz=r['p'][2]-prev['p'][2]
++                    self.pending['forwardMM']+=dx*math.cos(prev['yaw'])+dz*math.sin(prev['yaw'])
++                    net=math.hypot(r['p'][0]-self.pending['startPosition'][0],r['p'][2]-self.pending['startPosition'][2])
++                    self.pending['maxNetMM']=max(self.pending['maxNetMM'],net)
++                    if net>=p.resume_net_mm and self.pending['forwardMM']>=p.resume_forward_mm:
++                        self._close_resume('PASS',r['t'])
++        self.previous=r
++
++    def result(self):
++        episodes=[dict(x) for x in self.resumptions]
++        if self.pending is not None: episodes.append({**self.pending,'status':'CENSORED_END_OF_RECORD'})
++        status=('FAIL' if self.stationary else 'INCOMPLETE' if self.sampling_gaps
++                else 'PASS' if self.windows else 'NOT_EVALUATED')
++        return dict(policy=asdict(self.policy),status=status,samples=self.samples,
++                    evaluatedWindows=self.windows,disabledSamples=self.disabled_samples,
++                    minimumWindowSpanMM=self.min_span,stationaryWindows=self.stationary,
++                    samplingGaps=self.sampling_gaps,resumptionEpisodes=episodes,
++                    walkingResumed=any(x['status']=='PASS' for x in episodes))
++
++
++def audit_trajectory(rows,policy=None):
++    monitor=NavigationMonitor(policy)
++    for row in rows: monitor.add(row)
++    return monitor.result()
+--- /dev/null
++++ b/tools/reevaluate_evidence.py
+@@ -0,0 +1,174 @@
++#!/usr/bin/env python3
++"""Recompute checks from a supplied wall_fix_20260909 evidence tree.
++
++This NEVER steps MuJoCo. 'RECORDED' results are not new native executions.
++Source failures, retries, and original JSON files are never rewritten.
++"""
++from __future__ import annotations
++import argparse,csv,hashlib,json,math,sys,zipfile
++from pathlib import Path
++ROOT=Path(__file__).resolve().parents[1]
++sys.path.insert(0,str(ROOT))
++from tools.navigation_checks import audit_trajectory
++from tools.run_physics_campaign import compare_results
++from flylab.brain import Circuit,NeuralController
++
++
++def read(p):
++    def bad(v): raise ValueError('Nonfinite JSON token '+v)
++    return json.loads(p.read_text(encoding='utf-8'),parse_constant=bad)
++
++def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
++
++def read_table(p,columns):
++    with p.open(encoding='utf-8-sig',newline='') as f:
++        it=csv.reader(f);header=next(it);assert len(header)==columns,(p,len(header))
++        rows=[]
++        for row in it:
++            assert len(row)==columns,(p,len(row))
++            values=[float(x) for x in row];assert all(math.isfinite(x) for x in values),p
++            rows.append(values)
++    assert all(b[0]>a[0] for a,b in zip(rows,rows[1:])),p
++    return header,rows
++
++def brain_check(cp):
++    b=NeuralController(Circuit(cp['graph']),cp['seed']);b.restore(cp['brain'])
++    assert b.snapshot()==cp['brain']
++    assert abs(cp['tick']*cp['controlDt']-cp['brain']['clock'])<1e-5
++    assert all(math.isfinite(v) for v in cp['body']['state'])
++
++
++def reevaluate(evidence:Path,source:Path):
++    result=dict(schema='flylab.evidence-audit.fix2.v1',mode='RECORDED_DATA_RECOMPUTATION',
++                newNativePhysicsExecuted=False,sourceRoot=str(source),evidenceRoot=str(evidence),checks=[])
++    def check(name,ok,detail=None):
++        result['checks'].append(dict(name=name,passed=bool(ok),detail=detail))
++        if not ok:raise AssertionError(name+': '+str(detail))
++    m=read(evidence/'source_manifest.json')
++    # Use the baseline checksum list retained alongside fix_2, not the new list.
++    sums=source/'docs/FIX1_CHECKSUMS.sha256'
++    if not sums.exists():sums=source/'CHECKSUMS.sha256'
++    check('recorded source checksum-list hash matches fix_1',sha(sums)==m['sourceChecksumsSHA256'])
++    archive=source/'verification/source_inputs/FLY_LAB_B_fix_1.zip'
++    check('preserved fix_1 archive matches reviewed input',archive.exists() and sha(archive)=='2931abb6047fee907c09522420c855e1ed60e11d4fa844159d1088abd3a70a18')
++    verified=[];missing=[]
++    with zipfile.ZipFile(archive) as z:
++        for line in sums.read_text().splitlines():
++            digest,name=line.split(None,1);name=name.lstrip('*')
++            if name not in z.namelist():missing.append(name);continue
++            check('original source checksum '+name,hashlib.sha256(z.read(name)).hexdigest()==digest)
++            verified.append(name)
++    check('only known original packaging omission',missing==['.gitignore'])
++    result['originalSourceFiles']=dict(verified=verified,missing=missing,
++        note='The original omitted .gitignore remains omitted in the preserved original ZIP. fix_2 has its own new .gitignore.')
++    result['provenance']=dict(sourceManifest=m,sourceChecksumListSHA256=sha(sums),
++        limitation='Final source manifest is not a per-run signed attestation; uploaded records are reviewed, not independently recreated.')
++    gate=read(evidence/'campaign/gate.json');result['recordedGate']=gate
++    check('recorded native gate has 14 successful checks',gate['status']=='PASS' and gate['physicalExecuted'] and len(gate['checks'])==14 and all(x['passed'] for x in gate['checks']))
++    final=read(evidence/'campaign_final_report.json');runs=[];cases=[];ncp=0
++    check('33 unique final cases and result paths',len(final['cases'])==len(final['resultFiles'])==33 and len({(r['seed'],r['case']) for r in final['cases']})==33)
++    for name,summary in zip(final['resultFiles'],final['cases']):
++        rel=Path(name);path=evidence.parent.parent/rel
++        if not path.resolve().is_relative_to(evidence.resolve()):raise ValueError('Result path outside evidence root')
++        d=read(path);runs.append(d);folder=path.parent
++        check('individual result matches summary '+str((d['seed'],d['case'])),{k:v for k,v in d.items() if k!='trajectory'}==summary)
++        initial=read(folder/'initial_checkpoint.json');end=read(folder/'final_checkpoint.json');replay=read(folder/'replay.json')
++        for cp in [initial,end]:brain_check(cp);ncp+=1
++        h=hashlib.sha256(json.dumps(initial,sort_keys=True).encode()).hexdigest()
++        assert h==d['initialStateSHA256'];assert replay['initial']==initial
++        assert end['tick']==replay['endTick']==2000 and initial['tick']==0
++        assert d['physicalExecuted'] and d['physicalAttempted'] and d['status']=='PASS'
++        assert all(c['passed'] for c in d['checks']) and len(d['trajectory'])==100
++        nh,nr=read_table(folder/'neural.csv',177);ph,pr=read_table(folder/'physics.csv',135)
++        assert len(nr)==len(pr)==101 and nr[0][0]==0 and nr[-1][0]==10
++        for r,n,q in zip(d['trajectory'],nr[1:],pr[1:]):
++            assert abs(r['time']-n[0])<1e-10 and abs(r['time']-q[0])<1e-10
++            assert max(abs(r['position'][i]-n[j]) for i,j in [(0,1),(1,2),(2,3)])<1e-10
++            assert max(abs(a-b) for a,b in zip(r['descending'],q[-2:]))<1e-10
++        assert all(0<=a<=1 for n in nr for a in n[7:])
++        motor_off=d['case']=='motor-off'
++        if motor_off:assert all(q[-1]==q[-2]==0 for q in pr if q[0]>3)
++        if d['case']=='left-suppression':
++            ix=[i for i,x in enumerate(nh) if x.startswith('model:PFL3-L:')];assert len(ix)==16
++            assert all(n[i]==0 for n in nr if n[0]>3 for i in ix)
++        if d['case']!='baseline':
++            assert d['interventionAppliedAt']==3 and len(replay['commands'])==1 and replay['commands'][0]['tick']==600
++        normalized=[dict(t=r['time'],p=r['position'],yaw=r['yaw'],avoiding=False,recovering=False,
++            motorCoupled=not(motor_off and r['time']>3+1e-9),motionExpected=True) for r in d['trajectory']]
++        audit=audit_trajectory(normalized)
++        # Old campaign records do not have avoidance/recovery flags. They are
++        # irrelevant to the stationary rule, but DO NOT infer a resume verdict.
++        audit['walkingResumed']=None;audit['resumptionEpisodes']=[]
++        audit['fieldProvenance']=dict(motorCoupled='from case, onset and replay configuration',
++            avoidanceFlags='not recorded; unused placeholders for stationary-only analysis',
++            motionExpected='analysis question: active-motion stationary audit; motor-off excluded')
++        cases.append(dict(seed=d['seed'],case=d['case'],resultFile=name,status=d['status'],
++            neuralRows=len(nr),physicalRows=len(pr),initialHashVerified=True,csvTrajectoryConsistent=True,
++            stationaryAudit=audit,interventionDetails=d.get('interventionDetails'),metrics=d['metrics']))
++    comparisons=compare_results(runs)
++    check('30 comparisons independently recomputed',comparisons==final['comparisons'] and len(comparisons)==30 and all(x['status']=='PASS' for x in comparisons))
++    old=read(evidence/'campaign/report.json');failed=read(evidence/'campaign/seed-7_obstacle/result.json')
++    check('first obstacle failure explicitly retained',old['status']=='FAIL' and failed['status']=='FAIL' and final['retry']['seed']==7)
++    check('30 enabled-motion campaign traces without stationary windows',all(c['stationaryAudit']['status']=='PASS' for c in cases if c['case']!='motor-off'))
++    result['campaign']=dict(uniqueConditions=33,originalAttempts=33,retries=1,totalAttempts=34,
++        originalStatus=old['status'],finalRecordedStatus=final['status'],firstFailureReason=failed.get('reason'),
++        cases=cases,comparisons=comparisons,postInterventionMinimumSeparationMM=min(c['maxPostOnsetSeparationMM'] for c in comparisons),
++        postInterventionMaximumSeparationMM=max(c['maxPostOnsetSeparationMM'] for c in comparisons))
++    navigation=[]
++    for path in sorted((evidence/'navigation').glob('*/result.json')):
++        d=read(path);norm=[{**r,'recovering':False,'motorCoupled':True,'motionExpected':True} for r in d['trajectory']]
++        audit=audit_trajectory(norm)
++        audit['fieldProvenance']=dict(avoiding='recorded avoiding flag',recovering='not recorded; false placeholder. Source recovery implies avoiding.',motorCoupled='trial protocol and final checkpoint both enabled',motionExpected='trial protocol: continuous navigation')
++        cp=read(path.parent/'final_checkpoint.json');assert cp['config']['motorCoupled'];brain_check(cp);ncp+=1
++        assert d['status']=='PASS' and all(x['passed'] for x in d['checks'])
++        check('strict navigation '+path.parent.name,audit['status']=='PASS' and audit['walkingResumed'])
++        navigation.append(dict(case=d['case'],seed=d['seed'],recordedMetrics=d['metrics'],audit=audit))
++    result['navigation']=navigation
++    candidate=read(evidence/'navigation_candidate1/explore-19/result.json')
++    c=audit_trajectory([{**r,'recovering':False,'motorCoupled':True,'motionExpected':True} for r in candidate['trajectory']])
++    check('failed candidate remains a failure with strict rule',candidate['status']=='FAIL' and c['status']=='FAIL')
++    result['failedCandidate']=dict(case='explore-19',originalStatus=candidate['status'],audit=c)
++    frame=read(evidence/'browser_frame.json');history=read(evidence/'browser_history.json');cp=read(evidence/'browser_checkpoint.json')
++    summary=read(evidence/'browser_summary.json');brain_check(cp);ncp+=1
++    assert frame['tick']==cp['tick'] and frame['simTime']==summary['physicalSeconds']==73.415
++    assert len(history)==summary['samples']==735 and history[-1]['t']==73.4
++    transitions=[]
++    for e in frame['events']:
++        if e['message'].startswith('configure '):
++            conf=json.loads(e['message'][10:])
++            if 'motorCoupled' in conf:transitions.append((e['time'],conf['motorCoupled']))
++    norm=[]
++    for h in history:
++        motor=True
++        for t,value in transitions:
++            if h['t']>=t:motor=value
++        norm.append(dict(t=h['t'],p=h['body']['position'],yaw=h['body']['yaw'],
++            avoiding=False,recovering=False,motorCoupled=motor,motionExpected=True))
++        assert len(h['physics']['jointAngles'])==42 and len(h['values'])==170
++        if not motor:assert h['physics']['descending']==[0.,0.]
++        assert h['physics']['fault'] is None
++    a=audit_trajectory(norm);a['walkingResumed']=None;a['resumptionEpisodes']=[]
++    check('browser stationary audit excludes explicit motor-off interval',a['status']=='PASS')
++    result['browser']=dict(frameModelSeconds=frame['simTime'],lastSampleTime=history[-1]['t'],samples=len(history),
++        motorTransitions=transitions,stationaryAudit=a,restoreRecord=read(evidence/'browser_restore.json'),
++        limitation='Only archived UI/log/state evidence. No new browser session or native execution in this audit.')
++    result['validatedNeuralCheckpoints']=ncp
++    result['status']='PASS_RECORDED_EVIDENCE_AUDIT'
++    return result
++
++
++def main():
++    p=argparse.ArgumentParser(description=__doc__)
++    p.add_argument('--evidence',type=Path,default=ROOT/'verification/wall_fix_20260909')
++    p.add_argument('--source',type=Path,default=ROOT)
++    p.add_argument('--out',type=Path,default=ROOT/'verification/fix2_review/reevaluation.json')
++    args=p.parse_args()
++    if sys.flags.optimize: p.error('Do not run evidence validation with -O / -OO')
++    args.out.parent.mkdir(parents=True,exist_ok=True)
++    try:result=reevaluate(args.evidence.resolve(),args.source.resolve());code=0
++    except Exception as e:
++        import traceback
++        result=dict(status='FAIL_EVIDENCE_AUDIT',newNativePhysicsExecuted=False,reason=str(e),traceback=traceback.format_exc());code=1
++    args.out.write_text(json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False),encoding='utf-8')
++    print(result['status']);return code
++if __name__=='__main__':raise SystemExit(main())
+--- a/tools/run_physics_campaign.py
++++ b/tools/run_physics_campaign.py
+@@ -52,7 +52,7 @@
+             for s in seeds for c, d in CASES.items()]
+ 
+ 
+-def apply_intervention(engine, case: str) -> None:
++def apply_intervention(engine, case: str) -> dict | None:
+     if case == 'baseline':
+         return
+     settings = {'turn-positive': {'goalAngle': math.pi / 3},
+@@ -77,12 +77,12 @@
+         # Near a wall, blindly placing 5 mm ahead can leave the arena.
+         # Use the nearest legal direction, keeping the full 5 mm body clearance.
+         # The actual offset is recorded; a lateral placement is not called frontal.
+-        for offset in (0, math.pi/4, -math.pi/4, math.pi/2, -math.pi/2, math.pi):
++        for offset in (0, math.pi/4, -math.pi/4, math.pi/2, -math.pi/2, 3*math.pi/4, -3*math.pi/4, math.pi):
+             point=[p[0]+5*math.cos(yaw+offset), .8, p[2]+5*math.sin(yaw+offset)]
+             if -23<=point[0]<=23 and -17<=point[2]<=17:
+                 engine.command(dict(type='place', payload=dict(kind='obstacle', radius=.8, position=point)))
+                 return dict(position=point, angleOffsetDegrees=math.degrees(offset), distanceMM=5)
+-        raise RuntimeError('No legal 5 mm obstacle placement found')
++        raise RuntimeError('No legal placement among the eight 5 mm obstacle candidates')
+ 
+     else:
+         raise ValueError('Unknown case')
+@@ -156,7 +156,12 @@
+                 all_q.append(phy['jointAngles'])
+                 result['trajectory'].append(dict(time=frame['simTime'], position=body['position'],
+                     yaw=body['yaw'], speed=body['speed'], headingEstimate=engine.brain.heading,
+-                    goal=engine.brain.goal, contactsBW=phy['contactsBW'], descending=phy['descending']))
++                    goal=engine.brain.goal, contactsBW=phy['contactsBW'], descending=phy['descending'],
++                    avoidanceActive=bool(engine.brain.turnMemory),
++                    recoveryActive=bool(engine.brain.turnMemory and engine.brain.recoveryTime),
++                    motorCoupled=bool(engine.config['motorCoupled']),
++                    front=min(frame['sensors']['nearRanges'][3:6]), contact=body['contact'],
++                    motorCommand=dict(engine.brain.output)))
+         result['metrics'].update(horizontalPathMM=planar_distance, peakFootContactBW=peak_contact,
+             minUprightCosine=min_upright, maxDriveAfterIntervention=max_drive_after,
+             maxRecurrenceAfterIntervention=max_rec_after, maxCueAfterIntervention=max_cue_after,
+--- a/tools/verify_navigation.py
++++ b/tools/verify_navigation.py
+@@ -18,6 +18,7 @@
+ ROOT = Path(__file__).resolve().parents[1]
+ sys.path.insert(0, str(ROOT))
+ from flylab.dependencies import dependency_report
++from tools.navigation_checks import NavigationMonitor
+ 
+ 
+ def write(path, result):
+@@ -34,6 +35,7 @@
+     result = dict(case=case, seed=seed, status='RUNNING', physicalExecuted=False,
+                   checks=[], trajectory=[], metrics={})
+     engine = clone = None
++    monitor = NavigationMonitor()
+     start = time.monotonic()
+ 
+     def check(name, condition):
+@@ -96,13 +98,19 @@
+             if engine.tick % 20 == 0:
+                 row = dict(t=f['simTime'], p=f['body']['position'], yaw=f['body']['yaw'],
+                            front=min(f['sensors']['nearRanges'][3:6]), contact=f['body']['contact'],
+-                           avoiding=f['neural']['avoidanceActive'], drive=f['physics']['descending'])
++                           avoiding=f['neural']['avoidanceActive'],
++                           recovering=f['neural']['recoveryActive'],
++                           motorCoupled=f['config']['motorCoupled'], motionExpected=True,
++                           forwardCommand=f['neural']['output']['forwardSpeed'],
++                           yawCommand=f['neural']['output']['yawRate'], drive=f['physics']['descending'])
+                 result['trajectory'].append(row)
+-                recent = result['trajectory'][-31:]
+-                if len(recent) == 31 and all(r['front'] < 3.5 or r['contact'] for r in recent):
+-                    span = np.ptp([r['p'] for r in recent], axis=0)[[0, 2]]
+-                    if float(np.linalg.norm(span)) < 1:
+-                        raise AssertionError('blocked at a wall/obstacle for 3 seconds within a 1 mm envelope')
++                monitor.add(row)
++                audit=monitor.result()
++                if audit['stationaryWindows']:
++                    bad=audit['stationaryWindows'][-1]
++                    raise AssertionError('Stationary enabled motion for 3 seconds within a 1 mm envelope: '+str(bad))
++                if audit['samplingGaps']:
++                    raise AssertionError('Navigation sampling gap; continuous monitoring is not established')
+         rows = result['trajectory']
+         positions = np.array([r['p'] for r in rows])[:, [0, 2]]
+         result['metrics'].update(modelSeconds=engine.tick*CONTROL_DT,
+@@ -114,7 +122,8 @@
+         check('completed requested time without fault or prolonged blocking', engine.tick*CONTROL_DT >= duration-1e-8)
+         check('stays inside arena', (np.abs(positions[:, 0]) < 24).all() and (np.abs(positions[:, 1]) < 18).all())
+         check('avoidance was exercised', any(r['avoiding'] for r in rows))
+-        check('walking resumes after avoidance', any(a['avoiding'] and not z['avoiding'] for a,z in zip(rows, rows[1:])))
++        check('gap-free enabled-motion stationary monitor', monitor.result()['status']=='PASS')
++        check('measured forward walking resumes after avoidance', monitor.result()['walkingResumed'])
+         if case == 'explore':
+             check('explores a spatial span > 10 mm', result['metrics']['planarSpanMM'] > 10)
+             if seed == 42:
+@@ -130,6 +139,7 @@
+     except Exception as error:
+         result.update(status='FAIL', reason=str(error), traceback=traceback.format_exc())
+     finally:
++        result['navigationAudit'] = monitor.result()
+         if engine:
+             write(out/'final_checkpoint.json', engine.checkpoint())
+             engine.close()

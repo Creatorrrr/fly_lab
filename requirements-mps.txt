@@ -1,0 +1,2 @@
+-r requirements-c.txt
+torch==2.14.0; sys_platform == 'darwin' and platform_machine == 'arm64'

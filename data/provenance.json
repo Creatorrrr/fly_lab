@@ -1,0 +1,39 @@
+{
+  "schema": "flylab.connectome.v1",
+  "name": "Hemibrain EPG–PEN–PEG excerpt",
+  "dataset": "hemibrain:v1.2.1",
+  "scope": "biased_excerpt_not_complete_induced_subgraph",
+  "sourceRepository": "https://github.com/aplbrain/seismic",
+  "commit": "1a789eefc2ca03c1f79e283069e41d20d12ed91f",
+  "sourcePath": "neuroaiengines/networks/hemibrain_conn_df_both.csv",
+  "sourceGitBlob": "9067c6cf66677c6f3bdda69daaf39385209ce620",
+  "sourceLineRanges": [
+    [
+      2,
+      65
+    ],
+    [
+      1000,
+      1063
+    ],
+    [
+      1500,
+      1563
+    ]
+  ],
+  "excerptSha256": "5da036a89b66fdfa5bb56695075fc3d3c95b71d19bc5a635f9bdfb491e895be8",
+  "sourceRows": 192,
+  "neurons": 98,
+  "directedPairs": 177,
+  "synapseCountSum": 3747,
+  "units": "ROI synapse counts; not fitted synaptic conductance",
+  "extraction": "Three 64-row source ranges transcribed from the pinned public CSV; source_record preserves the original pandas index. Header renamed from blank to source_record. Full upstream blob was NOT independently downloaded/verified in this build.",
+  "limitations": [
+    "Biased convenience excerpt, NOT complete EPG/PEN/PEG connectivity",
+    "Missing edges mean unobserved in excerpt, not anatomical absence",
+    "All anatomical effective signs are assumed excitatory in A; no receptor validation",
+    "IndexFix-to-angle mapping is a display/controller assumption, not measured tuning",
+    "Body geometry and neural graph layout are schematic",
+    "PFL3-like steering nodes and HD/GOAL scaffold are synthetic, not connectome neurons"
+  ]
+}

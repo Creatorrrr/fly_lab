@@ -1,0 +1,41 @@
+# Python environments and generated caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local environment configuration (keep shareable templates)
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+# Operating system metadata
+.DS_Store
+__MACOSX/
+
+# Simulation recordings and validation output
+physics_verification.json
+physics_verification.png
+MUJOCO_LOG.TXT
+verification/
+artifacts/
+output/playwright/
+.playwright-cli/
+tests/UI_FIXTURE_*.png
+tests/browser_result.json
+tests/parity_result.json
+tests/*_console.txt
+*.log
+
+# Downloaded source data and rebuilt graph bundles
+data/fafb783/raw/
+data/fafb783/bundle/

@@ -1,0 +1,3101 @@
+{
+  "schema": "flylab.connectome.v1",
+  "manifest": {
+    "schema": "flylab.connectome.v1",
+    "name": "Hemibrain EPG–PEN–PEG excerpt",
+    "dataset": "hemibrain:v1.2.1",
+    "scope": "biased_excerpt_not_complete_induced_subgraph",
+    "sourceRepository": "https://github.com/aplbrain/seismic",
+    "commit": "1a789eefc2ca03c1f79e283069e41d20d12ed91f",
+    "sourcePath": "neuroaiengines/networks/hemibrain_conn_df_both.csv",
+    "sourceGitBlob": "9067c6cf66677c6f3bdda69daaf39385209ce620",
+    "sourceLineRanges": [
+      [
+        2,
+        65
+      ],
+      [
+        1000,
+        1063
+      ],
+      [
+        1500,
+        1563
+      ]
+    ],
+    "excerptSha256": "5da036a89b66fdfa5bb56695075fc3d3c95b71d19bc5a635f9bdfb491e895be8",
+    "sourceRows": 192,
+    "neurons": 98,
+    "directedPairs": 177,
+    "synapseCountSum": 3747,
+    "units": "ROI synapse counts; not fitted synaptic conductance",
+    "extraction": "Three 64-row source ranges transcribed from the pinned public CSV; source_record preserves the original pandas index. Header renamed from blank to source_record. Full upstream blob was NOT independently downloaded/verified in this build.",
+    "limitations": [
+      "Biased convenience excerpt, NOT complete EPG/PEN/PEG connectivity",
+      "Missing edges mean unobserved in excerpt, not anatomical absence",
+      "All anatomical effective signs are assumed excitatory in A; no receptor validation",
+      "IndexFix-to-angle mapping is a display/controller assumption, not measured tuning",
+      "Body geometry and neural graph layout are schematic",
+      "PFL3-like steering nodes and HD/GOAL scaffold are synthetic, not connectome neurons"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "hemibrain:387364605",
+      "bodyId": "387364605",
+      "type": "EPG",
+      "name": "EPG(PB08)_L3",
+      "hemisphere": "L",
+      "pbIndex": 3,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:416642425",
+      "bodyId": "416642425",
+      "type": "EPG",
+      "name": "EPG(PB08)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:449438847",
+      "bodyId": "449438847",
+      "type": "EPG",
+      "name": "EPG(PB08)_L3",
+      "hemisphere": "L",
+      "pbIndex": 3,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:478375456",
+      "bodyId": "478375456",
+      "type": "EPG",
+      "name": "EPG(PB08)_R3",
+      "hemisphere": "R",
+      "pbIndex": 3,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:541118908",
+      "bodyId": "541118908",
+      "type": "EPG",
+      "name": "EPG(PB08)_R3",
+      "hemisphere": "R",
+      "pbIndex": 3,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:541870397",
+      "bodyId": "541870397",
+      "type": "EPG",
+      "name": "EPG(PB08)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:572870540",
+      "bodyId": "572870540",
+      "type": "EPG",
+      "name": "EPG(PB08)_L1",
+      "hemisphere": "L",
+      "pbIndex": 1,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:632544268",
+      "bodyId": "632544268",
+      "type": "EPG",
+      "name": "EPG(PB08)_R2",
+      "hemisphere": "R",
+      "pbIndex": 2,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:633546217",
+      "bodyId": "633546217",
+      "type": "EPG",
+      "name": "EPG(PB08)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:634962055",
+      "bodyId": "634962055",
+      "type": "EPG",
+      "name": "EPG(PB08)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:665314820",
+      "bodyId": "665314820",
+      "type": "EPG",
+      "name": "EPG(PB08)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:694920753",
+      "bodyId": "694920753",
+      "type": "EPG",
+      "name": "EPG(PB08)_R5",
+      "hemisphere": "R",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:695629525",
+      "bodyId": "695629525",
+      "type": "EPG",
+      "name": "EPG(PB08)_R2",
+      "hemisphere": "R",
+      "pbIndex": 2,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:695956656",
+      "bodyId": "695956656",
+      "type": "EPG",
+      "name": "EPG(PB08)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:696362840",
+      "bodyId": "696362840",
+      "type": "EPG",
+      "name": "EPG(PB08)_L5",
+      "hemisphere": "L",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:697001770",
+      "bodyId": "697001770",
+      "type": "EPG",
+      "name": "EPG(PB08)_L2",
+      "hemisphere": "L",
+      "pbIndex": 2,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:725951521",
+      "bodyId": "725951521",
+      "type": "EPG",
+      "name": "EPG(PB08)_R5",
+      "hemisphere": "R",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:758419409",
+      "bodyId": "758419409",
+      "type": "EPG",
+      "name": "EPG(PB08)_L3",
+      "hemisphere": "L",
+      "pbIndex": 3,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:788794171",
+      "bodyId": "788794171",
+      "type": "EPG",
+      "name": "EPG(PB08)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:789126240",
+      "bodyId": "789126240",
+      "type": "EPG",
+      "name": "EPG(PB08)_L5",
+      "hemisphere": "L",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:819828986",
+      "bodyId": "819828986",
+      "type": "EPG",
+      "name": "EPG(PB08)_L5",
+      "hemisphere": "L",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:910438331",
+      "bodyId": "910438331",
+      "type": "EPG",
+      "name": "EPG(PB08)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:912545106",
+      "bodyId": "912545106",
+      "type": "EPG",
+      "name": "EPG(PB08)_L2",
+      "hemisphere": "L",
+      "pbIndex": 2,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:912601268",
+      "bodyId": "912601268",
+      "type": "EPG",
+      "name": "EPG(PB08)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:941132434",
+      "bodyId": "941132434",
+      "type": "EPG",
+      "name": "EPG(PB08)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:942491983",
+      "bodyId": "942491983",
+      "type": "EPG",
+      "name": "EPG(PB08)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1002507159",
+      "bodyId": "1002507159",
+      "type": "EPG",
+      "name": "EPG(PB08)_R7",
+      "hemisphere": "R",
+      "pbIndex": 7,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1002852791",
+      "bodyId": "1002852791",
+      "type": "EPG",
+      "name": "EPG(PB08)_R7",
+      "hemisphere": "R",
+      "pbIndex": 7,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1004017998",
+      "bodyId": "1004017998",
+      "type": "EPG",
+      "name": "EPG(PB08)_L7",
+      "hemisphere": "L",
+      "pbIndex": 7,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1034219901",
+      "bodyId": "1034219901",
+      "type": "EPG",
+      "name": "EPG(PB08)_R7",
+      "hemisphere": "R",
+      "pbIndex": 7,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1065410141",
+      "bodyId": "1065410141",
+      "type": "EPG",
+      "name": "EPG(PB08)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1125964814",
+      "bodyId": "1125964814",
+      "type": "EPG",
+      "name": "EPG(PB08)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1126647624",
+      "bodyId": "1126647624",
+      "type": "EPG",
+      "name": "EPG(PB08)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1127476096",
+      "bodyId": "1127476096",
+      "type": "EPG",
+      "name": "EPG(PB08)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1167995070",
+      "bodyId": "1167995070",
+      "type": "EPG",
+      "name": "EPG(PB08)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1168664495",
+      "bodyId": "1168664495",
+      "type": "EPG",
+      "name": "EPG(PB08)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1447576662",
+      "bodyId": "1447576662",
+      "type": "EPG",
+      "name": "EPG(PB08)_L1",
+      "hemisphere": "L",
+      "pbIndex": 1,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813012006",
+      "bodyId": "5813012006",
+      "type": "EPG",
+      "name": "EPG(PB08)_L7",
+      "hemisphere": "L",
+      "pbIndex": 7,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813014873",
+      "bodyId": "5813014873",
+      "type": "EPG",
+      "name": "EPG(PB08)_R1",
+      "hemisphere": "R",
+      "pbIndex": 1,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813022281",
+      "bodyId": "5813022281",
+      "type": "EPG",
+      "name": "EPG(PB08)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813027103",
+      "bodyId": "5813027103",
+      "type": "EPG",
+      "name": "EPG(PB08)_R5",
+      "hemisphere": "R",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813040233",
+      "bodyId": "5813040233",
+      "type": "EPG",
+      "name": "EPG(PB08)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813061251",
+      "bodyId": "5813061251",
+      "type": "EPG",
+      "name": "EPG(PB08)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813077544",
+      "bodyId": "5813077544",
+      "type": "EPG",
+      "name": "EPG(PB08)_R1",
+      "hemisphere": "R",
+      "pbIndex": 1,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813080838",
+      "bodyId": "5813080838",
+      "type": "EPG",
+      "name": "EPG(PB08)_R3",
+      "hemisphere": "R",
+      "pbIndex": 3,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:848761388",
+      "bodyId": "848761388",
+      "type": "PEG",
+      "name": "PEG(PB07)_R1",
+      "hemisphere": "R",
+      "pbIndex": 1,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:881898734",
+      "bodyId": "881898734",
+      "type": "PEG",
+      "name": "PEG(PB07)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:912147912",
+      "bodyId": "912147912",
+      "type": "PEG",
+      "name": "PEG(PB07)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:942173776",
+      "bodyId": "942173776",
+      "type": "PEG",
+      "name": "PEG(PB07)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:942587380",
+      "bodyId": "942587380",
+      "type": "PEG",
+      "name": "PEG(PB07)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:972555509",
+      "bodyId": "972555509",
+      "type": "PEG",
+      "name": "PEG(PB07)_R2",
+      "hemisphere": "R",
+      "pbIndex": 2,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:974300015",
+      "bodyId": "974300015",
+      "type": "PEG",
+      "name": "PEG(PB07)_L3",
+      "hemisphere": "L",
+      "pbIndex": 3,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1002848661",
+      "bodyId": "1002848661",
+      "type": "PEG",
+      "name": "PEG(PB07)_R7",
+      "hemisphere": "R",
+      "pbIndex": 7,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1065409934",
+      "bodyId": "1065409934",
+      "type": "PEG",
+      "name": "PEG(PB07)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1190171884",
+      "bodyId": "1190171884",
+      "type": "PEG",
+      "name": "PEG(PB07)_L2",
+      "hemisphere": "L",
+      "pbIndex": 2,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1199677638",
+      "bodyId": "1199677638",
+      "type": "PEG",
+      "name": "PEG(PB07)_L9",
+      "hemisphere": "L",
+      "pbIndex": 9,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813014882",
+      "bodyId": "5813014882",
+      "type": "PEG",
+      "name": "PEG(PB07)_R5",
+      "hemisphere": "R",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813059834",
+      "bodyId": "5813059834",
+      "type": "PEG",
+      "name": "PEG(PB07)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:508793049",
+      "bodyId": "508793049",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L7",
+      "hemisphere": "L",
+      "pbIndex": 7,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:509410587",
+      "bodyId": "509410587",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:570461892",
+      "bodyId": "570461892",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R3",
+      "hemisphere": "R",
+      "pbIndex": 3,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:634608104",
+      "bodyId": "634608104",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L2",
+      "hemisphere": "L",
+      "pbIndex": 2,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:663190769",
+      "bodyId": "663190769",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:664645558",
+      "bodyId": "664645558",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:757055317",
+      "bodyId": "757055317",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:847336755",
+      "bodyId": "847336755",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:849482511",
+      "bodyId": "849482511",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:910447075",
+      "bodyId": "910447075",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R5",
+      "hemisphere": "R",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:972892437",
+      "bodyId": "972892437",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R2",
+      "hemisphere": "R",
+      "pbIndex": 2,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1002507131",
+      "bodyId": "1002507131",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R7",
+      "hemisphere": "R",
+      "pbIndex": 7,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1125964630",
+      "bodyId": "1125964630",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1127471692",
+      "bodyId": "1127471692",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1220576923",
+      "bodyId": "1220576923",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L9",
+      "hemisphere": "L",
+      "pbIndex": 9,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1380495496",
+      "bodyId": "1380495496",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1508334312",
+      "bodyId": "1508334312",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L3",
+      "hemisphere": "L",
+      "pbIndex": 3,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813056953",
+      "bodyId": "5813056953",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813080979",
+      "bodyId": "5813080979",
+      "type": "PENa",
+      "name": "PEN_a(PB06a)_L5",
+      "hemisphere": "L",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:387023620",
+      "bodyId": "387023620",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:539462336",
+      "bodyId": "539462336",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L4",
+      "hemisphere": "L",
+      "pbIndex": 4,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:569775058",
+      "bodyId": "569775058",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:663562172",
+      "bodyId": "663562172",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R4",
+      "hemisphere": "R",
+      "pbIndex": 4,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:664650297",
+      "bodyId": "664650297",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:693755250",
+      "bodyId": "693755250",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R7",
+      "hemisphere": "R",
+      "pbIndex": 7,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:724280817",
+      "bodyId": "724280817",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R2",
+      "hemisphere": "R",
+      "pbIndex": 2,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:849421763",
+      "bodyId": "849421763",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R5",
+      "hemisphere": "R",
+      "pbIndex": 5,
+      "indexFix": 5,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:879183317",
+      "bodyId": "879183317",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L6",
+      "hemisphere": "L",
+      "pbIndex": 6,
+      "indexFix": 4,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:941123755",
+      "bodyId": "941123755",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:973566036",
+      "bodyId": "973566036",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R3",
+      "hemisphere": "R",
+      "pbIndex": 3,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1062526223",
+      "bodyId": "1062526223",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R8",
+      "hemisphere": "R",
+      "pbIndex": 8,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1197993940",
+      "bodyId": "1197993940",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R6",
+      "hemisphere": "R",
+      "pbIndex": 6,
+      "indexFix": 6,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1218728570",
+      "bodyId": "1218728570",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R9",
+      "hemisphere": "R",
+      "pbIndex": 9,
+      "indexFix": 9,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1220584946",
+      "bodyId": "1220584946",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L9",
+      "hemisphere": "L",
+      "pbIndex": 9,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1318109929",
+      "bodyId": "1318109929",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L7",
+      "hemisphere": "L",
+      "pbIndex": 7,
+      "indexFix": 3,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1353544607",
+      "bodyId": "1353544607",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L8",
+      "hemisphere": "L",
+      "pbIndex": 8,
+      "indexFix": 2,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1600083889",
+      "bodyId": "1600083889",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L9",
+      "hemisphere": "L",
+      "pbIndex": 9,
+      "indexFix": 1,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:1601771527",
+      "bodyId": "1601771527",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_R9",
+      "hemisphere": "R",
+      "pbIndex": 9,
+      "indexFix": 9,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813047157",
+      "bodyId": "5813047157",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L2",
+      "hemisphere": "L",
+      "pbIndex": 2,
+      "indexFix": 8,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    },
+    {
+      "id": "hemibrain:5813070465",
+      "bodyId": "5813070465",
+      "type": "PENb",
+      "name": "PEN_b(PB06b)_L3",
+      "hemisphere": "L",
+      "pbIndex": 3,
+      "indexFix": 7,
+      "origin": "anatomical",
+      "dataset": "hemibrain:v1.2.1"
+    }
+  ],
+  "edges": [
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:387364605",
+      "count": 66,
+      "roiCounts": {
+        "EB": 66
+      },
+      "sourceRecords": [
+        0
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:449438847",
+      "count": 52,
+      "roiCounts": {
+        "EB": 52
+      },
+      "sourceRecords": [
+        1
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:539462336",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        2
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:697001770",
+      "count": 11,
+      "roiCounts": {
+        "EB": 11
+      },
+      "sourceRecords": [
+        3
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:757055317",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        4
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:758419409",
+      "count": 43,
+      "roiCounts": {
+        "EB": 43
+      },
+      "sourceRecords": [
+        5
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:910438331",
+      "count": 18,
+      "roiCounts": {
+        "EB": 18
+      },
+      "sourceRecords": [
+        6
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:912545106",
+      "count": 14,
+      "roiCounts": {
+        "EB": 14
+      },
+      "sourceRecords": [
+        7
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:941132434",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        8
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:942491983",
+      "count": 10,
+      "roiCounts": {
+        "EB": 10
+      },
+      "sourceRecords": [
+        9
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:1002507159",
+      "count": 40,
+      "roiCounts": {
+        "EB": 40
+      },
+      "sourceRecords": [
+        10
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:1002852791",
+      "count": 24,
+      "roiCounts": {
+        "EB": 24
+      },
+      "sourceRecords": [
+        11
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:1034219901",
+      "count": 54,
+      "roiCounts": {
+        "EB": 54
+      },
+      "sourceRecords": [
+        12
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:1062526223",
+      "count": 13,
+      "roiCounts": {
+        "EB": 13
+      },
+      "sourceRecords": [
+        13
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:1126647624",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        14
+      ]
+    },
+    {
+      "pre": "hemibrain:387023620",
+      "post": "hemibrain:5813061251",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        15
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:387023620",
+      "count": 21,
+      "roiCounts": {
+        "EB": 21
+      },
+      "sourceRecords": [
+        16
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:449438847",
+      "count": 61,
+      "roiCounts": {
+        "EB": 61
+      },
+      "sourceRecords": [
+        17
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:539462336",
+      "count": 23,
+      "roiCounts": {
+        "EB": 23
+      },
+      "sourceRecords": [
+        18
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:757055317",
+      "count": 19,
+      "roiCounts": {
+        "EB": 19
+      },
+      "sourceRecords": [
+        20
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:758419409",
+      "count": 33,
+      "roiCounts": {
+        "EB": 33
+      },
+      "sourceRecords": [
+        21
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:849482511",
+      "count": 26,
+      "roiCounts": {
+        "EB": 26
+      },
+      "sourceRecords": [
+        22
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:910438331",
+      "count": 19,
+      "roiCounts": {
+        "EB": 19
+      },
+      "sourceRecords": [
+        27
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:941132434",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        44
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:942491983",
+      "count": 9,
+      "roiCounts": {
+        "EB": 9
+      },
+      "sourceRecords": [
+        48
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:942587380",
+      "count": 5,
+      "roiCounts": {
+        "PB": 5
+      },
+      "sourceRecords": [
+        49
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:974300015",
+      "count": 112,
+      "roiCounts": {
+        "PB": 102,
+        "EB": 10
+      },
+      "sourceRecords": [
+        51,
+        52
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1002507131",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        53
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1002507159",
+      "count": 36,
+      "roiCounts": {
+        "EB": 36
+      },
+      "sourceRecords": [
+        54
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1002848661",
+      "count": 14,
+      "roiCounts": {
+        "EB": 14
+      },
+      "sourceRecords": [
+        55
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1002852791",
+      "count": 17,
+      "roiCounts": {
+        "EB": 17
+      },
+      "sourceRecords": [
+        56
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1034219901",
+      "count": 49,
+      "roiCounts": {
+        "EB": 49
+      },
+      "sourceRecords": [
+        57
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1062526223",
+      "count": 27,
+      "roiCounts": {
+        "EB": 27
+      },
+      "sourceRecords": [
+        58
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1125964630",
+      "count": 47,
+      "roiCounts": {
+        "EB": 47
+      },
+      "sourceRecords": [
+        59
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:1508334312",
+      "count": 33,
+      "roiCounts": {
+        "PB": 30,
+        "EB": 3
+      },
+      "sourceRecords": [
+        61,
+        62
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:5813070465",
+      "count": 29,
+      "roiCounts": {
+        "PB": 29
+      },
+      "sourceRecords": [
+        65
+      ]
+    },
+    {
+      "pre": "hemibrain:387364605",
+      "post": "hemibrain:5813080979",
+      "count": 7,
+      "roiCounts": {
+        "EB": 7
+      },
+      "sourceRecords": [
+        66
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:478375456",
+      "count": 9,
+      "roiCounts": {
+        "EB": 9
+      },
+      "sourceRecords": [
+        67
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:508793049",
+      "count": 51,
+      "roiCounts": {
+        "EB": 51
+      },
+      "sourceRecords": [
+        68
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:509410587",
+      "count": 14,
+      "roiCounts": {
+        "PB": 13,
+        "EB": 1
+      },
+      "sourceRecords": [
+        69,
+        70
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:541870397",
+      "count": 31,
+      "roiCounts": {
+        "EB": 31
+      },
+      "sourceRecords": [
+        71
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:569775058",
+      "count": 9,
+      "roiCounts": {
+        "PB": 9
+      },
+      "sourceRecords": [
+        72
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:633546217",
+      "count": 34,
+      "roiCounts": {
+        "EB": 34
+      },
+      "sourceRecords": [
+        73
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:663562172",
+      "count": 21,
+      "roiCounts": {
+        "PB": 21
+      },
+      "sourceRecords": [
+        74
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:664645558",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        75
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:695956656",
+      "count": 28,
+      "roiCounts": {
+        "EB": 28
+      },
+      "sourceRecords": [
+        76
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:696362840",
+      "count": 12,
+      "roiCounts": {
+        "EB": 12
+      },
+      "sourceRecords": [
+        77
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:725951521",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        78
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:788794171",
+      "count": 28,
+      "roiCounts": {
+        "EB": 28
+      },
+      "sourceRecords": [
+        79
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:847336755",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        80
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:849421763",
+      "count": 32,
+      "roiCounts": {
+        "EB": 32
+      },
+      "sourceRecords": [
+        81
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:881898734",
+      "count": 9,
+      "roiCounts": {
+        "EB": 9
+      },
+      "sourceRecords": [
+        85
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:910447075",
+      "count": 37,
+      "roiCounts": {
+        "EB": 37
+      },
+      "sourceRecords": [
+        88
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:912601268",
+      "count": 24,
+      "roiCounts": {
+        "EB": 24
+      },
+      "sourceRecords": [
+        107
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:942173776",
+      "count": 85,
+      "roiCounts": {
+        "PB": 74,
+        "EB": 11
+      },
+      "sourceRecords": [
+        109,
+        110
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:1127471692",
+      "count": 9,
+      "roiCounts": {
+        "EB": 9
+      },
+      "sourceRecords": [
+        112
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:1318109929",
+      "count": 30,
+      "roiCounts": {
+        "EB": 30
+      },
+      "sourceRecords": [
+        114
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:5813056953",
+      "count": 20,
+      "roiCounts": {
+        "PB": 19,
+        "EB": 1
+      },
+      "sourceRecords": [
+        115,
+        116
+      ]
+    },
+    {
+      "pre": "hemibrain:416642425",
+      "post": "hemibrain:5813080838",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        118
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:1447576662",
+      "count": 9,
+      "roiCounts": {
+        "EB": 8,
+        "PB": 1
+      },
+      "sourceRecords": [
+        3607,
+        3608
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:1508334312",
+      "count": 34,
+      "roiCounts": {
+        "EB": 34
+      },
+      "sourceRecords": [
+        3609
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:1601771527",
+      "count": 29,
+      "roiCounts": {
+        "EB": 29
+      },
+      "sourceRecords": [
+        3610
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:5813040233",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        3611
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:5813047157",
+      "count": 22,
+      "roiCounts": {
+        "PB": 22
+      },
+      "sourceRecords": [
+        3612
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:5813059834",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        3614
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:5813061251",
+      "count": 18,
+      "roiCounts": {
+        "EB": 18
+      },
+      "sourceRecords": [
+        3615
+      ]
+    },
+    {
+      "pre": "hemibrain:912545106",
+      "post": "hemibrain:5813070465",
+      "count": 21,
+      "roiCounts": {
+        "EB": 21
+      },
+      "sourceRecords": [
+        3616
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:416642425",
+      "count": 13,
+      "roiCounts": {
+        "EB": 13
+      },
+      "sourceRecords": [
+        3617
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:478375456",
+      "count": 38,
+      "roiCounts": {
+        "EB": 38
+      },
+      "sourceRecords": [
+        3618
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:508793049",
+      "count": 14,
+      "roiCounts": {
+        "EB": 14
+      },
+      "sourceRecords": [
+        3619
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:509410587",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        3620
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:541118908",
+      "count": 24,
+      "roiCounts": {
+        "EB": 24
+      },
+      "sourceRecords": [
+        3621
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:541870397",
+      "count": 28,
+      "roiCounts": {
+        "EB": 26,
+        "PB": 2
+      },
+      "sourceRecords": [
+        3622,
+        3623
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:569775058",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        3624
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:633546217",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        3625
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:663562172",
+      "count": 18,
+      "roiCounts": {
+        "EB": 18
+      },
+      "sourceRecords": [
+        3626
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:664645558",
+      "count": 9,
+      "roiCounts": {
+        "PB": 9
+      },
+      "sourceRecords": [
+        3627
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:664650297",
+      "count": 16,
+      "roiCounts": {
+        "PB": 16
+      },
+      "sourceRecords": [
+        3628
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:695956656",
+      "count": 11,
+      "roiCounts": {
+        "EB": 11
+      },
+      "sourceRecords": [
+        3629
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:788794171",
+      "count": 17,
+      "roiCounts": {
+        "EB": 17
+      },
+      "sourceRecords": [
+        3630
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:849421763",
+      "count": 45,
+      "roiCounts": {
+        "EB": 45
+      },
+      "sourceRecords": [
+        3631
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:879183317",
+      "count": 13,
+      "roiCounts": {
+        "PB": 13
+      },
+      "sourceRecords": [
+        3632
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:881898734",
+      "count": 68,
+      "roiCounts": {
+        "PB": 54,
+        "EB": 14
+      },
+      "sourceRecords": [
+        3634,
+        3635
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:910447075",
+      "count": 16,
+      "roiCounts": {
+        "EB": 16
+      },
+      "sourceRecords": [
+        3638
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:1004017998",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        3654
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:1127471692",
+      "count": 12,
+      "roiCounts": {
+        "EB": 12
+      },
+      "sourceRecords": [
+        3655
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:1318109929",
+      "count": 42,
+      "roiCounts": {
+        "EB": 42
+      },
+      "sourceRecords": [
+        3656
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:1353544607",
+      "count": 7,
+      "roiCounts": {
+        "EB": 7
+      },
+      "sourceRecords": [
+        3657
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:1380495496",
+      "count": 15,
+      "roiCounts": {
+        "PB": 15
+      },
+      "sourceRecords": [
+        3658
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:5813056953",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        3659
+      ]
+    },
+    {
+      "pre": "hemibrain:912601268",
+      "post": "hemibrain:5813080838",
+      "count": 10,
+      "roiCounts": {
+        "EB": 10
+      },
+      "sourceRecords": [
+        3661
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:416642425",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        3662
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:633546217",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        3663
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:634962055",
+      "count": 17,
+      "roiCounts": {
+        "EB": 17
+      },
+      "sourceRecords": [
+        3664
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:663190769",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        3665
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:664645558",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        3666
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:664650297",
+      "count": 9,
+      "roiCounts": {
+        "EB": 9
+      },
+      "sourceRecords": [
+        3667
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:665314820",
+      "count": 7,
+      "roiCounts": {
+        "EB": 7
+      },
+      "sourceRecords": [
+        3668
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:694920753",
+      "count": 30,
+      "roiCounts": {
+        "EB": 30
+      },
+      "sourceRecords": [
+        3669
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:695956656",
+      "count": 26,
+      "roiCounts": {
+        "EB": 26
+      },
+      "sourceRecords": [
+        3670
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:696362840",
+      "count": 18,
+      "roiCounts": {
+        "EB": 18
+      },
+      "sourceRecords": [
+        3671
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:725951521",
+      "count": 43,
+      "roiCounts": {
+        "EB": 43
+      },
+      "sourceRecords": [
+        3672
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:789126240",
+      "count": 36,
+      "roiCounts": {
+        "EB": 36
+      },
+      "sourceRecords": [
+        3673
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:819828986",
+      "count": 36,
+      "roiCounts": {
+        "EB": 36
+      },
+      "sourceRecords": [
+        3674
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:910438331",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        3675
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:1197993940",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        3676
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:5813014882",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        3677
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:5813022281",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        3678
+      ]
+    },
+    {
+      "pre": "hemibrain:941123755",
+      "post": "hemibrain:5813027103",
+      "count": 45,
+      "roiCounts": {
+        "EB": 45
+      },
+      "sourceRecords": [
+        3679
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:634962055",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        3680
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:663190769",
+      "count": 12,
+      "roiCounts": {
+        "PB": 12
+      },
+      "sourceRecords": [
+        3681
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:665314820",
+      "count": 27,
+      "roiCounts": {
+        "EB": 27
+      },
+      "sourceRecords": [
+        3682
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:693755250",
+      "count": 35,
+      "roiCounts": {
+        "EB": 35
+      },
+      "sourceRecords": [
+        3683
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:758419409",
+      "count": 11,
+      "roiCounts": {
+        "EB": 11
+      },
+      "sourceRecords": [
+        3685
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:847336755",
+      "count": 11,
+      "roiCounts": {
+        "PB": 11
+      },
+      "sourceRecords": [
+        3686
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:849482511",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        3687
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:910438331",
+      "count": 25,
+      "roiCounts": {
+        "EB": 25
+      },
+      "sourceRecords": [
+        3689
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:912147912",
+      "count": 86,
+      "roiCounts": {
+        "PB": 66,
+        "EB": 20
+      },
+      "sourceRecords": [
+        3704,
+        3705
+      ]
+    },
+    {
+      "pre": "hemibrain:941132434",
+      "post": "hemibrain:941123755",
+      "count": 27,
+      "roiCounts": {
+        "PB": 27
+      },
+      "sourceRecords": [
+        3707
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1065409934",
+      "count": 15,
+      "roiCounts": {
+        "EB": 15
+      },
+      "sourceRecords": [
+        4874
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1065410141",
+      "count": 32,
+      "roiCounts": {
+        "EB": 31,
+        "PB": 1
+      },
+      "sourceRecords": [
+        4875,
+        4876
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1127471692",
+      "count": 32,
+      "roiCounts": {
+        "PB": 27,
+        "EB": 5
+      },
+      "sourceRecords": [
+        4877,
+        4878
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1127476096",
+      "count": 30,
+      "roiCounts": {
+        "EB": 30
+      },
+      "sourceRecords": [
+        4879
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1168664495",
+      "count": 40,
+      "roiCounts": {
+        "EB": 37,
+        "PB": 3
+      },
+      "sourceRecords": [
+        4880,
+        4881
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1199677638",
+      "count": 5,
+      "roiCounts": {
+        "PB": 5
+      },
+      "sourceRecords": [
+        4882
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1220576923",
+      "count": 29,
+      "roiCounts": {
+        "EB": 29
+      },
+      "sourceRecords": [
+        4883
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1220584946",
+      "count": 23,
+      "roiCounts": {
+        "EB": 21,
+        "PB": 2
+      },
+      "sourceRecords": [
+        4884,
+        4885
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1353544607",
+      "count": 10,
+      "roiCounts": {
+        "PB": 10
+      },
+      "sourceRecords": [
+        4886
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:1600083889",
+      "count": 19,
+      "roiCounts": {
+        "EB": 19
+      },
+      "sourceRecords": [
+        4887
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:5813012006",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        4888
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:5813014873",
+      "count": 13,
+      "roiCounts": {
+        "EB": 13
+      },
+      "sourceRecords": [
+        4889
+      ]
+    },
+    {
+      "pre": "hemibrain:1167995070",
+      "post": "hemibrain:5813077544",
+      "count": 35,
+      "roiCounts": {
+        "EB": 35
+      },
+      "sourceRecords": [
+        4892
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:570461892",
+      "count": 25,
+      "roiCounts": {
+        "EB": 25
+      },
+      "sourceRecords": [
+        4893
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:572870540",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        4894
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:632544268",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        4895
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:634608104",
+      "count": 15,
+      "roiCounts": {
+        "EB": 15
+      },
+      "sourceRecords": [
+        4896
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:695629525",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        4897
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:724280817",
+      "count": 21,
+      "roiCounts": {
+        "EB": 21
+      },
+      "sourceRecords": [
+        4898
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:972555509",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        4919
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:972892437",
+      "count": 11,
+      "roiCounts": {
+        "EB": 11
+      },
+      "sourceRecords": [
+        4920
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:973566036",
+      "count": 33,
+      "roiCounts": {
+        "EB": 33
+      },
+      "sourceRecords": [
+        4921
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1065409934",
+      "count": 55,
+      "roiCounts": {
+        "PB": 41,
+        "EB": 14
+      },
+      "sourceRecords": [
+        4923,
+        4924
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1065410141",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        4925
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1127471692",
+      "count": 5,
+      "roiCounts": {
+        "PB": 5
+      },
+      "sourceRecords": [
+        4926
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1127476096",
+      "count": 25,
+      "roiCounts": {
+        "EB": 25
+      },
+      "sourceRecords": [
+        4927
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1167995070",
+      "count": 43,
+      "roiCounts": {
+        "EB": 43
+      },
+      "sourceRecords": [
+        4929
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1220576923",
+      "count": 23,
+      "roiCounts": {
+        "EB": 23
+      },
+      "sourceRecords": [
+        4930
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1220584946",
+      "count": 29,
+      "roiCounts": {
+        "EB": 26,
+        "PB": 3
+      },
+      "sourceRecords": [
+        4931,
+        4932
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1353544607",
+      "count": 19,
+      "roiCounts": {
+        "PB": 19
+      },
+      "sourceRecords": [
+        4933
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:1600083889",
+      "count": 13,
+      "roiCounts": {
+        "EB": 13
+      },
+      "sourceRecords": [
+        4934
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:5813012006",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        4935
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:5813014873",
+      "count": 14,
+      "roiCounts": {
+        "EB": 14
+      },
+      "sourceRecords": [
+        4936
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:5813047157",
+      "count": 11,
+      "roiCounts": {
+        "EB": 11
+      },
+      "sourceRecords": [
+        4937
+      ]
+    },
+    {
+      "pre": "hemibrain:1168664495",
+      "post": "hemibrain:5813077544",
+      "count": 56,
+      "roiCounts": {
+        "EB": 56
+      },
+      "sourceRecords": [
+        4939
+      ]
+    },
+    {
+      "pre": "hemibrain:1190171884",
+      "post": "hemibrain:1002852791",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        4940
+      ]
+    },
+    {
+      "pre": "hemibrain:1190171884",
+      "post": "hemibrain:1125964814",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        4941
+      ]
+    },
+    {
+      "pre": "hemibrain:1190171884",
+      "post": "hemibrain:1218728570",
+      "count": 27,
+      "roiCounts": {
+        "EB": 27
+      },
+      "sourceRecords": [
+        4942
+      ]
+    },
+    {
+      "pre": "hemibrain:1190171884",
+      "post": "hemibrain:1601771527",
+      "count": 35,
+      "roiCounts": {
+        "EB": 35
+      },
+      "sourceRecords": [
+        4943
+      ]
+    },
+    {
+      "pre": "hemibrain:1190171884",
+      "post": "hemibrain:5813070465",
+      "count": 31,
+      "roiCounts": {
+        "EB": 31
+      },
+      "sourceRecords": [
+        4944
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:633546217",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        4945
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:634962055",
+      "count": 15,
+      "roiCounts": {
+        "EB": 15
+      },
+      "sourceRecords": [
+        4946
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:663190769",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        4947
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:664650297",
+      "count": 6,
+      "roiCounts": {
+        "EB": 6
+      },
+      "sourceRecords": [
+        4948
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:665314820",
+      "count": 7,
+      "roiCounts": {
+        "EB": 7
+      },
+      "sourceRecords": [
+        4949
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:694920753",
+      "count": 32,
+      "roiCounts": {
+        "EB": 32
+      },
+      "sourceRecords": [
+        4950
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:695956656",
+      "count": 19,
+      "roiCounts": {
+        "EB": 19
+      },
+      "sourceRecords": [
+        4951
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:696362840",
+      "count": 18,
+      "roiCounts": {
+        "EB": 18
+      },
+      "sourceRecords": [
+        4952
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:725951521",
+      "count": 38,
+      "roiCounts": {
+        "EB": 38
+      },
+      "sourceRecords": [
+        4953
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:789126240",
+      "count": 48,
+      "roiCounts": {
+        "EB": 48
+      },
+      "sourceRecords": [
+        4954
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:819828986",
+      "count": 30,
+      "roiCounts": {
+        "EB": 30
+      },
+      "sourceRecords": [
+        4955
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:879183317",
+      "count": 7,
+      "roiCounts": {
+        "EB": 7
+      },
+      "sourceRecords": [
+        4956
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:941123755",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        4957
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:5813022281",
+      "count": 8,
+      "roiCounts": {
+        "EB": 8
+      },
+      "sourceRecords": [
+        4958
+      ]
+    },
+    {
+      "pre": "hemibrain:1197993940",
+      "post": "hemibrain:5813027103",
+      "count": 42,
+      "roiCounts": {
+        "EB": 42
+      },
+      "sourceRecords": [
+        4959
+      ]
+    },
+    {
+      "pre": "hemibrain:1199677638",
+      "post": "hemibrain:724280817",
+      "count": 11,
+      "roiCounts": {
+        "EB": 11
+      },
+      "sourceRecords": [
+        4960
+      ]
+    },
+    {
+      "pre": "hemibrain:1199677638",
+      "post": "hemibrain:848761388",
+      "count": 4,
+      "roiCounts": {
+        "EB": 4
+      },
+      "sourceRecords": [
+        4961
+      ]
+    },
+    {
+      "pre": "hemibrain:1199677638",
+      "post": "hemibrain:5813014873",
+      "count": 5,
+      "roiCounts": {
+        "EB": 5
+      },
+      "sourceRecords": [
+        4962
+      ]
+    }
+  ]
+}

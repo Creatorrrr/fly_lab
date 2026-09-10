@@ -15,7 +15,7 @@ from flylab.c.receptors import ReceptorParameters, JointReceptors
 from flylab.c.single_joint import JointParameters, build_profile, encode_feedback
 
 
-def run(graph_path,out,seconds=.3,backend='exp_lif_mps'):
+def run(graph_path,out,seconds=.3,backend='auto'):
     seconds=finite(seconds,'probe seconds',.05,2.)
     count=model_ticks(seconds,.001,maximum=2000)
     out=Path(out);out.mkdir(parents=True,exist_ok=False)
@@ -75,7 +75,7 @@ def run(graph_path,out,seconds=.3,backend='exp_lif_mps'):
                         motor_final_current_mV=state['h'][motor].tolist(),incoming=incoming)
                     write_json(directory/'result.json',result);report['cases'].append(result)
                     write_json(out/'report.json',report)
-                    print(name,result['motor_spike_counts'],result['motor_peak_voltage_mV'],flush=True)
+                    print(name,result['motor_spike_counts'],result['motor_sampled_peak_voltage_mV'],flush=True)
         report.update(status='COMPLETE',neural_backend=backend,neural_runtime=state.get('backend_runtime'),
             simulated_neurons=graph.n,simulated_seconds=seconds*len(report['cases']),
             interpretation='Fixed stimuli only. Subthreshold responses and absent motor recruitment remain failures of the proposed feedback mechanism.',
@@ -97,6 +97,6 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--graph',default='data/acquisitions/banc888-v2-20260909/bundle')
     p.add_argument('--out',required=True);p.add_argument('--seconds',type=float,default=.3)
-    p.add_argument('--backend',choices=('exp_lif_mps','exp_lif_cpu_reference'),default='exp_lif_mps')
+    p.add_argument('--backend',choices=('auto','exp_lif_mps','exp_lif_cpu_reference','exp_lif_cuda'),default='auto')
     a=p.parse_args();report=run(a.graph,a.out,a.seconds,a.backend)
     print(report['status']);raise SystemExit(0 if report['status']=='COMPLETE' else 2 if report['status']=='BLOCKED' else 1)

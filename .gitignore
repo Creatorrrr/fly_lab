@@ -15,6 +15,7 @@ htmlcov/
 
 # Local environment configuration (keep shareable templates)
 .env
+flylab.local.json
 .env.*
 !.env.example
 !.env.sample

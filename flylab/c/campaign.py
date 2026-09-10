@@ -71,8 +71,10 @@ def verify_result_files(manifest, root):
             path=(root/row['result_file']).resolve();path.relative_to(root.resolve())
             if file_hash(path)!=row['result_sha256']:raise ValueError('Case result hash mismatch')
 
-def run_campaign(graph, bindings, spec, out, *, backend='exp_lif_mps', resume=False,
+def run_campaign(graph, bindings, spec, out, *, backend='auto', resume=False,
                  body_factory=FlyGymBody, cancelled=lambda:False, checkpoint_controls=1000):
+    from .backend_selection import resolve_backend
+    backend=resolve_backend(backend)
     spec=validate_spec(spec,bindings,backend);out=Path(out)
     bounded_int(checkpoint_controls,'checkpoint controls',1,24000)
     identity=dict(graph_hash=graph.hash,binding_hash=bindings.hash,backend=backend,versions=runtime_versions(),
@@ -87,7 +89,7 @@ def run_campaign(graph, bindings, spec, out, *, backend='exp_lif_mps', resume=Fa
         source_root=Path(__file__).resolve().parents[2]
         import shutil
         for path in (source_root/'flylab').rglob('*'):
-            if path.suffix in ('.py','.metal'):
+            if path.suffix in ('.py','.metal','.cu'):
                 target=out/'source'/path.relative_to(source_root);target.parent.mkdir(parents=True,exist_ok=True)
                 shutil.copy2(path,target)
         for path in [source_root/'data/circuit.json',source_root/'tools/run_c_campaign.py',

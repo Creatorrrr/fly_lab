@@ -8,12 +8,12 @@ from flylab.c.graph import GraphStore
 from flylab.c.ports import PortBindings
 from flylab.c.integrity import read_json, write_json
 from flylab.c.pathways import reachability, propagate, diagnostic_cases
-from flylab.c.neural import NEURAL_BACKENDS
+from flylab.c.neural import BACKEND_CHOICES
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--graph',default='data/fafb783/bundle');p.add_argument('--bindings',default='data/fafb783/bindings-bilateral-geosmin-v2.json')
-    p.add_argument('--backend',choices=NEURAL_BACKENDS,default='exp_lif_mps');p.add_argument('--seconds',type=float,default=.2)
+    p.add_argument('--backend',choices=BACKEND_CHOICES,default='auto');p.add_argument('--seconds',type=float,default=.2)
     p.add_argument('--out',type=Path,required=True);a=p.parse_args();a.out.mkdir(parents=True,exist_ok=False)
     g=GraphStore.load(a.graph);b=PortBindings(g,read_json(a.bindings))
     write_json(a.out/'reachability.json',reachability(g,b));summaries=[]

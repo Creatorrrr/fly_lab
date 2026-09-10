@@ -1,0 +1,4 @@
+# Optional NVIDIA physics candidate. Neural CUDA remains requirements-cuda.txt.
+# Matches the pinned FlyGym 2.1.0 warp extra; does not replace CPU MuJoCo.
+warp-lang==1.14.0
+mujoco-warp==3.9.0

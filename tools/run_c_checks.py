@@ -3,6 +3,7 @@
 import argparse
 import importlib.util
 import json
+import os
 from pathlib import Path
 import platform
 import sys
@@ -15,13 +16,19 @@ sys.path.insert(0, str(ROOT))
 
 def preflight(tier):
     required = []
-    if tier in ('research', 'mps'):
+    if tier in ('research', 'mps', 'cuda'):
         if importlib.util.find_spec('torch') is None:
             raise RuntimeError('BLOCKED_TORCH: install requirements-research.txt')
         import torch
         required.append(dict(name='torch', version=torch.__version__))
         if tier == 'mps' and not (torch.backends.mps.is_available() and hasattr(torch.mps, 'compile_shader')):
             raise RuntimeError('BLOCKED_MPS: actual Apple MPS hardware and compile_shader required')
+        if tier == 'cuda':
+            from flylab.c.backend_selection import backend_availability
+            cuda=backend_availability()['exp_lif_cuda']
+            if not cuda['available'] or not torch.cuda.is_available():
+                raise RuntimeError('BLOCKED_CUDA: actual CUDA, CuPy and CUDA-enabled PyTorch required: '+str(cuda))
+            required.append(cuda)
     if tier == 'native':
         from flylab.dependencies import dependency_report
         report = dependency_report()
@@ -40,8 +47,10 @@ def test_ids(suite):
 
 
 def main():
+    # Keep diagnostic subprocesses consistent with the Windows UTF-8 launcher.
+    if os.name=='nt':os.environ['PYTHONUTF8']='1'
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--tier', choices=('regression','research','native','mps'), default='regression')
+    parser.add_argument('--tier', choices=('regression','research','native','mps','cuda'), default='regression')
     parser.add_argument('--out', type=Path, required=True)
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=False)
@@ -55,6 +64,7 @@ def main():
             'research':['tests.test_c_research','tests.test_c_contracts.ResearchContractTests'],
             'native':['tests.test_c_repairs','tests.test_c_sensorimotor','tests.test_runtime_optimization','tests.test_c_muscles','tests.test_c_single_joint'],
             'mps':['tests.test_c_mps','tests.test_c_contracts.ResearchContractTests','tests.test_c_research'],
+            'cuda':['tests.test_c_cuda','tests.test_c_backend_selection'],
         }
         loader = unittest.TestLoader()
         suite = (loader.discover(str(ROOT/'tests'), top_level_dir=str(ROOT)) if args.tier=='regression'

@@ -24,13 +24,16 @@ class ResearchTests(unittest.TestCase):
         np.testing.assert_allclose(n.snapshot()['arrays']['v'],r.v,atol=1e-4,rtol=0)
     @unittest.skipUnless(mps_available(),'Actual MPS required')
     def test_heterogeneity_delays_gaps_plasticity_cpu_mps_and_restore(self):
+        self.check_heterogeneity('mps')
+
+    def check_heterogeneity(self,device):
         ids=[n['id'] for n in self.g.nodes]
         spec=dict(self.spec,cells=[dict(ids=[ids[1]],parameters={'tau_m_s':.015},evidence=['test'])],
                   synapses=[dict(pre=ids[0],post=ids[1],weight_mV=2.,delay_s=.001,receptor='test effect',evidence=['test'])],
                   gap_junctions=[dict(a=ids[3],b=ids[4],coupling=.2,evidence=['test'])],
                   plasticity=dict(rule='reward_stdp_v1',eta=.01,tau_s=.02,max_abs_mV=10.,
                                   edges=[dict(pre=ids[0],post=ids[1])],evidence=['test']))
-        cpu=ResearchLIF(self.g,spec);gpu=ResearchLIF(self.g,spec,'mps');x=np.zeros(self.g.n,np.float32);x[[0,3]]=30.
+        cpu=ResearchLIF(self.g,spec);gpu=ResearchLIF(self.g,spec,device);x=np.zeros(self.g.n,np.float32);x[[0,3]]=30.
         cpu.advance(x,150,list(range(6)),reward=1.);gpu.advance(x,150,list(range(6)),reward=1.)
         self.assertEqual(cpu.last_events,gpu.last_events)
         for k,v in cpu.snapshot()['arrays'].items():

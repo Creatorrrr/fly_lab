@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native MPS/physics workbench evidence; retain every diagnostic outcome."""
+"""Native GPU/physics workbench evidence; retain every diagnostic outcome."""
 import argparse
 import copy
 import json
@@ -17,21 +17,28 @@ from flylab.c.experiments import replay_recording, paired
 from flylab.c.behavior import CRITERIA, trace_sample, behavior_metrics
 from flylab.sensors import default_world, SensorAdapter
 from tools.benchmark_c_runtime import exact_differences
+from flylab.c.neural import BACKEND_CHOICES
+from flylab.c.backend_selection import resolve_backend
 
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--out',type=Path,required=True)
     p.add_argument('--seconds',type=float,default=.2);p.add_argument('--matrix',action='store_true')
+    p.add_argument('--backend',choices=BACKEND_CHOICES,default='auto')
+    p.add_argument('--graph',default='data/fafb783/bundle')
+    p.add_argument('--bindings',default='data/fafb783/bindings.json')
+    p.add_argument('--bilateral-bindings',default='data/fafb783/bindings-bilateral-geosmin-v1.json')
     a=p.parse_args();a.out.mkdir(parents=True,exist_ok=False)
+    a.backend=resolve_backend(a.backend)
     if not .1<=a.seconds<=3 or abs(a.seconds/.005-round(a.seconds/.005))>1e-8:raise ValueError('Use 5ms periods between .1 and 3s')
-    g=GraphStore.load('data/fafb783/bundle')
-    original=PortBindings(g,read_json('data/fafb783/bindings.json'))
-    b=PortBindings(g,read_json('data/fafb783/bindings-bilateral-geosmin-v1.json'))
+    g=GraphStore.load(a.graph)
+    original=PortBindings(g,read_json(a.bindings))
+    b=PortBindings(g,read_json(a.bilateral_bindings))
     report=dict(schema='flylab.workbench_validation.v1',status='RUNNING',gates={},cases=[],criteria=CRITERIA,
                 biologicalValidation=False,physicalExecuted=False,binding=b.summary())
     def persist():write_json(a.out/'report.json',report)
     persist()
-    e=CEngine(g,original,mode='C_STRICT',backend='exp_lif_mps')
+    e=CEngine(g,original,mode='C_STRICT',backend=a.backend)
     try:
         e.step(2);before=e.checkpoint();body=e.body
         e.command('place',dict(kind='food',position=[2,.7,-1],strength=2.))
@@ -74,7 +81,7 @@ def main():
             first_50ms_wall_seconds=elapsed)
         report['physicalExecuted']=True;persist()
     finally:e.close()
-    e=CEngine(g,b,mode='C_STRICT',backend='exp_lif_mps')
+    e=CEngine(g,b,mode='C_STRICT',backend=a.backend)
     try:
         packet=copy.deepcopy(e.last_sensors);packet['odor']=[.8,.1];packet['danger']=.6
         enc=SensoryEncoder(b,42);drive,_,ports=enc.encode(packet,.005,.0001)
@@ -95,7 +102,7 @@ def main():
     if a.matrix:
         for mode in ('C_STRICT','C_SHADOW','C_ASSISTED'):
             for seed in (7,19,42):
-                base=CEngine(g,b,mode=mode,seed=seed,backend='exp_lif_mps')
+                base=CEngine(g,b,mode=mode,seed=seed,backend=a.backend)
                 try:initial=base.checkpoint();StateStore.save(a.out/f'initial-{mode}-{seed}',initial)
                 finally:base.close()
                 for case in ('baseline','food_left','food_right','hazard_left','hazard_right','obstacle_front'):

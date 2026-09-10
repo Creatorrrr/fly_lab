@@ -15,6 +15,8 @@ def main():
     p.add_argument('--checkpoint',type=Path,required=True);p.add_argument('--out',type=Path,required=True)
     p.add_argument('--worker',action='store_true');p.add_argument('--source',type=Path,default=ROOT)
     p.add_argument('--case',choices=('default','512-recording'),default='default');p.add_argument('--seconds',type=float,default=.15)
+    p.add_argument('--graph',type=Path,default=ROOT/'data/fafb783/bundle')
+    p.add_argument('--bindings',type=Path,default=ROOT/'data/fafb783/bindings.json')
     a=p.parse_args();a.out.mkdir(parents=True,exist_ok=False);sys.path.insert(0,str(a.source.resolve() if a.worker else ROOT))
     from flylab.c.storage import StateStore
     from flylab.c.integrity import read_json, write_json
@@ -23,7 +25,7 @@ def main():
         from flylab.c.ports import PortBindings
         from flylab.c.engine import CEngine
         from flylab.c.protocol import signal_frame
-        g=GraphStore.load(ROOT/'data/fafb783/bundle');b=PortBindings(g,read_json(ROOT/'data/fafb783/bindings.json'))
+        g=GraphStore.load(a.graph);b=PortBindings(g,read_json(a.bindings))
         cp=StateStore.load(a.checkpoint);e=CEngine.from_checkpoint(g,b,cp)
         try:e.step(1)
         finally:e.close()
@@ -50,8 +52,9 @@ def main():
         for trial in range(2):
             for label in (('baseline','current') if trial==0 else ('current','baseline')):
                 out=a.out/f'{case}-{trial}-{label}'
-                cmd=[sys.executable,str(Path(__file__).resolve()),'--worker','--baseline',str(a.baseline),'--source',str(a.baseline if label=='baseline' else ROOT),
-                     '--checkpoint',str(a.checkpoint),'--out',str(out),'--case',case,'--seconds',str(a.seconds)]
+                cmd=[sys.executable,'-X','utf8',str(Path(__file__).resolve()),'--worker','--baseline',str(a.baseline),'--source',str(a.baseline if label=='baseline' else ROOT),
+                     '--checkpoint',str(a.checkpoint),'--out',str(out),'--case',case,'--seconds',str(a.seconds),
+                     '--graph',str(a.graph.resolve()),'--bindings',str(a.bindings.resolve())]
                 with (a.out/(out.name+'.log')).open('w') as log:subprocess.run(cmd,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,check=True)
                 runs[trial,label]=out;print(out.name,read_json(out/'timing.json')['wall_seconds'],flush=True)
         reference=StateStore.load(runs[0,'baseline']/'final');trace=read_json(runs[0,'baseline']/'trace.json')

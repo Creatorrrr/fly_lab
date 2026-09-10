@@ -31,4 +31,4 @@ def run(graph,profile,inputs,out,device):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('graph','profile','inputs','out'):p.add_argument('--'+name,required=True)
-    p.add_argument('--device',choices=('cpu','mps'),default='mps');a=p.parse_args();run(**vars(a))
+    p.add_argument('--device',choices=('auto','cpu','mps','cuda'),default='auto');a=p.parse_args();run(**vars(a))

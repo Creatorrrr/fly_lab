@@ -11,10 +11,16 @@ class CSensorAdapter(SensorAdapter):
     def __init__(self, seed, model=None):
         super().__init__(seed)
         self.model = copy.deepcopy(model or {'kind': 'legacy-clipped-v1'})
-        if self.model.get('kind') not in ('legacy-clipped-v1', 'compressive-odor-v2'):
+        if self.model.get('kind') not in ('legacy-clipped-v1', 'compressive-odor-v2','four-site-odor-v1'):
             raise ValueError('Unknown sensor transduction model')
         if self.model['kind'] == 'compressive-odor-v2':
             finite(self.model.get('half_concentration'), 'half concentration', .001, 100.)
+        self.four_site_odor=None
+        if self.model['kind']=='four-site-odor-v1':
+            from ..flygym_senses import FourSiteOdor
+            self.four_site_odor=FourSiteOdor(field=self.model.get('field','gaussian'),
+                half_concentration=self.model.get('half_concentration',1.),
+                sigma_mm=self.model.get('sigma_mm',30.**.5),core_radius_mm=self.model.get('core_radius_mm',.1))
         self.diagnostics = {}
         self.previous_silhouette=None
 
@@ -40,6 +46,19 @@ class CSensorAdapter(SensorAdapter):
         self.diagnostics = dict(model=self.model, concentration_unit='engineering Gaussian field units',
                                 food_raw=food, hazard_raw=hazard, food_transduced=packet['odor'],
                                 food_would_clip_legacy=[x>=1 for x in food], hazard_transduced=packet['danger'])
+        if self.four_site_odor is not None:
+            odor=self.four_site_odor.observe(body,world)
+            response=np.asarray(odor['response'])
+            packet['odor']=response[:2,0].tolist()
+            packet['danger']=float(response[:2,1].mean())
+            mean=sum(packet['odor'])/2.
+            packet['odorChange']=float(np.clip((mean-previous)/dt,-2.,2.))
+            self.previousOdor=mean
+            self.diagnostics.update(four_site_odor=odor,food_raw=[r[0] for r in odor['concentration'][:2]],
+                hazard_raw=float(np.asarray(odor['concentration'])[:2,1].mean()),
+                food_transduced=packet['odor'],hazard_transduced=packet['danger'],
+                concentration_unit=odor['concentration_unit'],
+                palp_neural_mapping='unbound; anatomical mapping review required')
         if self.model.get('extended_observations'):
             visible=body.obstacle_silhouette(head,R) if hasattr(body,'obstacle_silhouette') else [0.]*64
             coverage=[sum(visible[:32])/32.,sum(visible[32:])/32.]

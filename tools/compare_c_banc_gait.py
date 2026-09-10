@@ -18,6 +18,8 @@ from flylab.c.behavior import trace_sample
 from flylab.c.body_identity import source_identity
 from flylab.c.engine import CEngine
 from flylab.c.graph import GraphStore
+from flylab.c.neural import BACKEND_CHOICES
+from flylab.c.backend_selection import resolve_backend
 from flylab.c.integrity import canonical, digest, file_hash, read_json, write_json
 from flylab.c.neuromuscular import build_spec
 from flylab.c.ports import PortBindings
@@ -73,16 +75,17 @@ def candidate_bindings(graph, baseline):
     return result
 
 
-def run_case(graph, binding, directory, input_name, seconds=10.):
+def run_case(graph, binding, directory, input_name, seconds=10., backend='auto'):
     directory.mkdir()
     world = default_world()
     world['sources'] = []
     world['obstacles'] = []
     engine = CEngine(graph, PortBindings(graph, binding), world=world,
-                     seed=42, mode='C_STRICT', backend='exp_lif_mps')
+                     seed=42, mode='C_STRICT', backend=backend)
     started = time.perf_counter()
     samples, rates, counts, voltages = [], [], [], []
     feet_requested, feet_applied, feet_released, force_rows = [], [], [], []
+    measured_feet=[]
     result = dict(status='RUNNING', physicalExecuted=True, biological_validation=False)
     try:
         if input_name == 'DNg100':
@@ -104,6 +107,8 @@ def run_case(graph, binding, directory, input_name, seconds=10.):
             for k in range(round(seconds/.005)+1):
                 frame = engine.step() if k else engine.frame()
                 row = trace_sample(frame)
+                row['measured_feet']=engine.body.contact_probe()
+                measured_feet.append(row['measured_feet'])
                 stream.write(canonical(row)+b'\n')
                 samples.append({key: row[key] for key in BEHAVIOR_FIELDS})
                 readout = engine.neural.readout(motor)
@@ -131,6 +136,11 @@ def run_case(graph, binding, directory, input_name, seconds=10.):
             adhesion_applied_fraction=np.mean(feet_applied, axis=0).tolist(),
             lift_release_fraction=np.mean(feet_released, axis=0).tolist(),
             mean_adhesion_force_bw=np.mean(force_rows, axis=0).tolist())
+        result['foot_measurements']=dict(
+            tip_height_range_mm=np.ptp(np.asarray([r['tip_position_native_mm'] for r in measured_feet])[:,:,2],axis=0).tolist(),
+            contact_sample_duration_s=(np.asarray([r['floor_contact'] for r in measured_feet][1:]).sum(axis=0)*.005).tolist(),
+            integrated_slip_mm=(np.asarray([r['slip_speed_mm_s'] for r in measured_feet][1:]).sum(axis=0)*.005).tolist(),
+            sample_dt_s=.005,interpretation='Measured tip movement and sampled floor support; distinct from predicted Jacobian lift')
     except Exception as exc:
         result.update(status='FAIL', error=repr(exc), completed_model_seconds=engine.tick*.0001)
         raise
@@ -145,7 +155,8 @@ def run_case(graph, binding, directory, input_name, seconds=10.):
     return result
 
 
-def run(graph_path, binding_path, protocol_path, out):
+def run(graph_path, binding_path, protocol_path, out, backend='auto'):
+    backend=resolve_backend(backend)
     protocol = read_json(protocol_path)
     validate_protocol(protocol)
     out = Path(out)
@@ -167,7 +178,7 @@ def run(graph_path, binding_path, protocol_path, out):
         for name in PROFILES:
             for stimulus in INPUTS:
                 case = name+'-'+stimulus
-                report['cases'][case] = run_case(graph, profiles[name], out/case, stimulus)
+                report['cases'][case] = run_case(graph, profiles[name], out/case, stimulus, backend=backend)
                 write_json(out/'report.json', report)
         qualified = [name for name in PROFILES[1:] if all(
             report['cases'][name+'-'+stimulus]['behavior']['task_status'] == 'PASS' and
@@ -190,6 +201,7 @@ if __name__ == '__main__':
     p.add_argument('--baseline', default='data/banc888/bindings-neuromuscular-v2.json')
     p.add_argument('--protocol', required=True)
     p.add_argument('--out', required=True)
+    p.add_argument('--backend',choices=BACKEND_CHOICES,default='auto')
     a = p.parse_args()
-    report = run(a.graph, a.baseline, a.protocol, a.out)
+    report = run(a.graph, a.baseline, a.protocol, a.out, a.backend)
     print(report['status'], report['adoption'])

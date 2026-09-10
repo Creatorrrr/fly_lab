@@ -15,12 +15,18 @@ from .inputs import validate_input
 from .neural_state import validate_neural_ranges
 
 NEURAL_BACKENDS = ('exp_lif_cpu_reference', 'exp_lif_mps', 'exp_lif_cuda')
+BACKEND_CHOICES = ('auto',) + NEURAL_BACKENDS
 
 
 def create_backend(graph, parameters=None, backend='exp_lif_cpu_reference'):
+    from .backend_selection import resolve_backend
+    backend = resolve_backend(backend)
     if backend == 'exp_lif_mps':
         from .neural_mps import MetalLIF
         return MetalLIF(graph, parameters)
+    if backend == 'exp_lif_cuda' and (parameters is None or parameters.dtype == 'float32'):
+        from .neural_cuda import CudaLIF
+        return CudaLIF(graph, parameters)
     return ExpLIF(graph, parameters, backend)
 
 

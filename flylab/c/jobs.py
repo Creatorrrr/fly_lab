@@ -7,7 +7,7 @@ import sys
 import time
 from .campaign import validate_spec, pilot_spec
 from .integrity import read_json, write_json, checked_name
-from .locking import acquire, locked
+from .locking import acquire, locked, lease
 
 class CampaignJobs:
     def __init__(self, root, graph_path):
@@ -27,13 +27,37 @@ class CampaignJobs:
 
     def _launch(self,name,resume):
         directory=self.root/checked_name(name);job=read_json(directory/'job.json')
-        fd=acquire(self.root/'.worker.lock')
-        args=[sys.executable,str(Path(__file__).resolve().parents[2]/'tools/run_c_campaign.py'),
+        args=[sys.executable,'-X','utf8',str(Path(__file__).resolve().parents[2]/'tools/run_c_campaign.py'),
               '--graph',job['graph'],'--bindings',str((directory/'bindings.json').resolve()),
               '--backend',job['backend'],'--spec',str((directory/'spec.json').resolve()),
-              '--out',str((directory/'result').resolve()),'--cancel-file',str((directory/'cancel').resolve()),
-              '--worker-lock-fd',str(fd)]
+              '--out',str((directory/'result').resolve()),'--cancel-file',str((directory/'cancel').resolve())]
         if resume:args.append('--resume')
+        if os.name=='nt':
+            # Windows CRT descriptors cannot be inherited through pass_fds.
+            # Serialize startup until the child owns its own OS lease.
+            with lease(self.root/'.worker-start.lock'):
+                if self.active():raise ValueError('A campaign worker is already active')
+                ready=directory/('.worker-ready-'+secrets.token_hex(6)+'.json')
+                args+=['--worker-lock-path',str((self.root/'.worker.lock').resolve()),
+                       '--worker-ready-file',str(ready.resolve())]
+                with (directory/'worker.log').open('ab') as log:
+                    p=subprocess.Popen(args,stdout=log,stderr=subprocess.STDOUT,
+                        cwd=Path(__file__).resolve().parents[2],creationflags=subprocess.CREATE_NO_WINDOW)
+                self.processes[name]=p
+                deadline=time.monotonic()+30
+                while not ready.is_file():
+                    if p.poll() is not None:
+                        raise RuntimeError('Campaign worker failed before acquiring its lease; see '+str(directory/'worker.log'))
+                    if time.monotonic()>=deadline:
+                        (directory/'cancel').touch()
+                        raise RuntimeError('Campaign startup timed out; cancellation requested; see '+str(directory/'worker.log'))
+                    time.sleep(.025)
+                owner=read_json(ready)
+                write_json(self.root/'.worker-owner.json',dict(id=name,pid=owner['pid'],started=time.time()))
+                write_json(directory/'worker.json',dict(pid=p.pid,worker_pid=owner['pid'],started=time.time()))
+            return
+        fd=acquire(self.root/'.worker.lock')
+        args+=['--worker-lock-fd',str(fd)]
         try:
             with (directory/'worker.log').open('ab') as log:
                 p=subprocess.Popen(args,stdout=log,stderr=subprocess.STDOUT,cwd=Path(__file__).resolve().parents[2],pass_fds=(fd,))

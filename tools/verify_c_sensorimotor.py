@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Actual BANC/MPS/MuJoCo loop, ablations, joint direction and continuation."""
+"""Actual BANC/GPU/MuJoCo loop, ablations, joint direction and continuation."""
 import argparse
 import copy
 from pathlib import Path
@@ -8,6 +8,8 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import numpy as np
 from flylab.c.graph import GraphStore
+from flylab.c.neural import BACKEND_CHOICES
+from flylab.c.backend_selection import resolve_backend
 from flylab.c.ports import PortBindings
 from flylab.c.engine import CEngine
 from flylab.c.integrity import read_json, write_json
@@ -25,7 +27,8 @@ def same(a,b):
     return a==b
 
 
-def run(graph_path, binding_path, out, seconds=.5):
+def run(graph_path, binding_path, out, seconds=.5, backend='auto'):
+    backend=resolve_backend(backend)
     if not .05 <= seconds <= 30 or abs(seconds/.005-round(seconds/.005))>1e-8:
         raise ValueError('Duration must be 0.05..30 s on a control boundary')
     out=Path(out);out.mkdir(parents=True,exist_ok=False)
@@ -36,7 +39,7 @@ def run(graph_path, binding_path, out, seconds=.5):
     reports=[]
     for case in ('feedback','feedback_off','motor_disconnected','flexor','extensor','DNg100'):
         world=default_world();world['sources']=[];world['obstacles']=[]
-        engine=CEngine(graph,bindings,world=world,mode='C_STRICT',backend='exp_lif_mps')
+        engine=CEngine(graph,bindings,world=world,mode='C_STRICT',backend=backend)
         directory=out/case;directory.mkdir()
         try:
             duration=round((seconds+.02)/.005)
@@ -110,6 +113,6 @@ if __name__=='__main__':
     p.add_argument('--graph',default='data/acquisitions/banc888-v2-20260909/bundle')
     p.add_argument('--bindings',default='data/banc888/bindings-neuromuscular-v1.json')
     p.add_argument('--out',required=True);p.add_argument('--seconds',type=float,default=.5)
-    a=p.parse_args();r=run(a.graph,a.bindings,a.out,a.seconds)
+    p.add_argument('--backend',choices=BACKEND_CHOICES,default='auto');a=p.parse_args();r=run(a.graph,a.bindings,a.out,a.seconds,a.backend)
     print(r['status'],r['checks'])
     raise SystemExit(0 if r['status']=='PASS' else 1)

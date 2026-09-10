@@ -1,0 +1,1058 @@
+{
+  "schema": "flylab.flygym-implementation-evidence.v1",
+  "created_at": "2026-09-10T12:37:52.511653+00:00",
+  "workspace": "C:\\Users\\ckthd\\Dev\\Projects\\fly_lab",
+  "artifact_root": "C:\\Users\\ckthd\\Dev\\Projects\\fly_lab\\verification\\flygym-implementation-20260910",
+  "source_identity": "eae6127893565236eb47d450453cd43ebedd802db8391a8037b2510cf14abb17",
+  "gait_source_identity": "abaf5730b71435648866d1d2302dea36fb361ee1a11cd6d1bd9c87d996fc5951",
+  "baseline_commit": "abd9a2d74567bc335eddb4ba1af1a81e6e1376a4",
+  "baseline_included_uncommitted_cuda_changes": true,
+  "packages": {
+    "flygym": "2.1.0",
+    "mujoco": "3.9.0",
+    "numpy": "2.5.3",
+    "cupy-cuda13x": "14.2.0",
+    "torch": "2.14.0+cu130",
+    "warp-lang": "1.14.0",
+    "mujoco-warp": "3.9.0",
+    "pyarrow": "23.0.1"
+  },
+  "device": {
+    "name": "NVIDIA GeForce RTX 4080",
+    "driver": "591.86",
+    "reported_memory_MiB": 16376
+  },
+  "defaults": {
+    "neural": "auto: CUDA then MPS then CPU",
+    "physics": "cpu",
+    "live_mode": "C_SHADOW",
+    "default_sensor_profile_changed": false
+  },
+  "cpu_regression": {
+    "controls": 20,
+    "model_seconds": 0.1,
+    "trace_exact": true,
+    "trace_digest": "959fdb32509bcd7c8c4af0ba5b2130d1780a8d7d94faffdcd9cfec01c1ed7336"
+  },
+  "tests": {
+    "total": 293,
+    "passed": 269,
+    "skipped": 24,
+    "native_additional_suite_passed": 6,
+    "native_suite_overlap_with_regression": 3,
+    "windows_utf8_environment": true
+  },
+  "profiler": {
+    "status": "PASS",
+    "model_seconds": 0.05,
+    "warmup_model_seconds": 0.02,
+    "steady_uninstrumented": {
+      "runs": [
+        {
+          "repeat": 0,
+          "build_s": 2.3079902000026777,
+          "warmup_s": 0.48342309999861754,
+          "wall_s": 0.11670900000899564,
+          "sim_per_wall": 0.4284159747418462,
+          "control_latency_median_s": 0.011444450006820261,
+          "control_latency_p95_s": 0.013112994996481574
+        },
+        {
+          "repeat": 1,
+          "build_s": 0.5474486000020988,
+          "warmup_s": 0.044384299995726906,
+          "wall_s": 0.1207672000018647,
+          "sim_per_wall": 0.41401970070704613,
+          "control_latency_median_s": 0.012073400001099799,
+          "control_latency_p95_s": 0.01341412499823491
+        },
+        {
+          "repeat": 2,
+          "build_s": 0.5787123999907635,
+          "warmup_s": 0.04539929999737069,
+          "wall_s": 0.11365040000237059,
+          "sim_per_wall": 0.43994565790315804,
+          "control_latency_median_s": 0.011474750004708767,
+          "control_latency_p95_s": 0.012010460004239576
+        }
+      ],
+      "wall_median_s": 0.11670900000899564,
+      "sim_per_wall": 0.4284159747418462
+    },
+    "isolated_replay": {
+      "physics_wall_s": 0.051015500008361414,
+      "physics_exact": true,
+      "neural_wall_s": 0.07178889999340754,
+      "neural_exact": true,
+      "semantics": "Recorded inputs, integration only. Do not add overlapping component times to predict end-to-end speed."
+    }
+  },
+  "warp": {
+    "status": "FAIL_CORRECTNESS",
+    "seconds": 0.02,
+    "seeds": [
+      42
+    ],
+    "repeats": 3,
+    "tolerances": {
+      "qpos_abs": 0.001,
+      "qvel_abs": 0.1,
+      "foot_force_bw_abs": 0.15
+    },
+    "checks": {
+      "restore_exact_seed42": false,
+      "clock_seed42": true,
+      "contact_api_seed42": true,
+      "config_step_seed42": true,
+      "bad_restore_atomic_seed42": true,
+      "numerical_seed42": false
+    },
+    "comparisons": [
+      {
+        "seed": 42,
+        "left": "A",
+        "right": "B",
+        "max_abs_delta": {
+          "qpos": 0.08558495850817423,
+          "qvel": 7.481061912947365,
+          "feet_bw": 0.2598024809397329,
+          "tip_mm": 0.08178676352612468
+        }
+      },
+      {
+        "seed": 42,
+        "left": "B",
+        "right": "C",
+        "max_abs_delta": {
+          "qpos": 0.0303875228975726,
+          "qvel": 5.618987877413249,
+          "feet_bw": 0.16824096453086962,
+          "tip_mm": 0.008013257338718521
+        }
+      }
+    ],
+    "single_world_adoption": false
+  },
+  "joint": {
+    "status": "COMPLETE",
+    "feedback_status": "FAIL_RESPONSE_CRITERIA",
+    "simulated_nodes": 158706,
+    "graph_hash": "9bd8468f5e5e40c3e6daaffde9f444466825ba8e69189f1e347568bff85920ff",
+    "comparisons": [
+      {
+        "angle": 1.4,
+        "responses": {
+          "neural": {
+            "iae": 0.00035284611804763523,
+            "peak": 0.0069063106535129926,
+            "status": "COMPLETE"
+          },
+          "neural_cut": {
+            "iae": 0.00035284611804763523,
+            "peak": 0.0069063106535129926,
+            "status": "COMPLETE"
+          },
+          "passive": {
+            "iae": 0.00035284611804763523,
+            "peak": 0.0069063106535129926,
+            "status": "COMPLETE"
+          },
+          "teacher": {
+            "iae": 0.0005941664576199433,
+            "peak": 0.007002310005742141,
+            "status": "COMPLETE"
+          }
+        },
+        "torque": 0.01
+      },
+      {
+        "angle": 1.4,
+        "responses": {
+          "neural": {
+            "iae": 0.0003537427848572381,
+            "peak": 0.006914668694105286,
+            "status": "COMPLETE"
+          },
+          "neural_cut": {
+            "iae": 0.0003537427848572381,
+            "peak": 0.006914668694105286,
+            "status": "COMPLETE"
+          },
+          "passive": {
+            "iae": 0.0003537427848572381,
+            "peak": 0.006914668694105286,
+            "status": "COMPLETE"
+          },
+          "teacher": {
+            "iae": 0.0006030910277526463,
+            "peak": 0.0070601984742271195,
+            "status": "COMPLETE"
+          }
+        },
+        "torque": -0.01
+      },
+      {
+        "angle": 2.0,
+        "responses": {
+          "neural": {
+            "iae": 0.0003798375202210471,
+            "peak": 0.007211320586660186,
+            "status": "COMPLETE"
+          },
+          "neural_cut": {
+            "iae": 0.0003798375202210471,
+            "peak": 0.007211320586660186,
+            "status": "COMPLETE"
+          },
+          "passive": {
+            "iae": 0.0003798375202210471,
+            "peak": 0.007211320586660186,
+            "status": "COMPLETE"
+          },
+          "teacher": {
+            "iae": 0.0006006756342443994,
+            "peak": 0.007013068113785881,
+            "status": "COMPLETE"
+          }
+        },
+        "torque": 0.01
+      },
+      {
+        "angle": 2.0,
+        "responses": {
+          "neural": {
+            "iae": 0.0003813972481923789,
+            "peak": 0.007224958274462567,
+            "status": "COMPLETE"
+          },
+          "neural_cut": {
+            "iae": 0.0003813972481923789,
+            "peak": 0.007224958274462567,
+            "status": "COMPLETE"
+          },
+          "passive": {
+            "iae": 0.0003813972481923789,
+            "peak": 0.007224958274462567,
+            "status": "COMPLETE"
+          },
+          "teacher": {
+            "iae": 0.0005950877678884838,
+            "peak": 0.006984916561985521,
+            "status": "COMPLETE"
+          }
+        },
+        "torque": -0.01
+      }
+    ]
+  },
+  "gait": {
+    "status": "COMPLETE",
+    "adoption": "REJECTED_ALL_CANDIDATES",
+    "source": "abaf5730b71435648866d1d2302dea36fb361ee1a11cd6d1bd9c87d996fc5951",
+    "cases": {
+      "baseline-DNg100": {
+        "status": "COMPLETE",
+        "technical": "PASS",
+        "walking": "FAIL",
+        "net_mm": 0.4382954682792763,
+        "signed_forward_mm": 0.41739129102186356,
+        "stuck": "DETECTED",
+        "foot": {
+          "contact_sample_duration_s": [
+            9.99,
+            0.2,
+            10.0,
+            9.82,
+            10.0,
+            10.0
+          ],
+          "integrated_slip_mm": [
+            1.1426082648736111,
+            0.07720498091112352,
+            0.6576622631378805,
+            2.88937027338975,
+            0.5352438082702914,
+            0.4737265008368842
+          ],
+          "interpretation": "Measured tip movement and sampled floor support; distinct from predicted Jacobian lift",
+          "sample_dt_s": 0.005,
+          "tip_height_range_mm": [
+            0.03894654798511446,
+            1.0851305296819977,
+            0.05105733900550104,
+            0.11577983343462259,
+            0.033762586849607965,
+            0.04179713812162818
+          ]
+        }
+      },
+      "baseline-feedback": {
+        "status": "COMPLETE",
+        "technical": "PASS",
+        "walking": "FAIL",
+        "net_mm": 0.06782404629762562,
+        "signed_forward_mm": 0.06688099705191061,
+        "stuck": "DETECTED",
+        "foot": {
+          "contact_sample_duration_s": [
+            9.995000000000001,
+            10.0,
+            10.0,
+            9.995000000000001,
+            10.0,
+            10.0
+          ],
+          "integrated_slip_mm": [
+            0.16722385951583932,
+            0.1661364718054692,
+            0.17277270122678587,
+            0.14946471467292974,
+            0.11453599440046576,
+            0.11187830932590913
+          ],
+          "interpretation": "Measured tip movement and sampled floor support; distinct from predicted Jacobian lift",
+          "sample_dt_s": 0.005,
+          "tip_height_range_mm": [
+            0.02652444572061896,
+            0.01978188446936302,
+            0.02176772485856228,
+            0.02539137013833994,
+            0.018446943151993724,
+            0.01904181749040834
+          ]
+        }
+      },
+      "combined-DNg100": {
+        "status": "COMPLETE",
+        "technical": "PASS",
+        "walking": "FAIL",
+        "net_mm": 0.34178966926599824,
+        "signed_forward_mm": 0.305781831414524,
+        "stuck": "DETECTED",
+        "foot": {
+          "contact_sample_duration_s": [
+            9.995000000000001,
+            0.085,
+            10.0,
+            2.865,
+            10.0,
+            10.0
+          ],
+          "integrated_slip_mm": [
+            1.258792342284699,
+            0.08687145936091703,
+            0.5519044273438607,
+            1.6451324422441513,
+            0.9193403492051446,
+            0.7867664883118114
+          ],
+          "interpretation": "Measured tip movement and sampled floor support; distinct from predicted Jacobian lift",
+          "sample_dt_s": 0.005,
+          "tip_height_range_mm": [
+            0.03552916105057809,
+            1.2494546174183758,
+            0.050076119729741596,
+            0.28482706428134097,
+            0.029572836805166917,
+            0.025099563556461993
+          ]
+        }
+      },
+      "combined-feedback": {
+        "status": "COMPLETE",
+        "technical": "PASS",
+        "walking": "FAIL",
+        "net_mm": 0.08125473980557969,
+        "signed_forward_mm": 0.07848156502445541,
+        "stuck": "DETECTED",
+        "foot": {
+          "contact_sample_duration_s": [
+            9.995000000000001,
+            10.0,
+            10.0,
+            9.99,
+            10.0,
+            10.0
+          ],
+          "integrated_slip_mm": [
+            0.21189316593144758,
+            0.24031966993200282,
+            0.15943966570257068,
+            0.21402326122564092,
+            0.13998426329878308,
+            0.1669509059587724
+          ],
+          "interpretation": "Measured tip movement and sampled floor support; distinct from predicted Jacobian lift",
+          "sample_dt_s": 0.005,
+          "tip_height_range_mm": [
+            0.030588427982428747,
+            0.02258314233812573,
+            0.024681302703000632,
+            0.02846016110940168,
+            0.020606034212647006,
+            0.02515086721219019
+          ]
+        }
+      },
+      "lift_release-DNg100": {
+        "status": "COMPLETE",
+        "technical": "PASS",
+        "walking": "FAIL",
+        "net_mm": 0.4369509308985356,
+        "signed_forward_mm": 0.38807784217499,
+        "stuck": "DETECTED",
+        "foot": {
+          "contact_sample_duration_s": [
+            9.985,
+            0.095,
+            10.0,
+            9.895,
+            9.995000000000001,
+            7.07
+          ],
+          "integrated_slip_mm": [
+            1.2736948767596155,
+            0.0682447797652302,
+            1.2653404582938275,
+            3.039493059347811,
+            0.6265293669123364,
+            0.37529391416601765
+          ],
+          "interpretation": "Measured tip movement and sampled floor support; distinct from predicted Jacobian lift",
+          "sample_dt_s": 0.005,
+          "tip_height_range_mm": [
+            0.036003633933638424,
+            1.0916105222654848,
+            0.051266748582534084,
+            0.03619044033808115,
+            0.029681184883008305,
+            0.16900203600122787
+          ]
+        }
+      },
+      "lift_release-feedback": {
+        "status": "COMPLETE",
+        "technical": "PASS",
+        "walking": "FAIL",
+        "net_mm": 0.06782404629762562,
+        "signed_forward_mm": 0.06688099705191061,
+        "stuck": "DETECTED",
+        "foot": {
+          "contact_sample_duration_s": [
+            9.995000000000001,
+            10.0,
+            10.0,
+            9.995000000000001,
+            10.0,
+            10.0
+          ],
+          "integrated_slip_mm": [
+            0.16722385951583932,
+            0.1661364718054692,
+            0.17277270122678587,
+            0.14946471467292974,
+            0.11453599440046576,
+            0.11187830932590913
+          ],
+          "interpretation": "Measured tip movement and sampled floor support; distinct from predicted Jacobian lift",
+          "sample_dt_s": 0.005,
+          "tip_height_range_mm": [
+            0.02652444572061896,
+            0.01978188446936302,
+            0.02176772485856228,
+            0.02539137013833994,
+            0.018446943151993724,
+            0.01904181749040834
+          ]
+        }
+      },
+      "unit_response-DNg100": {
+        "status": "COMPLETE",
+        "technical": "PASS",
+        "walking": "FAIL",
+        "net_mm": 0.3299182557305464,
+        "signed_forward_mm": 0.25397595535258066,
+        "stuck": "DETECTED",
+        "foot": {
+          "contact_sample_duration_s": [
+            9.965,
+            0.29,
+            10.0,
+            9.790000000000001,
+            10.0,
+            10.0
+          ],
+          "integrated_slip_mm": [
+            2.5780287733029867,
+            0.10071905762220432,
+            0.8560024623421079,
+            3.4423591759345262,
+            0.563491341731722,
+            0.7617997736601525
+          ],
+          "interpretation": "Measured tip movement and sampled floor support; distinct from predicted Jacobian lift",
+          "sample_dt_s": 0.005,
+          "tip_height_range_mm": [
+            0.05005614765469313,
+            1.6445696564742294,
+            0.056556064155311024,
+            0.33111307284245123,
+            0.02981809357270021,
+            0.031021942282308007
+          ]
+        }
+      },
+      "unit_response-feedback": {
+        "status": "COMPLETE",
+        "technical": "PASS",
+        "walking": "FAIL",
+        "net_mm": 0.08125473980557969,
+        "signed_forward_mm": 0.07848156502445541,
+        "stuck": "DETECTED",
+        "foot": {
+          "contact_sample_duration_s": [
+            9.995000000000001,
+            10.0,
+            10.0,
+            9.99,
+            10.0,
+            10.0
+          ],
+          "integrated_slip_mm": [
+            0.21189316593144758,
+            0.24031966993200282,
+            0.15943966570257068,
+            0.21402326122564092,
+            0.13998426329878308,
+            0.1669509059587724
+          ],
+          "interpretation": "Measured tip movement and sampled floor support; distinct from predicted Jacobian lift",
+          "sample_dt_s": 0.005,
+          "tip_height_range_mm": [
+            0.030588427982428747,
+            0.02258314233812573,
+            0.024681302703000632,
+            0.02846016110940168,
+            0.020606034212647006,
+            0.02515086721219019
+          ]
+        }
+      }
+    }
+  },
+  "physics_batch": {
+    "schema": "flylab.warp-batch-evaluation.v1",
+    "scope": "physics only, held neutral actuator input",
+    "model_hash": "1d0afa81e59cc33369f7c963d002bc56b887c30c9ca3625281491c9bc114a9c2",
+    "physics": {
+      "profile": {
+        "backend": "cpu",
+        "noslip_iterations": 0,
+        "multiccd": false,
+        "max_contacts": 1024,
+        "max_constraints": 4096,
+        "cuda_graph": true
+      },
+      "profile_hash": "4585a702c6b469ec06966b366b1439abd0619ba72f439d6c01b21597f8d4b9e3",
+      "integrator": 0,
+      "solver": 2,
+      "iterations": 100,
+      "noslip_iterations": 0,
+      "cone": 0,
+      "jacobian": 2,
+      "enableflags": 2,
+      "disableflags": 524288,
+      "tolerance": 1e-08,
+      "timestep": 0.0001,
+      "precision": "float64",
+      "observation_source": "CPU MuJoCo",
+      "length_unit": "mm",
+      "force_unit": "MuJoCo model units; not SI calibrated"
+    },
+    "cases": [
+      {
+        "worlds": 1,
+        "status": "COMPLETE",
+        "warmup_s": 1.1599629999982426,
+        "graph_warmup_s": 0.07117710000602528,
+        "warmup_steps": 51,
+        "sample_protocol": "Consecutive horizons after separate kernel and graph warm-up",
+        "wall_s": [
+          0.028832899988628924,
+          0.028377599999657832,
+          0.027786200007540174
+        ],
+        "world_steps_per_s": 1761.9530897821833,
+        "memory_allocated_delta_bytes": 138412032,
+        "memory_note": "Observed driver allocation delta, not peak VRAM; other processes can affect it",
+        "contacts": 12,
+        "max_constraints": 48
+      },
+      {
+        "worlds": 8,
+        "status": "COMPLETE",
+        "warmup_s": 0.007077300004311837,
+        "graph_warmup_s": 0.06128840000019409,
+        "warmup_steps": 51,
+        "sample_protocol": "Consecutive horizons after separate kernel and graph warm-up",
+        "wall_s": [
+          0.031349900003988296,
+          0.03108109999448061,
+          0.03224190000037197
+        ],
+        "world_steps_per_s": 12759.21135152305,
+        "memory_allocated_delta_bytes": 33554432,
+        "memory_note": "Observed driver allocation delta, not peak VRAM; other processes can affect it",
+        "contacts": 104,
+        "max_constraints": 56,
+        "isolation": {
+          "untouched_max_abs": 5.960464477539063e-08,
+          "perturbed_max_abs": 0.0001023411750793457,
+          "passed": true
+        }
+      },
+      {
+        "worlds": 16,
+        "status": "COMPLETE",
+        "warmup_s": 0.010414899996249005,
+        "graph_warmup_s": 0.06156590000318829,
+        "warmup_steps": 51,
+        "sample_protocol": "Consecutive horizons after separate kernel and graph warm-up",
+        "wall_s": [
+          0.034515299994382076,
+          0.033590200007893145,
+          0.03478979998908471
+        ],
+        "world_steps_per_s": 23178.126805509815,
+        "memory_allocated_delta_bytes": 35651584,
+        "memory_note": "Observed driver allocation delta, not peak VRAM; other processes can affect it",
+        "contacts": 201,
+        "max_constraints": 52,
+        "isolation": {
+          "untouched_max_abs": 5.960464477539063e-08,
+          "perturbed_max_abs": 0.0001023411750793457,
+          "passed": true
+        }
+      },
+      {
+        "worlds": 32,
+        "status": "COMPLETE",
+        "warmup_s": 0.00932900000771042,
+        "graph_warmup_s": 0.06870709999930114,
+        "warmup_steps": 51,
+        "sample_protocol": "Consecutive horizons after separate kernel and graph warm-up",
+        "wall_s": [
+          0.03885430000082124,
+          0.0391273999994155,
+          0.039447099989047274
+        ],
+        "world_steps_per_s": 40892.060295953765,
+        "memory_allocated_delta_bytes": 67108864,
+        "memory_note": "Observed driver allocation delta, not peak VRAM; other processes can affect it",
+        "contacts": 401,
+        "max_constraints": 52,
+        "isolation": {
+          "untouched_max_abs": 1.1920928955078125e-07,
+          "perturbed_max_abs": 0.0001023411750793457,
+          "passed": true
+        }
+      }
+    ],
+    "default_changed": false,
+    "full_neural_campaign": false,
+    "biological_validation": false,
+    "isolation_check": {
+      "qpos_tolerance": 1e-05,
+      "test": "World 1 external force; compare untouched worlds in the same batch"
+    },
+    "status": "COMPLETE"
+  },
+  "four_site": {
+    "schema": "flylab.four-site-integration.v1",
+    "status": "PASS",
+    "nodes": 139255,
+    "binding_hash": "972b51db37c7465cc890f22ed2c6b432554f286a76b749b7bd4461a1a1943ab1",
+    "backend": "exp_lif_cuda",
+    "default_profile_changed": false,
+    "restore_future_exact": true,
+    "seconds_after_restore": 0.05,
+    "observation_time_s": 0.09499999999998954,
+    "normal_ports": [
+      {
+        "name": "odor_DM1",
+        "value": 5.655504106207682,
+        "unit": "mV",
+        "enabled": true,
+        "feature": 0.31977704169851384,
+        "requested": 5.755986750573249,
+        "clipped": false
+      }
+    ],
+    "disabled_ports": [
+      {
+        "name": "odor_DM1",
+        "value": 0.0,
+        "unit": "mV",
+        "enabled": false,
+        "feature": 0.32016612289999674,
+        "requested": 5.7629902121999415,
+        "clipped": false
+      }
+    ],
+    "sensor_off_zero_input": true,
+    "fault": null
+  },
+  "ui": {
+    "verification": "Actual in-app-browser button actions plus saved state comparison",
+    "restored_checkpoint": "checkpoint-d18e8cacfdad",
+    "all_three_observations_time_s": 2.295,
+    "observation_state": {
+      "source": "checkpoint-d18e8cacfdad",
+      "after_observations": "checkpoint-54a27edbc1e3",
+      "control_tick": 459,
+      "components": {
+        "body": "EXACT",
+        "neural": "EXACT",
+        "sensors": "EXACT",
+        "encoder": "EXACT",
+        "legacy": "EXACT",
+        "supervisor": "EXACT",
+        "last_command": "EXACT",
+        "last_sensors": "EXACT",
+        "pending": "EXACT",
+        "active": "EXACT",
+        "control_tick": "EXACT",
+        "sensor_tick": "EXACT"
+      },
+      "status": "PASS"
+    },
+    "advanced_by_step_button_model_seconds": 0.05,
+    "final_time_s": 2.345,
+    "final_checkpoint": "checkpoint-aaf2c76ff2c5",
+    "neural": "exp_lif_cuda",
+    "physics": "cpu",
+    "mode": "C_SHADOW",
+    "final_server_listener_pid": 41532,
+    "final_server_checkpoint": "checkpoint-aaf2c76ff2c5",
+    "final_server_verified_time_s": 2.345,
+    "final_odor_response_verified": true
+  },
+  "limitations": [
+    "Warp numerical tolerance and strict future restore failed; default remains CPU",
+    "Teacher target holding works, but force recovery IAE is worse than passive in these cases",
+    "BANC feedback and all gait candidates failed adoption criteria",
+    "Retina/palp neural mapping is absent; existing antenna ports only",
+    "Full neural batches, full-body muscle expansion, complex terrain and 60-second real-time validation are not completed",
+    "Physics batch memory figures are observed allocation deltas, not peak VRAM"
+  ],
+  "artifacts": {
+    "baseline/source-manifest.json": {
+      "sha256": "b7f4b3d8bff9c33abbb5a8361910167b1dca98be4cfdae82719ef208207d55ce",
+      "bytes": 15486
+    },
+    "implementation-before-final-fixes/source-manifest.json": {
+      "sha256": "560b9c0711c8b73e2c7b97ca071643774c7d496ad1b0ee16650d6c06849f3a8b",
+      "bytes": 16106
+    },
+    "implementation-final/source-manifest.json": {
+      "sha256": "3ca619ac16aa5d0e2a8f95fd3461e228b220537865488885a3878ad1de760916",
+      "bytes": 17565
+    },
+    "implementation-final-v2/source-manifest.json": {
+      "sha256": "dc0b155d02f42a3c94159a9fc12c60f39646f2c97aa9182508a07dac76f70e7f",
+      "bytes": 17565
+    },
+    "baseline-run/trace.json": {
+      "sha256": "e51d47259ecf590c4a5dde715d7f0a87ee3e3df10d56f16773438203d3414f64",
+      "bytes": 246803
+    },
+    "cpu-contract-run/trace.json": {
+      "sha256": "e51d47259ecf590c4a5dde715d7f0a87ee3e3df10d56f16773438203d3414f64",
+      "bytes": 246803
+    },
+    "cpu-final-run/trace.json": {
+      "sha256": "e51d47259ecf590c4a5dde715d7f0a87ee3e3df10d56f16773438203d3414f64",
+      "bytes": 246803
+    },
+    "cpu-final.log": {
+      "sha256": "7f8c789208b65557097de78c61f88c6b42ade78f4c1d07346497ffdbe8ede0af",
+      "bytes": 176
+    },
+    "regression.log": {
+      "sha256": "de80ca8688ec10bde77d431bce6c90b862f4c9c75cb39afc96b236798080b288",
+      "bytes": 44895
+    },
+    "regression-final.log": {
+      "sha256": "9610fe98eb54afe012620f2723fcc041d34583801bfb79ed15061fd90b396db9",
+      "bytes": 40657
+    },
+    "regression-final-v2.log": {
+      "sha256": "213ef2a10ff07b8ead9c3ca39e869b9fd9506d5b2fd969f888d304374c647413",
+      "bytes": 40806
+    },
+    "new-tests.log": {
+      "sha256": "e0aaebf0bc63ce2bd4d271dd7bb4466779794abc2552ee2cb041d35d8b53a839",
+      "bytes": 837
+    },
+    "new-tests-final.log": {
+      "sha256": "85f07dacb7940e97e622bdd69779d7afed67ddfdbf269bfa6bcc0c40d3555863",
+      "bytes": 992
+    },
+    "warp-verify-01/report.json": {
+      "sha256": "e7072aab974cd540d8b827c48d8ee5dd9d0646abf911424300859ff5a39e0c1d",
+      "bytes": 5024
+    },
+    "profile-01/report.json": {
+      "sha256": "bdc7945a6decf71e944a964d71632fc11bf56116f1c08b70ffb5e06896b48d44",
+      "bytes": 4844
+    },
+    "joint-teacher/spec.json": {
+      "sha256": "1d12c62868a5181334868e063e878130419a6df394c307b47943cf29acb23d04",
+      "bytes": 482
+    },
+    "joint-teacher/report.json": {
+      "sha256": "461e290b614727d9844e55adbe9127f92cef1752a9653546b08752e910bcca64",
+      "bytes": 5627
+    },
+    "banc-gait/report.json": {
+      "sha256": "04a80f64bff3e61cfcdfe40f4eb608027038a882e97f669f36c13fb6ffc0def1",
+      "bytes": 2101590
+    },
+    "banc-gait/compact-report.json": {
+      "sha256": "2b7cf0765be68fb8f6bd73ff2e3486953d9509eab312bb101c98eef86c001cc8",
+      "bytes": 8544
+    },
+    "gait-protocol.json": {
+      "sha256": "604a29f41c2f350385d24de40f9433ca38e9cc3e74f02bb7fab2bca3d40e8760",
+      "bytes": 703
+    },
+    "warp-batch/report.json": {
+      "sha256": "5f28c0b29c63c48a295325d3c503225a3b7bc1817ff9a971615d7ffdc9f040c8",
+      "bytes": 3569
+    },
+    "warp-batch-steady/report.json": {
+      "sha256": "11b72a26852d2a85fe93a2486642eeefe1da7fc33d52399fd9b6b6c8fdca0013",
+      "bytes": 4222
+    },
+    "four-site-integration/report.json": {
+      "sha256": "19a5ae55c15b431fbd7068773479aa04955508b145a1ed99787acdd6b5690c70",
+      "bytes": 903
+    },
+    "ui-observation-state.json": {
+      "sha256": "5f307c28fff46a3e7f8384d88a2aa9ee86d6e0c12b996bc99cb6de5ef566ae55",
+      "bytes": 482
+    },
+    "eyes.png": {
+      "sha256": "941855dd6cbfda6af75452bc8e06765ae96930e93471577359a9d2fc1b781d67",
+      "bytes": 82077
+    },
+    "odor-sample.json": {
+      "sha256": "127c389696c8444ebec89e92d748d45f96d15c95eb712b44857a620a85ef24d3",
+      "bytes": 1670
+    },
+    "doctor-final-v2.json": {
+      "sha256": "b07bc445925500bb140f4ba5e587ec92e361b196ac5a54550b1d4660159b8ae3",
+      "bytes": 7149
+    },
+    "doctor-final-v2.stderr.log": {
+      "sha256": "d924dbdc8579394d5c5063ab38c9c5aa5106df843bbebc5ed855f325a9c80dd1",
+      "bytes": 305
+    }
+  },
+  "source_files": {
+    "build_c.py": "1ca66d9a28f7a4137598d9c9cad3f2dad43ceb2c41f340e0dfcc7de9ba7a1093",
+    "data/acquisitions/local-windows-20260910/bindings-four-site-odor-v1.json": "d17a86a14a8de9927f8f580c683462ba919f3cf47d48b6bb5e485281a8853acd",
+    "data/circuit.json": "f97a20b58b51767273e6bbf2ac4f5657d3f76e68fa75820c61189f898f65b188",
+    "data/releases/banc888-v2-sources.json": "76b626a5da2505ecc920850a513d08d215510458b666a46cf97fdc7a2501a85a",
+    "data/releases/flybody-source.json": "cc7226449a5246c4c4ebf15c3ce357081482d48262699e991354c4f2e78b675d",
+    "data/releases/flywire_fafb-783.json": "88057f984946f519e9160c14f096103026c1732424b77a10e66c09cd63c9eeca",
+    "FLY_LAB_C.html": "b212edbba4c2acd5521545dab36489f002a7ba925b8b03ab1fc3930928feead4",
+    "flylab/__init__.py": "94fde92bff2f2372863257573bb9f48abb0c96b25abd0b929882a580657c9f70",
+    "flylab/_reflex.py": "91ee559fdcade02bcd573a9c3c5b8fe91268b14d0ae0b069357dbdcfb2c31908",
+    "flylab/_spline.py": "07683300f0613f8dd117550c6b8dc215fc8a7519bb4b302621e7374af904b0cc",
+    "flylab/body.py": "3347983438bcbffe7c96875cafb508bf5096b648f9c4239224bdfa17f4e52631",
+    "flylab/body_warp.py": "cd4c989859d8d213f9755910c5dad87f035e1223b2fbe3143b45c3bc73c5af0a",
+    "flylab/brain.py": "845bb8dd437551452676f5df303702e75da67e2082295e68973d01c88c157b48",
+    "flylab/c/__init__.py": "cdc47e26f4f67f99be061785e56687fbc69a09598133db6ac2a7faa8ed6de510",
+    "flylab/c/backend_selection.py": "be58f390ed14d2c97a8f1f7ac00ec212dad204d79f2f2e5b7c30f75876c24f1f",
+    "flylab/c/behavior.py": "efd586ecc1a06511d0c2d38598ff2c72d7ff5d5f795756619b6b9a3374e29c5b",
+    "flylab/c/body_identity.py": "63c983db2bedecb11629edccbb6941e8af5cbe28cd73040cf2a392b4e462f98c",
+    "flylab/c/campaign.py": "d71aba3d03082196071b8bb7501fd39a3fca14d34f994b5a8cc3a5c5594fa11e",
+    "flylab/c/cns.py": "e0b6d4caed97d106c8e2c31fa3194b23f74c6a5641ff1f0faa6760796403f1cd",
+    "flylab/c/contracts.py": "91f12692409b9cf714a3db7d803f21a0de86902226916c45fe42ddf55f0d8fbc",
+    "flylab/c/data_identity.py": "522a14529864e57e926a9dba62bd57ff2d49d42ea43912cb3d3bc98adffe725a",
+    "flylab/c/diagnostics.py": "c37e0c7a9d0b32dfff0ca6a638dcd163a6562e52566ce89b5e14228d2b775cb3",
+    "flylab/c/engine.py": "6af61e8cfd8948c1b031de1a0aa2930f8e49de9837c6121f860595e0aa2bfff1",
+    "flylab/c/evidence.py": "880e94b00d07c6f498ba2922a679be6c152dfbf97a181fa2edf3ebdb3952812d",
+    "flylab/c/experiments.py": "a07a4015d7a94353afb78a62a279f64359a0b0c7818646dfd128302ec855d0c6",
+    "flylab/c/flight.py": "78839746adf3eedd04efe86beced0f3213449d53a755fed03099c7f0dd749bad",
+    "flylab/c/graph.py": "0977c12c211abd742745eddb168cb70292a3096c16a51857a5e222f0901bbda6",
+    "flylab/c/inputs.py": "2aab8fd49b7f3bbf5f9acf1fcbdb5e6177a54ce0ef20e12125f8b1c79bacc630",
+    "flylab/c/integrity.py": "52cd5f0c91b5c825cab8c32c2c0290711c5240790e4468a1e9a6d0a3a71ae12d",
+    "flylab/c/jobs.py": "53894f2baa5ae9162902ca0448d03f17914e2636b2ff5324a8d75cef5b50c67b",
+    "flylab/c/joint_teacher.py": "3266b5f6856f96ecddd83c8aed6a44085cc493dcf7dc1bdc799d4e45921bd025",
+    "flylab/c/lif.cu": "e1ccf124da1ef87a608a3ebc80ea4b6ed2dca5899e7ed0d4b3dbe53fabca63ae",
+    "flylab/c/lif.metal": "b7870ea29b35da571da714282de322b65c45c1dbdd1a609ead54155262b01930",
+    "flylab/c/locking.py": "ba990a5d43cd5c69020f1180e59773e70c860fec792b1475f58520ce4092c176",
+    "flylab/c/metabolism.py": "602f8eefdb03532fe478d640c62db1619198ea59110c5b09f2e03142232e5d3f",
+    "flylab/c/model_config.py": "e58cb1f47d65b47acc596cf0a9f3c2278215461322e3ad341c809baebfcea284",
+    "flylab/c/muscle_calibration.py": "f0f51b700b320d4cae7fba66d105b1e20484291c8f78f1956f606044dcbd3ed7",
+    "flylab/c/muscles.py": "9845d05ce8317d84e3dbd82838f71a690e1819ac755ea1219d6cdbb507a6927a",
+    "flylab/c/neural.py": "a2f4c1384b51d83de33763309d766752bb6ffac66ac83cac8e2d15c3eac94925",
+    "flylab/c/neural_api.py": "675c2fc09bf78fac2b340bb7e9b8fe56713dd82bd2c448d82a6bce5dc8f564d3",
+    "flylab/c/neural_cuda.py": "a93903c63faea7fa6357501ca316c2c39c92c4f9cf58f12cc5d6da55d6abeed0",
+    "flylab/c/neural_mps.py": "48191874fc5aebc174165a2507d1718ce92331e9808a2ba9fbc5ed46e2c56776",
+    "flylab/c/neural_state.py": "9265685e2b69390c9be856fd7b01b2f40a0970b3de11a7876b9b9bc85686689a",
+    "flylab/c/neuromuscular.py": "bd811283e6608a78fae6a8f24e340fcd254079d862ae31a972498aec7ca26a20",
+    "flylab/c/observation.metal": "c20a1299e90231e776bb9e4d81c288cf368ed6e554818a2fca39b5bc046b931f",
+    "flylab/c/pathways.py": "6505b7ddd3248f1cdc90d0c475b2d739b33eec4032ea63c876da593cc9cd89ae",
+    "flylab/c/ports.py": "b2716204a3b64831ed736f8f9c542483c5d89ced6455779fc383298eb89c5a45",
+    "flylab/c/protocol.py": "052d9d163537e0974e6b094d65bdb021fad059357d31bff96487e06f914a18e3",
+    "flylab/c/receptors.py": "170d38f046eba6941f7320a53de57a2633e37253dec2a7cfc8e981670b589726",
+    "flylab/c/research_neural.py": "46283ec7cbd10257ca68999db9ed5317e5df6463b938a3501c36bf78271c9015",
+    "flylab/c/sensorimotor_campaign.py": "b57030227b3487a150890b2f8304223d1d9b2ca7773b5f324e6772ef9a5f125f",
+    "flylab/c/sensors.py": "49ee7fe4ca6a9326de92a28956f1b56d51e32b493e4eae2c09d630eb13e078f8",
+    "flylab/c/server.py": "f59c59f37e48522230ceca55c6bedfd137f1322dae42e5fbd8f8e948cd086e1e",
+    "flylab/c/single_joint.py": "fdb3546124cc74e7921fdbf1c1df17595e4443fc96b01ef317cde1401d4b96af",
+    "flylab/c/storage.py": "b6bf76a4c68f28cf4f3c0634ebf5f6c54b5c0eb2c1667ac552529b68bc2f72c3",
+    "flylab/c/tasks.py": "c08fc701b75df0423aadc71a929d0fa0a7eb63359d6fe0edfb03e11833435ba6",
+    "flylab/c/workbench.py": "1caf994741d54dab5968dbde686b6a180ebc8fa6f880c86e7db760415cd7cc2b",
+    "flylab/common.py": "7c88de6618a53a2c7f978a19ef134519abd10bdc91a95db2d0995aae628fe0c3",
+    "flylab/contracts.py": "23226689156ea0cf489d9998b36952cc9312c9c9e04ef0301486273f4f4980f3",
+    "flylab/dependencies.py": "0d59d58fc838d934cf34b88baaa756e289e113bdc491da43d910feec31745ccb",
+    "flylab/engine.py": "1e7ebd02393d3dc455244f7df6bb8e276da28db9f8fb22b2bca4c27e2345423b",
+    "flylab/flygym_senses.py": "2e3afeb89598c2b468e9d261695cde7049dd274a8fc5d0c8ffcfabdc1f9dd6ac",
+    "flylab/kinematics.py": "cd04e501e85b270636abdb77fb513b96c74159041c7d5f076ee42269a58bc45e",
+    "flylab/legacy.py": "ff3f75c306364672272d698675f281eceb0dc810e6bdf42fa85261dfde8e67f0",
+    "flylab/locomotion.py": "93c6c581544cc2963483b2505895cc1d278f2558f3d29a7472956dd2cbf36d3a",
+    "flylab/navigation_checks.py": "196f2d3c9df0f648e60c0d9dd125f5fbe5e6a29182ecfb7aa333c6b9219eb2c2",
+    "flylab/physics.py": "f380b45c1cd8943d881392c1c9c7fc8bd4d3c1b5a8aabcd59fbcf086a630a2dc",
+    "flylab/sensors.py": "2ce3534579003f44e14b2788b65c28315a9d245d380f506391c97618cd24ea31",
+    "flylab/server.py": "72b6d06ed4da1195802cfecb2df4e6413275b550d36edadebea913910e15258f",
+    "flylab.local.json": "d96829b82e432d23e32cd36596d9740ecae02d329497e1ae4b7960f9e21cf15a",
+    "requirements-c.txt": "5472a5a851c8f70c6b1391cc7177eccbbec40543f86edc66fb187993a0e941e1",
+    "requirements-cuda.txt": "b724d8f5d0885f6c25645386b26b3c40230aef7782d0714210ec172ae778b504",
+    "requirements-data.txt": "930077ed45928af2b2011ec5739964b5ad729a51f97e529e7cb9d734c74de172",
+    "requirements-mjx-probe.txt": "2bb105430173573bb3f7c3a96233d7a2f7b4793d61d6d3c6da5d4a99d258996f",
+    "requirements-mps.txt": "7a4a6f36920585534e53ca3215a21da577a0ef740a154c69238d78910dc6de82",
+    "requirements-research.txt": "a03ad6b14b9c7700c8bd743eed9e0d0df940a7cb93e9b06d90722117338e450b",
+    "requirements-test.txt": "b13a00f04bbb36435ee7d03da59c3f38fd41c779183538d12a3c6f32695bcab7",
+    "requirements-warp.txt": "7f5f6f9a8249a683b31bf47bfdc3ba55dd4db7566ddebae49df3911f1ec97349",
+    "requirements.txt": "9004ee39dac58b265fcd44c424b4fb2a8d44061368aea3ac429602572291304a",
+    "run_c.py": "1e02fbcaf1e176505812066ad5f82dfacf8285b48561237f0d347d8e437b1aa3",
+    "src/c/app.js": "cb432f01c8f2b0e57489ea113c4a06ffb2c19bfa05e423702f2711e763f83947",
+    "src/c/playback.js": "d4fed1f8b89011ba2975b8eaffda9c17bd1f7ad6cb44d3b73346ded8370f1e03",
+    "src/c/signals.js": "ef8866f3b128a11366df57540c7bb1643f779d0a8c58fab2f7fc19bada42b266",
+    "src/c/style.css": "0a88f8e2fc2d2ac68d5f903948949308de973dfd6deaf6c63f8d90b1b3baf394",
+    "src/c/template.html": "d242aa2e22f6ce180bccc6c06e9434b94da428d55218f1e538871f74ddeccfb6",
+    "src/c/workbench.js": "999fc42c4862477aaeba07af3d8f8f9cd4e46ea7dace485543e8009132dd8cca",
+    "tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tests/browser_smoke.py": "5514fd8620e9aa05427080136c54acea2ea5c79091373386cc5e03e94be66152",
+    "tests/c_fixtures.py": "7037477a20838649ed727e9cb95f2c23c3fc6665e62ba8ade9725d374f7f65ad",
+    "tests/fixture_body.py": "c661635886496e9f31ab0ec3b29e95adc4a3468142f47dc513ee638344cb50b2",
+    "tests/fixture_server.py": "6aeaf423e5d7c3b73568b2cea4d22b382fa529bbf9cc952f83e386f5fe50df80",
+    "tests/parity_result.json": "a9bb92d41ff79da97bffffeddb9d61f77546dae421daf3d188ddbe1b07b8c3d7",
+    "tests/test_avoidance.py": "0e1ec9994c6611cbe360a2f8c7fb20702efa588954494e0297d3a9046df09755",
+    "tests/test_c.py": "fe55a995a0ced9360a23722e5da7eb49b7334884b0f4b15fdedd6a5ef7beb1aa",
+    "tests/test_c_backend_selection.py": "6d6cadf9e333ec9fca4de2e0c889df74350837d3520729cd25834814f1ee20c7",
+    "tests/test_c_campaign.py": "d8f32d301612acf1241847e1e66ab65b0c36a43cf50b4769549c53d03dca812f",
+    "tests/test_c_contracts.py": "c22aedea1e5d9fa5685e2c7c660c6acec0cfa31fee6a845a7d7dabbf5468b7a2",
+    "tests/test_c_cuda.py": "a1ace5578c505e6358240043ca70e3c8bd04dcd281e5d5e66830ebbb8a399075",
+    "tests/test_c_delivery.py": "8ae8876a5f3777aa93fc4058f086c6177e0a0b2b39812d6c2d2ad3d75bce5523",
+    "tests/test_c_evidence.py": "9a20c9c6efee3aa8df6fb97f053d58a57161dc6f3c9db168146d7d1acdf0981e",
+    "tests/test_c_identity.py": "ea57dc47c2a0772ad84ab15736e12fbc25c6b0991ea30738ef017a9d7f4b14f7",
+    "tests/test_c_locking.py": "e916ac44ec762b1612ceec94229db066d84cfc08afae760f175f0a3e57aab6fc",
+    "tests/test_c_motor_units.py": "5aa5fa25f5fb1cdda430c71126b71b63ff12739db6ce9d0477e27b2e98a07c0f",
+    "tests/test_c_mps.py": "aadd22d04ff72273b639eaf61c649222b08675e34dcd789afabc8b842376b3bc",
+    "tests/test_c_muscles.py": "ad12d01ef33b1d08a8410b09e62704b3b5dcdaf11c04f1b2df54d2174c09c616",
+    "tests/test_c_recovery.py": "e6624ba7a27c9c7089e4b61ffad9b042a0903d4ff9014c7fe73d23d8cef01745",
+    "tests/test_c_repairs.py": "ca0510199e189ac834f9a43a658f79ce7cea1c95f168107a50724139d855bd3c",
+    "tests/test_c_research.py": "35f93ae60b7a5b01125618ace693faef3c06302f6cc106ad46e146e1addf7c25",
+    "tests/test_c_sensorimotor.py": "9d26812a0fb25a9a870951e71b260305943b06f7ff54eb03782eb30b0c0b38bf",
+    "tests/test_c_single_joint.py": "c3967df4222c8cdadfc81c7f5e1817cb1364c4cb9cc3584c07d5595238566cd0",
+    "tests/test_c_windows_jobs.py": "aa0d75a024008dc030e5cd37b8504964dc7fba6267975c0f27fa961f7bb0f2d0",
+    "tests/test_c_workbench.py": "482f1878df98f3b50e6279dd62f8bca2d7e8988c31b851e3309820e2006d7cd2",
+    "tests/test_core.py": "5a00780b06365683a188cb310987408563805756a56b90c710ccd2c5f5a3be76",
+    "tests/test_fix2.py": "1caf61ca0c29393972d6c7a0ba495e134c88c35c66d67607962b067c4a03ea2c",
+    "tests/test_flygym_improvements.py": "62f20d3cc27c4677ddc573f0ed134583693c8e938c1805cfa87d47f58ed01843",
+    "tests/test_runtime_optimization.py": "9e3e471231bef013bcaaf8556c20ec447b3bfc7adbba0498f31f377afe9f07e6",
+    "tests/test_server.py": "b6b311aff36ebec329399f9bee786c778dcdc48cb91ac2f6d081310d4fea436f",
+    "tests/test_validation.py": "70093fd847cb225abc4d79d774e663f76ec64b13881d47da878f6e8b28c255a1",
+    "tools/acquire_c_research_data.py": "7dfc5e8e474af84563191a1be1fb7daa42458e0adc48c6379d68586f63bf0d3a",
+    "tools/assess_c_hazards.py": "3e0820b5fe2b289b37678f558db9d1e98fc2957a34b2b5e3033699eff68d0155",
+    "tools/assess_c_obstacles.py": "be2a8ff8658c10ba252f4069aadfdcaf6aab3003757cbb636267ae4d754a3c6e",
+    "tools/benchmark_c_backends.py": "e41292f77b78b85061848036e6dc24bcac85fe979ff07fa304b14148fd1115b2",
+    "tools/benchmark_c_cuda.py": "06356fc680829ea977d8bdf0a649f8d08fb867bb4f678de67fb3edcb9813aab5",
+    "tools/benchmark_c_runtime.py": "7b88a5659d008fa95249cca66f8d30f71939a9963bd6f5d77200522ee6ed20f9",
+    "tools/benchmark_c_warp_batch.py": "63e6bda2ec8ac80dbe8bfdd001896a0bf24bb7e31890f106a6b1b720dc795520",
+    "tools/benchmark_c_workbench.py": "d90342384b21570cd84a6862fc7c25e69e7184428453f073048840e6e698ad54",
+    "tools/build_c_banc.py": "4ecaaf58e82d17fa870120601842264f6701f9f16a3c96f1c3332d5c02d232aa",
+    "tools/build_c_banc_sensorimotor.py": "26f8f15d7bce0b51b21537d73d36e0421e6c9cd90b85fe2475c37ba24bd26075",
+    "tools/build_c_bindings.py": "d35758f3092f17b7ea45735466647464d10a45375f6bd792f5fbbc741506b3f1",
+    "tools/build_c_flygym_sensor_profile.py": "734efb5de730c75a89614a1946c5d6456b1a28917747ef7de76b896c9b351a9d",
+    "tools/build_c_graph.py": "11efebc49b6386e555f1a4c6362614abffbfd9838a693bb7d44972a5336418e1",
+    "tools/build_c_halting_profile.py": "4b04c8e72be0476c99a890b1279f4b47ecd7b0c377ba049833558a223e145d02",
+    "tools/build_c_odor_profile.py": "48aecccd1a9d6d272155b6b1ebb59196b9e49bc40d375fdcb1607a306f9660dd",
+    "tools/build_c_poisson_profile.py": "4a3d6d518e775d0ba981f3fb4429eb8c8d1c51ee81a2936414372c4eb99c3463",
+    "tools/build_c_sensor_profile.py": "05fcf6237124c2c2dc29c3f09874ccc17a96e2435a2d92adfdf84e1a3f175666",
+    "tools/build_c_walking_profile.py": "ce4814d9b03331fc5713de7a39ba52a53100c305a46395d856f242fea9192bb0",
+    "tools/c_topology_control.py": "642203cd8f69909e51b156fac00888085bd62bb0010efd40fad7cd0160d75023",
+    "tools/compare_c_banc_gait.py": "cf76b2f37d2c78aea721f93481d296b966ee4e998de9580d8d50e23128903b18",
+    "tools/compare_c_joint_teacher.py": "afb88b02ca53634a4affc73213b40cad3c432c537b8ea2233881dcd272213304",
+    "tools/diagnose_c_motor.py": "01522f5432bfb9f3ea40838e6b5ea0ccf15d70a25b3a045a13d65255cdca1ebe",
+    "tools/diagnose_c_pathways.py": "05c7f1ee69909c5ba7b92fe4588778e4d40e34c3eb6031e874944bfbc15418be",
+    "tools/evaluate_c_motor.py": "8180d8ae1f39d9a88cc378a515346c410f86963f6cedb92dff2ad3ffa6403ad6",
+    "tools/migrate_a.py": "26fe38ea00c450fa4ceb3ebe62e6c07750cbf768100603599f7dc296d0fd6411",
+    "tools/navigation_checks.py": "7fa4e32f6ffd9479da1b7521d7e98733fb092bfa7c4e9f17e967877ba7a417dd",
+    "tools/pack_c_evidence.py": "4690d407587e59edbe1a296a89f6936e44c38c74430938cdb3a6e63437a2cd99",
+    "tools/plot_c_single_joint.py": "4040b93101be532a661066531b7d5fcdb70841fb491790b8b74c0669b1bc52d4",
+    "tools/prepare_c.py": "729fd9b0a678d1e50e459e563509aa348559b6d8d6e0f79a5119732936604a8b",
+    "tools/prepare_c_control_assays.py": "bc6f9c34ee684ccf313089d06318b4ae7f37debd4609f20927001d52e74930ba",
+    "tools/prepare_c_repair_assays.py": "33b63d7c60facc77108730b4e8c14ef90c19f4313cdd4c86cd22bc56647b3859",
+    "tools/prepare_c_sensorimotor_campaign.py": "cf48c127421d1ef87e3392919ef0bdf0412a232b4c9c44de95e8f579e504b43c",
+    "tools/preserve_c_session.py": "f159db632911c0f6311acc2a24305a0069019d0263c99a08aa320a4b7e6ff4b4",
+    "tools/probe_c_joint_feedback.py": "2438a7d8043181f4607ca18b73eed7ffa4f4cea2191770832574c13d31248324",
+    "tools/probe_c_steering.py": "22c12446e45b8740bafcc4b0d83071c6c8d0e3e133bc22500c2186a2ee9cf617",
+    "tools/probe_mjx_metal.py": "7f1a0f335f1310efea7716ca84e67b5093d46a0df5e5b6df582ef21c5df4b691",
+    "tools/profile_c_runtime.py": "475f3c8cad6dbaee856b444479be6d1332d302bff0e80d05d337f8149296cb39",
+    "tools/reevaluate_c_joint.py": "2521c9978916222672d7d16a7ea7b52d1890dac29188b1262b9ae833cb51437e",
+    "tools/reevaluate_evidence.py": "84f12ade172bad208551cf5ef0c48d73093276626d8760b663c8c346bf75c592",
+    "tools/run_c_campaign.py": "d559cb1022dd96e816f5c159868f7aee666cc23ff324049ac8783aadf4747319",
+    "tools/run_c_checks.py": "6d166756352a0f9008f4016e76baecdb9f42dd1bee89715e9651a7bad77f7e34",
+    "tools/run_c_research_neural.py": "11c40f5a336073049055e392c1f7194c12d4ea467440caa0d7d7e2f479e11fd3",
+    "tools/run_physics_campaign.py": "2912011755a50a05c5b1cb1de88ae21e26b8b6d2010b327a69ed558287e73379",
+    "tools/verify_c.py": "71baef3bca22a8be112fb7535c580c83d3febf0afdf5ebc2c6d9824c3370f5b3",
+    "tools/verify_c_cns.py": "e09a0ffa5508b772836c740c1e118599a3a4580217c1281bb7b0180a6bf90985",
+    "tools/verify_c_flight.py": "265bfaa7012318a5438de2fcb2cffb7aef21bc0caf7a0d266fd6d760e313c27c",
+    "tools/verify_c_head_contact.py": "0d89a24307b66e7c95666ffe9a0f23b162cf472a07d0fddde5a58db3c8f01590",
+    "tools/verify_c_muscle_geometry.py": "9e024a0f117a78359a8bb9c31b7903b7ca8146c36781a9ace0f4c02a18a0e882",
+    "tools/verify_c_muscle_guard.py": "dd38246fdb8c6f256ba885085ddbb5866408ce52723e382e05b894f5fbf456cf",
+    "tools/verify_c_muscles.py": "8ed25627561e97a4365febb04e6bb8c95021a3d0f3c3ee7f4266bfb79ef28989",
+    "tools/verify_c_neural_variants.py": "7cfec6064bab5b885630d1303ba0cde0a7255b1b31e45cb18c25937fc6ea4eda",
+    "tools/verify_c_numerics.py": "77ad79ef22226738bf50a448dc874a0bdc067bb21eaf1570428661769929c1d4",
+    "tools/verify_c_recovery_native.py": "004bceb15a250f0e135caa376d11943e7cf2bb3a65bfdc8f23ec697b196f7626",
+    "tools/verify_c_sensor_ports.py": "cef9d7ee612249bae1ff25f876c11c95415c8b5020f64b7f43b9b1a955cf26a9",
+    "tools/verify_c_sensorimotor.py": "0b367256ada98cf212e203bf124177a87b949d4620eb10a5aead39f9ef4b729a",
+    "tools/verify_c_single_joint.py": "f4f1c51ef2f468f45e9a0d25139fa79208fe47695faf0fc36c5757a6d4724026",
+    "tools/verify_c_warp.py": "abb3f975a19677fc5ca85443f3709687a9b31b3c4053b2d43d71dd3a72520e90",
+    "tools/verify_c_workbench.py": "68ec423f3ebd2c8ee28fee70733e25867a04259f2342c1b20ef086bb7f9e1b61",
+    "tools/verify_navigation.py": "7c83080cca84cb62f06c0dca528a53360c25a08e75917584cee75f06464c8448",
+    "tools/verify_physics.py": "d2649398296c38f798fd941d581e95066054b06b66b9b38cca24f5f6ee677152"
+  },
+  "doctor": {
+    "status": "READY",
+    "neural_backend": "exp_lif_cuda",
+    "physics_backend": "cpu",
+    "warp": {
+      "available": true,
+      "validated": false,
+      "devices": [
+        "cuda:0"
+      ],
+      "packages": {
+        "warp-lang": "1.14.0",
+        "mujoco-warp": "3.9.0"
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+-r requirements-c.txt
+--extra-index-url https://download.pytorch.org/whl/cu130
+# Windows/Linux CUDA runtime isolated in this virtual environment.
+cupy-cuda13x[ctk]==14.2.0
+cuda-toolkit==13.0.2
+# Pin the CUDA build so a fresh Windows install cannot select a CPU wheel.
+torch==2.14.0+cu130

@@ -1,0 +1,5 @@
+{
+  "backend": "auto",
+  "graph": "data/fafb783/bundle",
+  "bindings": "data/fafb783/bindings.json"
+}

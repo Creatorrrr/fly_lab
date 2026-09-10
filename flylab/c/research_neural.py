@@ -1,4 +1,4 @@
-"""Opt-in heterogeneous LIF experiments on CPU/MPS, independent of baseline C.
+"""Opt-in heterogeneous LIF experiments on CPU/MPS/CUDA, independent of baseline C.
 
 Explicit cell parameters, edge delays/receptor effects, electrical coupling and
 reward-gated STDP. Parameters require a declared evidence/assumption record.
@@ -15,14 +15,14 @@ from .neural_state import validate_neural_ranges
 class ResearchLIF:
     def __init__(self,graph,spec,device='cpu'):
         import torch
-        if device not in ('cpu','mps'):raise ValueError('Research device must be cpu or mps')
-        if device=='mps' and not torch.backends.mps.is_available():raise RuntimeError('BLOCKED_MPS')
+        from .backend_selection import resolve_research_device
+        device=resolve_research_device(device)
         if spec.get('schema')!='flylab.physiology.v1' or spec.get('graph_hash')!=graph.hash:raise ValueError('Physiology graph identity mismatch')
         if not spec.get('evidence') or not spec.get('uncertainty'):raise ValueError('Physiology evidence and uncertainty required')
         if set(spec)-{'schema','graph_hash','evidence','uncertainty','parameters','cells','synapses','gap_junctions','plasticity','name'}:raise ValueError('Unknown physiology field')
         self.torch=torch;self.device=device;self.graph=graph;self.spec=copy.deepcopy(spec);self.hash=digest(spec)
         self.p=LIFParameters(**spec.get('parameters',{}));self.tick=0;self.backend='research_lif_'+device;self.n=graph.n
-        if self.p.dtype!='float32':raise ValueError('Research CPU/MPS parity requires float32')
+        if self.p.dtype!='float32':raise ValueError('Research CPU/GPU parity requires float32')
         params={k:np.full(graph.n,getattr(self.p,k),np.float64) for k in ('rest_mV','reset_mV','threshold_mV','tau_m_s','tau_syn_s')}
         for row in spec.get('cells',[]):
             ids=graph.resolve(row['ids'],maximum=10000)
@@ -101,14 +101,16 @@ class ResearchLIF:
         drive,capture=validate_input(self.graph.n,drive,steps,capture,pulses)
         reward=finite(reward,'external scalar reward',-1.,1.)
         bounded_int(self.tick+steps,'research clock',0,self.max_tick)
-        t=self.torch;x=self.tensor(drive);selected=self.tensor(capture,t.int32);events=[];start=self.tick
+        t=self.torch;x=self.tensor(drive);selected=self.tensor(capture,t.int32);start=self.tick
+        events=t.empty((steps,len(capture)),dtype=t.uint8,device=self.device)
+        electrical=t.zeros_like(self.v)
         voltage_events=self.p.integration=='exact-exponential-voltage-events-v1'
         reset_current=self.p.integration in ('exact-exponential-reset-current-v1','exact-exponential-voltage-events-v1')
         if pulses is not None:pi,pv=self.tensor(pulses[0],t.int32),self.tensor(pulses[1])
         for k in range(steps):
             self.h+=self.queue[self.tick%self.slots];self.queue[self.tick%self.slots].zero_()
             if pulses is not None:(self.v if voltage_events else self.h).index_add_(0,pi,pv[k])
-            electrical=t.zeros_like(self.v)
+            electrical.zero_()
             if len(self.ga):
                 current=self.gc*(self.v[self.gb]-self.v[self.ga])
                 electrical.index_add_(0,self.ga,current);electrical.index_add_(0,self.gb,-current)
@@ -134,11 +136,12 @@ class ResearchLIF:
             if reset_current:self.h=t.where(spike,0.,self.h)
             self.refractory=t.where(spike,self.tick+self.refractory_ticks,self.refractory)
             self.rate*=self.er;self.rate+=spike*((1-self.er)/self.p.dt);self.spike_count+=spike
-            if len(capture):events.append(spike[selected].clone())
-        if not all(bool(t.isfinite(a).all().cpu()) for a in (self.v,self.h,self.queue)):raise RuntimeError('FAULT_RESEARCH_NEURAL_NONFINITE')
+            if len(capture):events[k].copy_(spike[selected])
+        healthy=t.stack([t.isfinite(a).all() for a in (self.v,self.h,self.queue,self.rate)]).all()
+        if not bool(healthy.cpu()):raise RuntimeError('FAULT_RESEARCH_NEURAL_NONFINITE')
         self.last_events=[]
-        if events:
-            times,cells=np.nonzero(t.stack(events).cpu().numpy())
+        if steps and len(capture):
+            times,cells=np.nonzero(events.cpu().numpy())
             self.last_events=[dict(tick=start+int(k)+1,index=int(capture[j])) for k,j in zip(times,cells)]
 
     def readout(self,indices):
@@ -181,6 +184,7 @@ class ResearchLIF:
         enabled=np.ones(len(self.graph.weights),bool);enabled[edges]=False
         edge_enabled=self.tensor(enabled,self.torch.bool)
         if self.device=='mps':self.torch.mps.synchronize()
+        if self.device=='cuda':self.torch.cuda.synchronize()
         for k,v in staged.items():setattr(self,k,v)
         self.edge_enabled=edge_enabled;self.edge_mutes=list(edges);self.tick=tick;self.last_events=[]
 
@@ -191,5 +195,6 @@ class ResearchLIF:
                     max_voltage_mV=float(self.v.max().cpu()))
 
     def region_summary(self,groups):
-        return [dict(region=name,neurons=len(ids),mean_rate_Hz=float(self.rate[self.tensor(ids,self.torch.int32)].mean().cpu()))
+        rates=self.rate.detach().cpu().numpy()
+        return [dict(region=name,neurons=len(ids),mean_rate_Hz=float(rates[ids].mean()))
                 for name,ids in groups.items()]

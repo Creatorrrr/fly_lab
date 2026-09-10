@@ -123,7 +123,7 @@ def evaluate(traces, results, spec):
         interpretation='A causal effect is not proof of stabilizing feedback or calibrated biology')
 
 
-def run(graph_path,out,seconds=.15,backend='exp_lif_mps',sensory_gain=18.):
+def run(graph_path,out,seconds=.15,backend='auto',sensory_gain=18.):
     seconds=finite(seconds,'assay seconds',.1,2.)
     if abs(seconds/.001-round(seconds/.001))>1e-8: raise ValueError('Integral 1 ms duration required')
     defaults=asdict(JointParameters(sensory_gain_mV=sensory_gain))
@@ -200,7 +200,7 @@ if __name__=='__main__':
     p.add_argument('--out',required=True);p.add_argument('--seconds',type=float,default=.15)
     p.add_argument('--sensory-gain',type=float,default=18.,help='Explicit uncalibrated FeCO input gain in mV; kept in the profile identity')
     p.add_argument('--require-feedback-effect',action='store_true',help='Exit with failure when technical checks pass but no causal motor effect of feedback is detected')
-    p.add_argument('--backend',choices=('exp_lif_mps','exp_lif_cpu_reference'),default='exp_lif_mps')
+    p.add_argument('--backend',choices=('auto','exp_lif_mps','exp_lif_cpu_reference','exp_lif_cuda'),default='auto')
     a=p.parse_args();report=run(a.graph,a.out,a.seconds,a.backend,a.sensory_gain)
     print(report['status'],report.get('sensorimotor_status','NOT_EVALUATED'),report.get('error',''),flush=True)
     raise SystemExit(exit_code(report,a.require_feedback_effect))

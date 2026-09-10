@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Alternate frozen and current MPS runtimes from identical physical checkpoints.
+"""Alternate frozen and current GPU runtimes from identical physical checkpoints.
 
 Workers use separate processes to avoid mixing module versions. Initialization,
 shader/JIT warmup and artifact export are excluded from continuation timing.
@@ -32,11 +32,12 @@ def worker(args):
     from flylab.c.storage import StateStore
     args.out.mkdir(parents=True,exist_ok=False)
     began=time.perf_counter()
-    graph=GraphStore.load(ROOT/'data/fafb783/bundle')
-    bindings=PortBindings(graph,json.loads((ROOT/'data/fafb783/bindings.json').read_text()))
+    graph=GraphStore.load(args.graph)
+    bindings=PortBindings(graph,json.loads(args.bindings.read_text()))
     source=StateStore.load(args.checkpoint)
     if args.case=='assisted':source['mode']='C_ASSISTED'
-    override=None if source['neural']['backend']=='exp_lif_mps' else 'exp_lif_mps'
+    if args.backend=='auto':raise ValueError('A benchmark worker requires a resolved --backend')
+    override=args.backend
     warm=CEngine.from_checkpoint(graph,bindings,source,backend_override=override)
     try:warm.step(1)
     finally:warm.close()
@@ -138,6 +139,9 @@ def main():
     p.add_argument('--repeats',type=int,default=3)
     p.add_argument('--worker',action='store_true')
     p.add_argument('--source-root',type=Path,default=ROOT)
+    p.add_argument('--backend',choices=('auto','exp_lif_cpu_reference','exp_lif_mps','exp_lif_cuda'),default='auto')
+    p.add_argument('--graph',type=Path,default=ROOT/'data/fafb783/bundle')
+    p.add_argument('--bindings',type=Path,default=ROOT/'data/fafb783/bindings.json')
     p.add_argument('--case',choices=('shadow','strict','assisted','recording'),default='shadow')
     p.add_argument('--additive-telemetry',action='store_true',help='Compare legacy dynamics with explicit additive telemetry exclusions')
     args=p.parse_args()
@@ -148,11 +152,13 @@ def main():
     args.out.mkdir(parents=True,exist_ok=False)
     sys.path.insert(0,str(ROOT))
     from flylab.c.storage import StateStore
+    from flylab.c.backend_selection import resolve_backend
+    args.backend=resolve_backend(args.backend)
     cases=['shadow','assisted','recording']
     if args.strict_checkpoint:cases.insert(1,'strict')
     report=dict(schema='flylab.c.runtime_benchmark.v1',status='RUNNING',platform=platform.platform(),
                 timing_scope='end-to-end CEngine.step(1), warm runtime, one physical world, no browser',
-                initialization_excluded=True,baseline='previous MPS implementation',cases=[])
+                initialization_excluded=True,backend=args.backend,baseline='frozen previous runtime',cases=[])
     write(args.out/'report.json',report)
     for case in cases:
         rows={'baseline':[],'optimized':[]};runs={};source=args.strict_checkpoint if case=='strict' else args.checkpoint
@@ -160,9 +166,10 @@ def main():
             order=('baseline','optimized') if trial%2==0 else ('optimized','baseline')
             for label in order:
                 path=args.out/f'{case}-{trial}-{label}'
-                command=[sys.executable,str(Path(__file__).resolve()),'--worker','--source-root',
+                command=[sys.executable,'-X','utf8',str(Path(__file__).resolve()),'--worker','--source-root',
                          str(args.baseline_root if label=='baseline' else ROOT),
-                         '--checkpoint',str(source),'--case',case,'--seconds',str(args.seconds),'--out',str(path)]
+                         '--checkpoint',str(source),'--case',case,'--seconds',str(args.seconds),'--out',str(path),
+                         '--backend',args.backend,'--graph',str(args.graph),'--bindings',str(args.bindings)]
                 with (args.out/f'{path.name}.log').open('w') as log:
                     subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,check=True,cwd=ROOT)
                 row=json.loads((path/'report.json').read_text());row['artifacts']=str(path.resolve())

@@ -1,5 +1,6 @@
 """Local v3 observation server with bounded catalogs and binary subscriptions."""
 from pathlib import Path
+from dataclasses import asdict
 import json
 import secrets
 from aiohttp import web
@@ -7,7 +8,8 @@ from . import VERSION, PROTOCOL, MODES
 from .engine import CEngine
 from .graph import GraphStore
 from .ports import PortBindings
-from .neural import LIFParameters, NEURAL_BACKENDS, create_backend
+from .neural import LIFParameters, NEURAL_BACKENDS, BACKEND_CHOICES, create_backend
+from .backend_selection import backend_availability, resolve_backend
 from .model_config import execution_capabilities, validate_execution, model_identity
 from .protocol import signal_frame
 from .storage import StateStore
@@ -25,7 +27,7 @@ class CDispatcher:
         self.graph_path, self.binding_path = Path(graph_path), Path(binding_path)
         self.artifacts = Path(artifacts).resolve()
         self.factory = body_factory
-        self.backend, self.default_mode = backend, default_mode
+        self.backend, self.default_mode = resolve_backend(backend), default_mode
         self.graph = self.bindings = self.engine = None
         self.profile_cache = {}
         self.profile_entries = {}
@@ -231,6 +233,30 @@ class CDispatcher:
                 raise ValueError('Environment identity mismatch')
             result = self.need().command('load_environment', {'world': saved['world']})
         elif op == 'regions': result = self.need().region_summary()
+        elif op == 'physical_observation':
+            if set(payload)-{'kind'}: raise ValueError('Unknown observation option')
+            e=self.need(); kind=payload.get('kind')
+            if e.body.test_double: raise ValueError('Native physical observations require the real body')
+            from ..flygym_senses import FourSiteOdor
+            if kind=='odor':
+                sensor=e.sensors.four_site_odor or FourSiteOdor()
+                result=sensor.observe(e.body,e.world)
+            elif kind in ('eyes','native'):
+                import base64, io
+                import numpy as np
+                from PIL import Image
+                if kind=='eyes':
+                    observation=e.body.compound_eye_observation()
+                    pixels=np.concatenate(list(observation['raw_rgb']),axis=1)
+                    result=dict(metadata=observation['metadata'],time_s=observation['time_s'],
+                        ommatidia=observation['ommatidia'].tolist())
+                else:
+                    pixels=e.body.preview()
+                    result=dict(time_s=e.body.physics_time(),metadata=dict(observation_only=True,
+                        body_model_hash=e.body.model_hash,kind='native MuJoCo mesh'))
+                buffer=io.BytesIO();Image.fromarray(pixels).save(buffer,format='PNG')
+                result['image']='data:image/png;base64,'+base64.b64encode(buffer.getvalue()).decode('ascii')
+            else:raise ValueError('Observation must be eyes, native or odor')
         elif op == 'command': result = self.need().command(payload.get('type'), payload.get('payload', {}))
         elif op == 'checkpoint':
             name = checked_name(payload.get('name', 'checkpoint-'+secrets.token_hex(6)))
@@ -302,7 +328,8 @@ class CServer(BServer):
         return web.json_response(dict(protocol=PROTOCOL, token=self.token, dependencies=dependency_report(),
                                       testDouble=self.test_double, backend=d.backend, defaultMode=d.default_mode,
                                       hasExperiment=d.engine is not None, graphAvailable=(d.graph_path/'manifest.json').is_file(),
-                                      bindingsAvailable=d.binding_path.is_file()), headers={'Cache-Control':'no-store'})
+                                      bindingsAvailable=d.binding_path.is_file(),
+                                      backendAvailability=backend_availability()), headers={'Cache-Control':'no-store'})
 
     async def send_reply(self, socket, result):
         binary = result.pop('_binary', None)
@@ -312,21 +339,39 @@ class CServer(BServer):
 
 def main():
     import argparse
+    local_path=ROOT/'flylab.local.json'
+    defaults=json.loads(local_path.read_text(encoding='utf-8')) if local_path.is_file() else {}
+    if not isinstance(defaults,dict) or set(defaults)-{'graph','bindings','backend'} or any(not isinstance(v,str) for v in defaults.values()):
+        raise ValueError('flylab.local.json supports string graph, bindings and backend fields only')
     parser = argparse.ArgumentParser(description='FLY LAB C: FAFB v783 connectome / NeuroMechFly')
     parser.add_argument('--port', type=int, default=8766)
-    parser.add_argument('--graph', type=Path, default=ROOT/'data/fafb783/bundle')
-    parser.add_argument('--bindings', type=Path, default=ROOT/'data/fafb783/bindings.json')
+    parser.add_argument('--graph', type=Path, default=ROOT/defaults.get('graph','data/fafb783/bundle'))
+    parser.add_argument('--bindings', type=Path, default=ROOT/defaults.get('bindings','data/fafb783/bindings.json'))
     parser.add_argument('--artifacts', type=Path, default=ROOT/'artifacts/c')
-    parser.add_argument('--backend', choices=NEURAL_BACKENDS, default='exp_lif_cpu_reference')
+    parser.add_argument('--backend', choices=BACKEND_CHOICES, default=defaults.get('backend','auto'))
+    parser.add_argument('--physics-backend', choices=('cpu','warp'), default='cpu',
+                        help='Independent physics backend; warp is an explicitly selected candidate')
+    parser.add_argument('--noslip-iterations', type=int, default=None)
+    parser.add_argument('--multiccd', action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument('--mode', choices=MODES, default='C_SHADOW')
     parser.add_argument('--doctor', action='store_true')
     parser.add_argument('--restore-checkpoint', help='Restore an artifact checkpoint before accepting browser connections')
     args = parser.parse_args()
+    requested_backend = args.backend
+    args.backend = resolve_backend(args.backend)
+    from ..physics import PhysicsProfile, body_factory as select_body, physics_availability
+    physics_profile=PhysicsProfile(backend=args.physics_backend,
+        noslip_iterations=args.noslip_iterations,multiccd=args.multiccd)
     if not 1024 <= args.port <= 65535: parser.error('Port must be 1024..65535')
     if args.doctor:
         report = dict(physical=dependency_report(), graph=args.graph.is_dir(), bindings=args.bindings.is_file(),
-                      cudaValidated=False, biologicalValidation=False)
+                      numericalValidation='NOT_RUN_BY_DOCTOR', biologicalValidation=False,
+                      backend_selection=requested_backend, backend_availability=backend_availability(),
+                      physics_profile=asdict(physics_profile), physics_availability=physics_availability())
         try:
+            selected_physics=report['physics_availability'][physics_profile.backend]
+            if not selected_physics['available']:
+                raise RuntimeError('Selected physics backend unavailable: '+str(selected_physics.get('reason','No CUDA device')))
             graph = GraphStore.load(args.graph); bindings = PortBindings(graph, read_json(args.bindings))
             parameters = validate_execution(bindings, args.mode, args.backend)
             report.update(graph=graph.manifest, bindings=bindings.summary(), status='READY', requested_backend=args.backend,
@@ -339,7 +384,8 @@ def main():
         print(json.dumps(report, indent=2, ensure_ascii=False))
         return 0 if report['status']=='READY' and report['physical']['ready'] else 2
     if not (ROOT/'FLY_LAB_C.html').is_file(): raise SystemExit('Run python build_c.py first')
-    server = CServer(args.port, args.graph, args.bindings, args.artifacts, backend=args.backend, default_mode=args.mode)
+    server = CServer(args.port, args.graph, args.bindings, args.artifacts, backend=args.backend, default_mode=args.mode,
+                     body_factory=select_body(physics_profile))
     print(f'FLY LAB C {VERSION} — http://127.0.0.1:{args.port} · {args.mode}', flush=True)
     app=server.app()
     if args.restore_checkpoint:

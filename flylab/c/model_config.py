@@ -47,6 +47,8 @@ def execution_capabilities(bindings):
 
 
 def validate_execution(bindings, mode, backend, parameters=None):
+    from .backend_selection import resolve_backend
+    backend = resolve_backend(backend)
     supported = execution_capabilities(bindings)
     if mode not in supported['modes']:
         reason = ('The BANC neuromuscular profile requires C_STRICT'

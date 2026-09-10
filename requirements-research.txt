@@ -1,4 +1,4 @@
 -r requirements-c.txt
-# ResearchLIF supports Torch CPU on Linux/macOS and MPS on Apple Silicon.
-# This is the version used for the C0.7 contract checks; no CUDA selection.
+# ResearchLIF supports Torch CPU, MPS on Apple Silicon and NVIDIA CUDA.
+# For NVIDIA hosts use the matching CUDA wheel; see requirements-cuda.txt.
 torch==2.14.0

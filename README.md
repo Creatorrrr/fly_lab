@@ -25,6 +25,16 @@ FAFB의 좌우 먹이 접근도 한쪽만 성공했습니다. 완전한 가상 �
 
 C 화면: **http://127.0.0.1:8766**. 기본 C_SHADOW에서 B가 몸을 구동하고 C가 병행 계산합니다. C_STRICT를 선택하고 **새 실험**을 누르면 C 신경 출력으로 구동합니다. 초기화 후에는 재생 또는 한 단계로 진행하세요. `./launch_c.sh`도 사용할 수 있습니다.
 
+실행 시 신경 계산 장치는 **CUDA → MPS → CPU** 순서로 자동 선택합니다. Windows NVIDIA 환경에서는 `.venv\Scripts\python.exe -m pip install -r requirements-cuda.txt` 후 `launch_c.bat`를 실행하세요. CUDA를 명시하려면 `launch_cuda.bat`, CPU를 명시하려면 `launch_c.bat --backend exp_lif_cpu_reference`입니다. 그래프와 바인딩 경로는 `flylab.local.example.json`을 참고해 `flylab.local.json`에 저장할 수 있습니다. 명령행 인자가 로컬 설정보다 우선합니다.
+
+RTX 4080에서 CUDA 커널·CUDA Graph·비동기 관측 전송을 적용하고 실제 FAFB 전뇌와 MuJoCo 연결을 검증했습니다. 같은 상태에서 50 ms씩 3회 측정한 신경 계산은 기존 CuPy 구현 대비 **3.78배**, 물리 포함 세 모드는 CPU 대비 **10.9–11.6배** 빨랐습니다. ResearchLIF와 기존 MPS 전용 실험·검증 도구도 CUDA를 선택할 수 있습니다. 설치 버전, 수치 차이, 검증 범위는 [CUDA 적용 및 Windows 검증](docs/C_CUDA_WINDOWS_20260910.md)에 기록했습니다. MuJoCo 물리 계산은 CPU를 사용합니다.
+
+[FlyGym 공식 구현 기반 개선안](docs/C_FLYGYM_IMPROVEMENT_PLAN_WINDOWS_20260910.md)은 현재 Windows/CUDA 환경에서 Warp 물리 평가, 같은 몸의 기계·신경 구동 대조, 접촉·복안·후각, 배치 실험의 적용 순서와 검증 기준을 정리한 후속 계획입니다.
+
+해당 계획의 물리 어댑터·계측, 같은 관절의 기계 교사, 실제 복안·4지점 후각 관측, 보행 대조와 물리 배치 평가 도구를 반영했습니다. 화면의 **실제 몸과 감각 관측**에서 실제 메시·복안·후각 값을 확인할 수 있습니다. **4지점 후각 · 더듬이 입력 (실험)**은 새 실험용 별도 프로파일이며, 복안과 palp에는 임의의 신경 ID를 연결하지 않습니다. [구현과 Windows 실측 결과](docs/C_FLYGYM_IMPLEMENTATION_WINDOWS_20260910.md)에 적용 범위와 재현 명령을 기록했습니다.
+
+기본 실행은 **CUDA 신경 + CPU 물리**입니다. 선택 의존성 `requirements-warp.txt`와 `--physics-backend warp`를 통해 Warp 후보를 실행할 수 있지만, 이번 수치·복원 비교가 실패하고 단일 세계도 느려 자동 선택하지 않습니다. 실제 BANC 24조건 관절 대조와 8조건 보행 대조에서도 감각 회로·보행 개선 기준을 통과하지 못해, 전신 근육 전환과 전뇌 배치 캠페인은 채택하지 않았습니다.
+
 Apple silicon에서는 **MPS 가속**을 사용할 수 있습니다. `.venv/bin/python -m pip install -r requirements-mps.txt` 후 `./launch_mps.sh`로 실행하거나 화면의 **신경 계산 → MPS · Apple GPU**를 선택하세요. 전환 전 체크포인트를 저장하고 현재 모델 시간·신경·물리 상태를 그대로 옮깁니다. 초기 M1 Max 측정에서 전뇌 계산 11.56배, 짧은 실제 몸 연결 3.58–4.35배 향상이 보고됐습니다. 이는 이전 버전·특정 조건의 이력이며 현재 개발본의 종합 배수나 실시간 속도를 뜻하지 않습니다. [MPS 검증 보고서](docs/C_MPS_VALIDATION.md)에 원자료와 수치 오차를 기록했습니다.
 
 후속 최적화에서는 다리 제어·접촉·광선 조회를 묶고 MPS와 CPU 몸 계산을 겹쳐 실행하며, 정지 화면의 반복 렌더링을 제거했습니다. 당시 C_SHADOW의 같은 상태에서 기존 MPS 버전 대비 추가 3.05배 향상을 측정했습니다. 이후 도구 변경의 반복 측정에는 변동성이 있어 과거 배수를 곱해 현재 성능으로 제시하지 않습니다. 실제 전뇌·몸·기록 비교와 Apple GPU 물리 경로의 미지원 사항은 [실행 최적화 보고서](docs/C_RUNTIME_OPTIMIZATION.md)에 있습니다.

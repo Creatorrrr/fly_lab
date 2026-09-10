@@ -11,6 +11,8 @@ import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import numpy as np
 from flylab.c.graph import GraphStore
+from flylab.c.neural import BACKEND_CHOICES
+from flylab.c.backend_selection import resolve_backend
 from flylab.c.neural import create_backend, LIFParameters
 from flylab.c.ports import PortBindings, SensoryEncoder, MotorDecoder
 from flylab.c.body_identity import source_identity
@@ -27,7 +29,8 @@ def packet(left,right):
                 forwardSpeed=0.,clearanceDown=1.,clearanceUp=10.,contact=0.)
 
 
-def run(graph_path, binding_paths, out, seconds=2., seeds=(42,197)):
+def run(graph_path, binding_paths, out, seconds=2., seeds=(42,197), backend='auto'):
+    backend=resolve_backend(backend)
     if not 1.<=seconds<=10. or abs(seconds/.005-round(seconds/.005))>1e-8:
         raise ValueError('1..10 seconds on a control boundary required')
     out=Path(out);out.mkdir(parents=True,exist_ok=False)
@@ -43,7 +46,7 @@ def run(graph_path, binding_paths, out, seconds=2., seeds=(42,197)):
         rows=[]
         for seed in seeds:
             for label,left,right in STIMULI:
-                neural=create_backend(graph,params,'exp_lif_mps')
+                neural=create_backend(graph,params,backend)
                 encoder=SensoryEncoder(bindings,seed);decoder=MotorDecoder(bindings)
                 trace=[]
                 for k in range(round(seconds/.005)):
@@ -75,7 +78,7 @@ def run(graph_path, binding_paths, out, seconds=2., seeds=(42,197)):
         report=dict(profile=bindings.spec.get('profile'),binding_hash=bindings.hash,rows=rows,checks=checks,
             status='PASS' if all(all(v for k,v in c.items() if k!='seed') for c in checks) else 'FAIL')
         write_json(directory/'report.json',report);reports.append(report)
-    report=dict(schema='flylab.steering-probe.v1',source=source,graph_hash=graph.hash,simulated_nodes=graph.n,
+    report=dict(schema='flylab.steering-probe.v1',backend=backend,source=source,graph_hash=graph.hash,simulated_nodes=graph.n,
         seconds_per_assay=seconds,seeds=list(seeds),stimuli=STIMULI,profiles=reports,
         physicalExecuted=False,biological_validation=False,automatic_profile_adoption=False)
     write_json(out/'report.json',report);return report
@@ -85,4 +88,5 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--graph',default='data/fafb783/bundle')
     p.add_argument('--bindings',nargs='+',required=True);p.add_argument('--out',required=True)
     p.add_argument('--seconds',type=float,default=2.);p.add_argument('--seeds',type=int,nargs='+',default=[42,197])
-    a=p.parse_args();run(a.graph,a.bindings,a.out,a.seconds,a.seeds)
+    p.add_argument('--backend',choices=BACKEND_CHOICES,default='auto')
+    a=p.parse_args();run(a.graph,a.bindings,a.out,a.seconds,a.seeds,a.backend)

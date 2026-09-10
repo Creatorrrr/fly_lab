@@ -1,0 +1,633 @@
+{
+  "schema": "flylab.flygym-improvement-plan-evidence.v1",
+  "date": "2026-09-10",
+  "local_root": "C:\\Users\\ckthd\\Dev\\Projects\\fly_lab",
+  "local_head": "abd9a2d74567bc335eddb4ba1af1a81e6e1376a4",
+  "code_basis": "HEAD plus existing uncommitted CUDA implementation; runtime code not changed in this planning turn",
+  "versions": {
+    "flygym": "2.1.0",
+    "mujoco": "3.9.0",
+    "warp-lang": null,
+    "mujoco-warp": null,
+    "cupy-cuda13x": "14.2.0",
+    "torch": "2.14.0+cu130"
+  },
+  "upstream": {
+    "upstream": "38c8ec61034cd59bc5ba0de20688d4a3c0000d60",
+    "installed_commit": "ca65a510c2afe6ac61c51df4f274c8d190c2f95f",
+    "installed_version": "2.1.0",
+    "ahead_by": 7,
+    "upstream_commit_date": "2026-06-28T23:43:47Z",
+    "changed_files": [
+      "docs/CNAME",
+      "docs/SUMMARY.md",
+      "docs/index.md",
+      "docs/outreach.md",
+      "docs/tutorials/index.md",
+      "docs/video_tutorials/captions/1_general_introduction.en.vtt",
+      "docs/video_tutorials/captions/2_body_model.en.vtt",
+      "docs/video_tutorials/captions/3_installing_flygym.en.vtt",
+      "docs/video_tutorials/captions/4_composing_models_and_scenes.en.vtt",
+      "docs/video_tutorials/captions/5_replaying_behavior_from_experimental_recordings.en.vtt",
+      "docs/video_tutorials/captions/6_gpu_accelerated_simulation.en.vtt",
+      "docs/video_tutorials/captions/7_profiling_simulation_performance.en.vtt",
+      "docs/video_tutorials/index.md",
+      "properdocs.yml",
+      "scripts/dev/build_wasm_game_assets.py",
+      "scripts/dev/build_wasm_viewer_assets.py",
+      "tutorials/1a_basic_model_composition.ipynb",
+      "wasm/viewer/viewer.js"
+    ],
+    "files": [
+      {
+        "path": "src/flygym/__init__.py",
+        "sha256": "bf57d0f48b247996a36aa7c3153f105af1b8b9b6d8fd47b19e0505604157fd53",
+        "bytes": 737,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "9fabb62c9539b705d93d4d0817b7186710bcab33efdb5831ca6ccd88f1552fbb"
+      },
+      {
+        "path": "src/flygym/anatomy.py",
+        "sha256": "64ac2cb6239d26ff872e34f2b59e6e35c9182b4b05e21e151e7e7d2c129c0e87",
+        "bytes": 20311,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "540851354511c07c171917e5f0c0d6458385934264b01c7ab4ced2c8baf43766"
+      },
+      {
+        "path": "src/flygym/compose/__init__.py",
+        "sha256": "238b5cfadf7bc5bce8631d13ed6861c3ec727827d7938bdb2fbe38a31caacf8e",
+        "bytes": 1294,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "f1240abceb08cbcc2fecb49a9dae49478606512e78131b43d07a994e79e37e0c"
+      },
+      {
+        "path": "src/flygym/compose/base.py",
+        "sha256": "de307140820365ee47e9391ad96e3750640f40f2673d61d66b3fd75cec795ebe",
+        "bytes": 4206,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "22e5e386936349decbce9f2a85b6b8cf030d9d2883d47b2b21ecce1a6af8bb44"
+      },
+      {
+        "path": "src/flygym/compose/fly/__init__.py",
+        "sha256": "c72dfa9d0c0720b0b4747b51cefaddbc8aeba82a77bda25429f140dd2332f454",
+        "bytes": 846,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "f9cb7bc8f23f7af1d9261f9b23e7f1d0ef2ddcfb1b4d087a95c1fcaa6afa2a8d"
+      },
+      {
+        "path": "src/flygym/compose/fly/base_fly.py",
+        "sha256": "9f7ec2c3786972467085cf6a92363cc72a95551226151ff1941fd96800ec677f",
+        "bytes": 37477,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "f3ce703ea0cae20bc08a195a1958c8df8b6842670e8b03260cc698e3063e3608"
+      },
+      {
+        "path": "src/flygym/compose/fly/flybody.py",
+        "sha256": "2b1f0b304d0ed70a79b70dc6f7cf9eabb434ec9ac34a7e338e66baf9464bc928",
+        "bytes": 40384,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "b296dc65d913c86cfd1eccdeed04274554f9ffbcf8eb757724e06fa40271c76c"
+      },
+      {
+        "path": "src/flygym/compose/fly/musculoskeletal.py",
+        "sha256": "c6e882479923640e4134ec1e2b6e567dd34f8a928556dccc4067b36a694ecd7a",
+        "bytes": 23910,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "126b5e06d9a304df15aa9ffa4e7740df8a85f93c1db31799dc2775dc552c16fe"
+      },
+      {
+        "path": "src/flygym/compose/fly/neuromechfly.py",
+        "sha256": "c47f422e5719f712b3f8b60913a22ce9d89d3943c81a8433549a129197ed50e3",
+        "bytes": 5164,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "d0975ab75b9cbec0cd5cde30361eb1f249edc38de22242fee06107e84d5cdfa7"
+      },
+      {
+        "path": "src/flygym/compose/physics.py",
+        "sha256": "da373a8753470a6480add7beeaa56fedebedb7408341c240e92de8e83ae90708",
+        "bytes": 7484,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "89b1c8bdbba054f9349670d7e59dc4727e2a671bbbccef4754db74f767ee6344"
+      },
+      {
+        "path": "src/flygym/compose/pose.py",
+        "sha256": "77b275210751e4cf33627f0404e93ffb5094f913cdf54a5f6672190bbd4650d5",
+        "bytes": 6176,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "dbf5485cacd6266fbb287b819bb39860adf5a021604058ca4ee40093f5bf0d49"
+      },
+      {
+        "path": "src/flygym/compose/world/__init__.py",
+        "sha256": "6b9c52fab55ae229d7c50f95fe29669d409c2f8a272347651225cd3d7ae39e48",
+        "bytes": 453,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "282a2ab76f38ac5a60e015f5a1ba315553a5d1318e09f4693a4a9a43a4885218"
+      },
+      {
+        "path": "src/flygym/compose/world/base_world.py",
+        "sha256": "cff1a5d0ec8781d2099e72f9eb6452706f7d5a3ba9016ef004343359aa9b2fca",
+        "bytes": 15896,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "2350e127c64890a28a9bd54b606e3fe59efd4aac71b050daf3afd248d7a45357"
+      },
+      {
+        "path": "src/flygym/compose/world/complex_terrain.py",
+        "sha256": "9d50276652c5cd61495a0b04452edc327b10677e5205a459a0350ce96540381b",
+        "bytes": 9055,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "dc395a14b0a08c8f9b97582668917daf72b14c805aea406c330d146a76197f60"
+      },
+      {
+        "path": "src/flygym/compose/world/flat_ground.py",
+        "sha256": "a1ed5add63ad316f0c4dbf3b02e169b79490bafb85a0d8763e9963ac701e9ba4",
+        "bytes": 1934,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "6d60d16080dd478b2cfa2fa29020fa7e820097096e5e97592138a5d3ef231a89"
+      },
+      {
+        "path": "src/flygym/compose/world/musculoskeletal.py",
+        "sha256": "ecd37219c06c0e2273f1a3595fe892fd99714887acdc83906aab45acd3dd8169",
+        "bytes": 4011,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "27206eb48e657e069daa2c57ae98052f971e3f6e5ef4ec6f45d902e6eb3d5884"
+      },
+      {
+        "path": "src/flygym/compose/world/tethered_world.py",
+        "sha256": "fbbc49898d742ddf7942af029728e52cb7155d8375ca91242a9041b40ac75235",
+        "bytes": 1951,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "f5805422b0cc830d967e82b88a17147df6bfcf67a36bbf953e4333350f82fff7"
+      },
+      {
+        "path": "src/flygym/flybody/__init__.py",
+        "sha256": "5e1aeb4b1b85c78ebe850aea30cd11aed20f8d971715f0f845956fbc56fa19d8",
+        "bytes": 180,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "b3ceb479b3807eeef8bf81e9515222eb7ad666330f29183b1ca7139ef114436b"
+      },
+      {
+        "path": "src/flygym/flybody/anatomy_flybody.py",
+        "sha256": "87c7a74e23e42ed876fb57e208d1d27d4966abe4a95ad861b27da0c9f3f9f230",
+        "bytes": 13878,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "f24cabaa1371ada8ce41cb9b6e166968f53bfcceabb73ace3abccb8eaea8e912"
+      },
+      {
+        "path": "src/flygym/flybody/parse_flybody.py",
+        "sha256": "8db21b02a1017fc08347679c5689fe3c94db0f451e4a57ed3f3f7b5f1b59e704",
+        "bytes": 30009,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "f8c832b4fa17c0ea3ed5948cec8547783b5ec1af10857d6af6d5e21ddc08f761"
+      },
+      {
+        "path": "src/flygym/rendering.py",
+        "sha256": "fe30605d5bd727d6cbcca8a70e2ce5ae7eb7c966171b932d37b4342e94dd7cfe",
+        "bytes": 18968,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "885d7a9543ee3dc2dd238c41239da3decadf6beccedfe3f5f9a886956fceddf5"
+      },
+      {
+        "path": "src/flygym/simulation.py",
+        "sha256": "c2a6fded0ccedb2124c1ac421e1b52cb2c087bfa40fcb38f8a32722d21c012d2",
+        "bytes": 31165,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "5daeec0de1f88ba7abb62c0c5bc3fa027fa3c78ac8140aab7f0b62f40bfdb070"
+      },
+      {
+        "path": "src/flygym/utils/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "installed_equal": true,
+        "installed_text_equal": true,
+        "installed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "src/flygym/utils/api1to2.py",
+        "sha256": "245a24710e5ce3e6322033fc756f44609673a925751d7f6c125ce9b417320c8d",
+        "bytes": 2051,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "820c726f9f3e23ac22155a011d919a2327af00c3d2a042a542a584827f305680"
+      },
+      {
+        "path": "src/flygym/utils/assets_lazy_loading.py",
+        "sha256": "534756e948ed21d12e6e1704cd11b549d565533d7d6611e28ff0fffcce0ee9f3",
+        "bytes": 9674,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "b626cde10234683c64a3a184fdf66b64c6955cd35b7cf771fa25f69599778862"
+      },
+      {
+        "path": "src/flygym/utils/exceptions.py",
+        "sha256": "c4e17b8a1ade26964ea176df6c7f6d540cf6d020c9ca02dd15a58218cc58d6b8",
+        "bytes": 145,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "5c0a661aeed209e28866caa2cd2e775ebc46e88bef8a29eabb3e8dea9f3614b0"
+      },
+      {
+        "path": "src/flygym/utils/math.py",
+        "sha256": "010159a4812390d6610efd1e240fc4854838616c41c0c0f7875d453d8c8f7bd0",
+        "bytes": 5734,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "8a57a9623928add383bf58f790162557f5e504b7a77ff20af03148036d1b34db"
+      },
+      {
+        "path": "src/flygym/utils/mjcf.py",
+        "sha256": "376a34852461e516e76c16ee2d4ef2348d84dd7c4988f9f30a2824405a1b868d",
+        "bytes": 14383,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "c7e987fc920a9bbc11381d405d01e856594b9d18a04ba69b0d0d8bc227759969"
+      },
+      {
+        "path": "src/flygym/utils/plot.py",
+        "sha256": "409b5d1f0e56eee3aaeae91a6900c889bd18d204188d9d2056bd889230cf18b1",
+        "bytes": 617,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "27889e9b833626ff3ed3a24d02f10e1198a64cc6ee5648a7d4ea206e89f05177"
+      },
+      {
+        "path": "src/flygym/utils/pose_conversion.py",
+        "sha256": "ff71c3db5d52e1a72dcbfe71c718d10098e54f736806d12ecb301bc32407cef3",
+        "bytes": 6851,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "3cc18b452a083976136245aa4a7a6c95ed369fb7349bc8d39f629e410350182f"
+      },
+      {
+        "path": "src/flygym/utils/profiling.py",
+        "sha256": "751f926e50e162c7fadd914a0091d2995ee717c62242f46c745210b23ef091ab",
+        "bytes": 9269,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "8ec84e4a21d9f79171227d7100d900a1fa61be580cb4c41b0b5c226212984ea8"
+      },
+      {
+        "path": "src/flygym/utils/video.py",
+        "sha256": "eb48777c443c5eb41170424bfce06e91349126e7d8f36f4f95092fbafbf94d15",
+        "bytes": 1209,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "28d1b476efdb6c6dc5eb2a4d8a07cf9059a940e8864c138f45b9f59a1e6a95fa"
+      },
+      {
+        "path": "src/flygym/vision/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "installed_equal": true,
+        "installed_text_equal": true,
+        "installed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "src/flygym/vision/retina.py",
+        "sha256": "fbb43595de2d7736423424b5cb4ea8eabc369d500fb028c26065c0e2ec4746c6",
+        "bytes": 11253,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "36c7367e0a38d1b9453c58b003cf723a60e9011229b698c96f5e54d6cfa813d2"
+      },
+      {
+        "path": "src/flygym/warp/__init__.py",
+        "sha256": "779c5caf7381c86226ff926437c2c4c9728b02dda21ef9935ff9f62118523f73",
+        "bytes": 171,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "29863db563f1e66722907d2ff407fbbaaea9e41a38e134ebd62d214daaa0c740"
+      },
+      {
+        "path": "src/flygym/warp/rendering.py",
+        "sha256": "7af34fe811754ef72f12bedc90f872adc58bf03c0e8aa55e03d85494956d2cf1",
+        "bytes": 17488,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "3fd7114cd4355cd6d632b01569c848fc208c51b671ca16ce3e0e33ceb4efaf0e"
+      },
+      {
+        "path": "src/flygym/warp/simulation.py",
+        "sha256": "2484143ccf8e3ae01d80774b7c257ef9c089bf7a2c293bba543f9f2842e7c310",
+        "bytes": 16526,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "a2c3888a6c9af7ed92f3ea16333acaff694cc4e12e9d630c5908ea85a604625b"
+      },
+      {
+        "path": "src/flygym/warp/utils.py",
+        "sha256": "91bc2d6044a09b4ed6408bea169299eed5c12dbcc8169dd63df5cc7ff153722e",
+        "bytes": 7562,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "f6ecc96e96784b9da9c95232b552299ba2ac8a2c64485efcf4c46d7a3a22adaa"
+      },
+      {
+        "path": "src/flygym_demo/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0,
+        "installed_equal": true,
+        "installed_text_equal": true,
+        "installed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "src/flygym_demo/benchmark/__init__.py",
+        "sha256": "67cbd75a26b751129c6edd01d619299e12e4fb6577efc1114278e362b81d2de0",
+        "bytes": 344,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "5caf83464d6e9df10ce297aab212ac9a6e79ac8729ed547336dec1b368d5a2d0"
+      },
+      {
+        "path": "src/flygym_demo/benchmark/time_gpu_simulation.py",
+        "sha256": "79780ff5ee1c2b5d55b3be6cedf8f229ab61ddb0913ace2a61803a005c07124d",
+        "bytes": 6381,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "6b1a1faeebe8549953b42f3fe8fd94b5dae6cdea75f2b1d729f102621f59915f"
+      },
+      {
+        "path": "src/flygym_demo/complex_terrain/__init__.py",
+        "sha256": "e8d8d7df5a854440729a05f00708e4ef9c759a8f31982f86f35aa23918e20107",
+        "bytes": 1134,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "46847f3f60ae8e228f48ec6ac920826348b4476dfe8d0098b3da4a78d5e5073c"
+      },
+      {
+        "path": "src/flygym_demo/complex_terrain/common.py",
+        "sha256": "306b5a287de6aa26a3de110dbe16f706b9df8c592386b6fdc770d6724d38ffd8",
+        "bytes": 3407,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "cb7c203e98b24d57d899f10a2a45d04f9209d43f7ffdad47cff6a80f6df2a8cd"
+      },
+      {
+        "path": "src/flygym_demo/complex_terrain/cpg_controller.py",
+        "sha256": "86804054621f35e28c74f0a88db6a73faa17db586f5554db00674c9851eab592",
+        "bytes": 6342,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "0194acbd7c27529a3be3875d016aa0a64a8ec6918407671740063d59c1fd18f3"
+      },
+      {
+        "path": "src/flygym_demo/complex_terrain/flybody_step_extraction.py",
+        "sha256": "c72d0c2ada11c11346af792bd0c1d44441d834625889cc8c30ceb4a8f2b222d2",
+        "bytes": 18374,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "99873703c11d0d645241a41bd54cfae8f6427d43a2a99522628453046ba63589"
+      },
+      {
+        "path": "src/flygym_demo/complex_terrain/hybrid_controller.py",
+        "sha256": "a29b189e2e2310acedceae993f67f93e8697e954e91326163cf92d1e078e2608",
+        "bytes": 11839,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "0ddde60be46033110cda032d18221d21078f346a008503de88b4ce74b8e63727"
+      },
+      {
+        "path": "src/flygym_demo/complex_terrain/preprogrammed.py",
+        "sha256": "ad945cee5af607e24f1a17ada0b8becd622c1fabebbb9f4f35e49dc7fd69e97f",
+        "bytes": 12597,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "ca012ee5caf38b96390489012d0d6074877caa340a7523b79fcc8e17a8f0e3d4"
+      },
+      {
+        "path": "src/flygym_demo/complex_terrain/rule_based_controller.py",
+        "sha256": "65a75e33a6aff58db75e23f4fda4708d72837bc3f0080230c228e7a933d5c3eb",
+        "bytes": 6587,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "434a86b70dc5b7639a1cb7736a9069bde1c2f66b6cbdb74ee32987f3005ca8fc"
+      },
+      {
+        "path": "src/flygym_demo/complex_terrain/turning_controller.py",
+        "sha256": "385f1b0169c60f0f241a63e0b4f4112aa1c4e65e4b9aec7e5b38cee8cdc6b1b7",
+        "bytes": 1159,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "d56e877fc2c9233bedd93ff15559af149d971b243d26b7c48f5e45ef8a93901d"
+      },
+      {
+        "path": "src/flygym_demo/muscle_imitation/__init__.py",
+        "sha256": "9fe31e6a1a648f640151d318e49ba730e326b11f564611611650dae7a767da00",
+        "bytes": 2021,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "005a2bcde0c256cb9b1e6005f596388d6a5bb746afe182bbd1896ad4e4fa86e2"
+      },
+      {
+        "path": "src/flygym_demo/muscle_imitation/__main__.py",
+        "sha256": "a825d989a67cbb92b60a6886f6ca6caff11551e983552f543f70d6f5dd542ea3",
+        "bytes": 5445,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "b358634180eb49d7043b6b984f0ceb78df88944763f35c9fef0d5aaedf9c84ef"
+      },
+      {
+        "path": "src/flygym_demo/muscle_imitation/data.py",
+        "sha256": "11a4116d31da267a2e8c91c857cfd0e34a8c9809cd50d4d24b053f7f8c670c3f",
+        "bytes": 6621,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "7ce15c262330fad9555296ff453e5a6e62827d302da108888a9f806fda2f323a"
+      },
+      {
+        "path": "src/flygym_demo/muscle_imitation/env.py",
+        "sha256": "2c90df2f2cca839c501ee3a2bfcddb86d46f9f1696e71293f6e45d2f9377bd2e",
+        "bytes": 15721,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "39f94e0488bf6fa958d6d418a1484d07d334319202c69bbb41a8eaf5edc87415"
+      },
+      {
+        "path": "src/flygym_demo/muscle_imitation/fly.py",
+        "sha256": "487110979a0ba923569f907532cab3023fa235da54995fdd1823b5838a3f5c68",
+        "bytes": 2214,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "836f2738391e00960e878268c41a7c2dba158ed698f85580b539a5589de8dd7c"
+      },
+      {
+        "path": "src/flygym_demo/muscle_imitation/record.py",
+        "sha256": "469cc24cd1da05b11621e750d3f5f367a3063ad80035e6b946428f0a4c532cbe",
+        "bytes": 3942,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "ddfbec3aff56a64ccc72230626cfd5382abb7e341615fb3ad1f6803dba504185"
+      },
+      {
+        "path": "src/flygym_demo/muscle_imitation/train.py",
+        "sha256": "a3d385a1d6d6a22f1b31c53a1de28d6a0048d5719aad36f8f2ea8785dec8bda2",
+        "bytes": 4786,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "5ade080e4c0ee25937d6bdfc58dbcabc72b6dcaa16de92512a765f2ac5c971c3"
+      },
+      {
+        "path": "src/flygym_demo/spotlight_data/__init__.py",
+        "sha256": "dc984c7f422735b4c62cff5e5e8df649e5283bcfd733ee194755a8e030b0f614",
+        "bytes": 70,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "ae30b3c6a83fb31f0d4747597a96f34833596aec0802641b34cd62d5d45d9031"
+      },
+      {
+        "path": "src/flygym_demo/spotlight_data/preprocessing.py",
+        "sha256": "00f3c0f5d73bae428d0110a9f732dd78ca0b1bb5dbc1df75616e6d022be4c16a",
+        "bytes": 5756,
+        "installed_equal": false,
+        "installed_text_equal": true,
+        "installed_sha256": "82227cbdfaed1243ea7c2095ccb689fb4a7768a447fb326ea025d68f7cfbcf23"
+      },
+      {
+        "path": "pyproject.toml",
+        "sha256": "adba22334274b58b48483322ae6bd8aa1568784ae959a71350f9665007abd341",
+        "bytes": 5623,
+        "installed_equal": null
+      },
+      {
+        "path": "README.md",
+        "sha256": "aa219c32e59beee5e498db70267425cc6b4fb709127f4137d804a32cea571cc3",
+        "bytes": 4127,
+        "installed_equal": null
+      }
+    ]
+  },
+  "comparison_policy": "CRLF normalized to LF for text equality; raw SHA256 retained separately",
+  "local_files": [
+    {
+      "path": "requirements.txt",
+      "sha256": "9004ee39dac58b265fcd44c424b4fb2a8d44061368aea3ac429602572291304a"
+    },
+    {
+      "path": "requirements-cuda.txt",
+      "sha256": "b724d8f5d0885f6c25645386b26b3c40230aef7782d0714210ec172ae778b504"
+    },
+    {
+      "path": "flylab/body.py",
+      "sha256": "d1fb9cb844fd973d23f73e027f4c461a32cc28084e619adaea5cf3c0cd8d8297"
+    },
+    {
+      "path": "flylab/_reflex.py",
+      "sha256": "91ee559fdcade02bcd573a9c3c5b8fe91268b14d0ae0b069357dbdcfb2c31908"
+    },
+    {
+      "path": "flylab/c/engine.py",
+      "sha256": "33b617cf3b2216ab741006d808e6de0c508741c380b34bad66d85866663b6dcc"
+    },
+    {
+      "path": "flylab/c/neural_cuda.py",
+      "sha256": "a93903c63faea7fa6357501ca316c2c39c92c4f9cf58f12cc5d6da55d6abeed0"
+    },
+    {
+      "path": "flylab/c/lif.cu",
+      "sha256": "e1ccf124da1ef87a608a3ebc80ea4b6ed2dca5899e7ed0d4b3dbe53fabca63ae"
+    },
+    {
+      "path": "flylab/c/neuromuscular.py",
+      "sha256": "bd811283e6608a78fae6a8f24e340fcd254079d862ae31a972498aec7ca26a20"
+    },
+    {
+      "path": "flylab/c/muscles.py",
+      "sha256": "9845d05ce8317d84e3dbd82838f71a690e1819ac755ea1219d6cdbb507a6927a"
+    },
+    {
+      "path": "flylab/c/single_joint.py",
+      "sha256": "fdb3546124cc74e7921fdbf1c1df17595e4443fc96b01ef317cde1401d4b96af"
+    },
+    {
+      "path": "flylab/c/receptors.py",
+      "sha256": "170d38f046eba6941f7320a53de57a2633e37253dec2a7cfc8e981670b589726"
+    },
+    {
+      "path": "flylab/c/ports.py",
+      "sha256": "b2716204a3b64831ed736f8f9c542483c5d89ced6455779fc383298eb89c5a45"
+    },
+    {
+      "path": "flylab/sensors.py",
+      "sha256": "2ce3534579003f44e14b2788b65c28315a9d245d380f506391c97618cd24ea31"
+    },
+    {
+      "path": "flylab/c/sensors.py",
+      "sha256": "94280af40ce9a705bab4156e2eea9eddb016e157ec1070cd609cef34d09dc81b"
+    },
+    {
+      "path": "flylab/c/storage.py",
+      "sha256": "b6bf76a4c68f28cf4f3c0634ebf5f6c54b5c0eb2c1667ac552529b68bc2f72c3"
+    },
+    {
+      "path": "tools/profile_c_runtime.py",
+      "sha256": "967eaecf318246a9adc789761274d4f7a13f4759567937cbc284a0badcb6068c"
+    },
+    {
+      "path": "tools/probe_mjx_metal.py",
+      "sha256": "7f1a0f335f1310efea7716ca84e67b5093d46a0df5e5b6df582ef21c5df4b691"
+    },
+    {
+      "path": "docs/C08_DEVELOPMENT_PLAN_20260910.md",
+      "sha256": "a5afb7c9a373a1c682882eb6f5e72a33f100949ef50cfe1c3ec8f2b016cb949b"
+    },
+    {
+      "path": "docs/C08_FLYGYM_REFINEMENT_20260910.md",
+      "sha256": "b69dee0f3ea3db7e0bff36627c9332e33089ed876769bfd4dbe9e585dd4b0dfc"
+    },
+    {
+      "path": "docs/C_CUDA_WINDOWS_20260910.md",
+      "sha256": "1056c084a117994a9197925dd6ca01aa10bbf1b57f6778ec7b11dd0c5f1a20b0"
+    }
+  ],
+  "data_directories": [
+    "local-windows-20260910"
+  ],
+  "performed": [
+    "Official remote source fetch",
+    "Installed/upstream source comparison",
+    "Current local source and saved validation report review",
+    "Plan and evidence document authoring"
+  ],
+  "not_performed": [
+    "Dependency installation",
+    "Simulation or training run",
+    "Runtime implementation edit",
+    "Browser or server state mutation"
+  ],
+  "plan_document": {
+    "path": "docs/C_FLYGYM_IMPROVEMENT_PLAN_WINDOWS_20260910.md",
+    "sha256": "e06ad47bdc31638cd82b8e949854fd063fa75c8b8b067766be0046a04c304f15"
+  },
+  "documentation_checks": {
+    "local_source_hashes_verified": 20,
+    "downloaded_source_hashes_verified": 60,
+    "installed_python_sources_equal_after_newline_normalization": 58,
+    "local_document_links_verified": 18,
+    "plan_lines": 176,
+    "errors": []
+  },
+  "additional_primary_sources": [
+    "https://github.com/NeLy-EPFL/flygym/blob/38c8ec61034cd59bc5ba0de20688d4a3c0000d60/scripts/dev/build_wasm_viewer_assets.py"
+  ]
+}

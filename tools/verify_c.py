@@ -10,7 +10,10 @@ import copy
 import json
 import math
 import platform
-import resource
+try:
+    import resource
+except ImportError:
+    resource = None
 import sys
 import time
 import traceback
@@ -27,7 +30,7 @@ def main():
     parser.add_argument('--compute-seconds',type=float,default=.05)
     parser.add_argument('--navigation-seconds',type=float,default=3.2)
     parser.add_argument('--cuda',action='store_true')
-    parser.add_argument('--backend', choices=('exp_lif_cpu_reference','exp_lif_mps','exp_lif_cuda'), default='exp_lif_cpu_reference')
+    parser.add_argument('--backend', choices=('auto','exp_lif_cpu_reference','exp_lif_mps','exp_lif_cuda'), default='auto')
     parser.add_argument('--scope', choices=('full-snapshot','loaded-graph'), default='full-snapshot')
     parser.add_argument('--reference', type=Path, help='Independent snapshot reference')
     args=parser.parse_args()
@@ -73,8 +76,8 @@ def main():
             computed_ticks=computed_ticks,model=model_identity(parameters),wall_seconds=duration,backend=n.backend,
             sim_wall_ratio=model_seconds/duration,summary=n.summary(),sparse_bytes=int(g.indptr.nbytes+g.indices.nbytes+g.counts.nbytes+g.weights.nbytes),
             neural_state_bytes=sum(g.n*(n.slots if k=='queue' else 1)*(8 if k in ('refractory_until','spike_count') else 1 if k in ('suppress','mute') else np.dtype(n.p.dtype).itemsize) for k in ['v','h','rate','queue','refractory_until','spike_count','suppress','mute']),
-            cpu_peak_rss_native=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
-            rss_native_unit='bytes' if sys.platform=='darwin' else 'KiB')
+            cpu_peak_rss_native=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss if resource else None,
+            rss_native_unit=('bytes' if sys.platform=='darwin' else 'KiB') if resource else 'unavailable')
         membership=result['gates']['full_snapshot_membership']
         result['gates']['full_snapshot_compute']=dict(status=membership['status'],simulated_nodes=n.n,computed_ticks=n.tick,
             reason='Full source membership and actual state/ticks required',backend=n.backend,model=model_identity(parameters))
@@ -85,7 +88,7 @@ def main():
             from tests.c_fixtures import graph_fixture
             toy=graph_fixture();cpu=ExpLIF(toy)
             try:
-                gpu=ExpLIF(toy,backend='exp_lif_cuda')
+                gpu=create_backend(toy,backend='exp_lif_cuda')
                 x=np.zeros(toy.n,dtype=np.float32);x[0]=30.
                 cpu.advance(x,1000,list(range(toy.n)));gpu.advance(x,1000,list(range(toy.n)))
                 delta=float(np.max(np.abs(cpu.v-gpu.host(gpu.v))))

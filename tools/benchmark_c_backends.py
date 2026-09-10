@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare CPU and real MPS from identical states; retain timing and error gates."""
+"""Compare CPU and a real CUDA/MPS backend from identical states."""
 from pathlib import Path
 import argparse
 import copy
@@ -13,7 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import numpy as np
 from flylab.c.graph import GraphStore
 from flylab.c.ports import PortBindings
-from flylab.c.neural import create_backend
+from flylab.c.neural import create_backend, BACKEND_CHOICES
+from flylab.c.backend_selection import resolve_backend
 from flylab.c.engine import CEngine
 from flylab.c.storage import StateStore
 from flylab.c.integrity import file_hash
@@ -38,31 +39,36 @@ def differences(a,b):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--checkpoint',type=Path,required=True)
+    p.add_argument('--graph',type=Path,default=Path('data/fafb783/bundle'))
+    p.add_argument('--bindings',type=Path,default=Path('data/fafb783/bindings.json'))
+    p.add_argument('--backend',choices=BACKEND_CHOICES,default='auto')
     p.add_argument('--strict-checkpoint',type=Path)
     p.add_argument('--out',type=Path,required=True)
     p.add_argument('--repeats',type=int,default=3)
     p.add_argument('--neural-seconds',type=float,default=.05)
     p.add_argument('--physics-seconds',type=float,default=.1)
     args=p.parse_args()
+    args.backend=resolve_backend(args.backend)
+    if args.backend=='exp_lif_cpu_reference':p.error('A working GPU backend is required for this comparison')
     if not 1<=args.repeats<=10 or not 0<args.neural_seconds<=1 or not 0<=args.physics_seconds<=1:p.error('Invalid bounded benchmark duration')
     if any(abs(v/.005-round(v/.005))>1e-8 for v in (args.neural_seconds,args.physics_seconds)):p.error('Use integer 5ms periods')
     args.out.mkdir(parents=True,exist_ok=False)
-    report=dict(schema='flylab.c.mps_benchmark.v1',status='RUNNING',platform=platform.platform(),
+    report=dict(schema='flylab.c.gpu_benchmark.v1',status='RUNNING',platform=platform.platform(),
                 source_checkpoint=str(args.checkpoint),source_manifest_sha256=file_hash(args.checkpoint/'manifest.json'),
                 physicalExecuted=False,biologicalValidation=False,neural=[],physical=[])
     def save(): (args.out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     save()
     try:
-        graph=GraphStore.load('data/fafb783/bundle')
-        bindings=PortBindings(graph,json.loads(Path('data/fafb783/bindings.json').read_text()))
+        graph=GraphStore.load(args.graph)
+        bindings=PortBindings(graph,json.loads(args.bindings.read_text()))
         source=StateStore.load(args.checkpoint)
         report.update(graph_hash=graph.hash,simulated_neurons=graph.n,edges=len(graph.weights))
         capture=graph.resolve(source['subscription'])
         drive=np.zeros(graph.n,dtype=np.float32)
         drive[graph.resolve(bindings.spec['sensory'][0]['ids'])]=10.
         report['neural_input']='Same fixed 10mV ORN_DM1 drive, starting from active user checkpoint; no body'
-        cpu=create_backend(graph);gpu=create_backend(graph,backend='exp_lif_mps')
-        report['mps_runtime']=dict(gpu.runtime_identity)
+        cpu=create_backend(graph);gpu=create_backend(graph,backend=args.backend)
+        report['gpu_runtime']=dict(gpu.runtime_identity)
         backends=(cpu,gpu);snapshots={};events={}
         for backend in backends:
             state=neural_state(source['neural'],backend)

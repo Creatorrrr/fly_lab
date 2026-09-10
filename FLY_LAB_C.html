@@ -14,6 +14,7 @@
 <div class="workspace">
 <div class="left-column">
 <section class="card scene"><div class="card-head"><h2>물리 환경 <span id="mode-tag">준비 중</span></h2><div class="view-buttons"><button id="track">추적</button><button id="wide">전체</button><button id="top">상단</button><button id="eye">개체 시점</button></div></div><div class="canvas-wrap"><canvas id="world" aria-label="관절 물리를 표시하는 3차원 초파리 관찰 화면"></canvas><canvas id="world-overlay" aria-hidden="true"></canvas><canvas id="world-preview" aria-hidden="true"></canvas><div class="caption">몸 표면은 도식 · 다리는 물리 분절 위치</div><div id="waiting">전뇌 연결망과 물리 몸을 준비합니다…</div></div><div class="metrics"><div>이동 거리<strong id="distance">—</strong></div><div>측정 속도<strong id="speed">—</strong></div><div>신경 평균 발화율<strong id="mean-rate">—</strong></div><div>SIM / WALL<strong id="performance">—</strong></div></div></section>
+<section class="card"><div class="card-head"><h2>실제 몸과 감각 관측</h2><span id="physics-device">CPU 물리</span></div><div class="view-buttons"><button id="observe-native">실제 메시</button><button id="observe-eyes">복안 관측</button><button id="observe-odor">후각 4지점</button></div><p class="muted">현재 시각을 관측합니다. 복안과 palp 관측은 아직 신경 입력에 연결하지 않았습니다.</p><div id="physical-observation" hidden><p id="physical-observation-time"></p><img id="physical-observation-image" alt="현재 물리 상태의 관측 영상" style="width:100%;height:auto" hidden><pre id="physical-observation-values" hidden></pre></div></section>
 <section class="card environment-editor"><div class="card-head"><h2>환경 배치</h2><span id="environment-count"></span></div>
 <p class="muted">먹이·위험원은 가상 냄새장, 장애물은 물리 충돌 형상입니다. 편집하면 재생이 멈추며 현재 시각에서 적용합니다.</p>
 <div class="input-row"><label>물체 <select id="environment-object" aria-label="편집할 환경 물체"><option value="">새 물체</option></select></label><button id="environment-new">새 배치</button></div>
@@ -671,6 +672,7 @@ function applyFrame(f){
  $('scope').textContent=f.mode==='B_COMPAT'?'B_COMPAT · 기존 부분 신경 모델':`${state.dataset} · ${f.scope.simulatedNodes.toLocaleString()} 뉴런 · ${f.scope.pairEdges.toLocaleString()} 연결`;
  $('neural-scope-note').textContent=f.mode==='B_COMPAT'?'현재 B 부분 신경 모델을 사용하며 C 전뇌 계산은 꺼져 있습니다.':`${f.scope.simulatedNodes.toLocaleString()}개 모델 뉴런을 계산하며 선택한 신호만 전송합니다. 전체 스냅샷 판정: ${f.scope.fullBrain?'확인':'미승인'}`;
  $('distance').textContent=f.body.travel.toFixed(2)+' mm';$('speed').textContent=f.body.speed.toFixed(2)+' mm/s';
+ $('physics-device').textContent=f.physics.backend.includes('warp')?'CUDA 물리 · 검증 후보':'CPU 물리';
  $('mean-rate').textContent=f.neural?f.neural.mean_rate_Hz.toFixed(3)+' Hz':'B rate';$('performance').textContent=f.performance.sim_wall_ratio.toFixed(3)+'×';
  $('command-source').textContent=f.neuromuscular?.enabled?'BANC 운동뉴런 → 관절':f.command.command_source;$('neural-command').textContent=commandText(f.command.u_neural)+(f.neuromuscular?.enabled?' (관측값)':'');
  $('assist-command').textContent=commandText(f.command.u_assist);$('final-command').textContent=f.neuromuscular?.enabled?'근육별 관절 목표 적용':commandText(f.command.u_final);
@@ -735,7 +737,7 @@ function applyProfileModes(){
 }
 $('binding-profile').addEventListener('change',applyProfileModes);
 function applyReady(result){state.profiles=result.profiles;state.supportedModes=result.capabilities.modes;state.dataset=result.manifest.dataset_id+' v'+result.manifest.snapshot_id;$('dataset-label').textContent=state.dataset+' · NeuroMechFly';
- const labels={'bindings.json':'기존 평균 냄새','bindings-bilateral-geosmin-v1.json':'좌우 먹이·geosmin v1 (실험)','bindings-bilateral-geosmin-v2.json':'좌우 먹이·geosmin v2 · 농도 압축 (실험)','bindings-visual-head-contact-research-v1.json':'좌우 냄새·물체 시야·머리 접촉 (연구)','bindings-odor-poisson-current-hypothesis-v1.json':'후각 Poisson 전류 입력 (검증 가설)'};
+ const labels={'bindings.json':'기존 평균 냄새','bindings-bilateral-geosmin-v1.json':'좌우 먹이·geosmin v1 (실험)','bindings-bilateral-geosmin-v2.json':'좌우 먹이·geosmin v2 · 농도 압축 (실험)','bindings-four-site-odor-v1.json':'4지점 후각 · 더듬이 입력 (실험)','bindings-visual-head-contact-research-v1.json':'좌우 냄새·물체 시야·머리 접촉 (연구)','bindings-odor-poisson-current-hypothesis-v1.json':'후각 Poisson 전류 입력 (검증 가설)'};
  labels['bindings-walking-population-v1.json']='DNg100·DNg97 보행 출력 (실험)';
  labels['bindings-walking-reset-current-v2.json']='보행 출력·발화 후 전류 초기화 (가설)';
  labels['bindings-walking-poisson-reset-current-v3.json']='약한 냄새 Poisson 입력·보행 출력 (가설)';
@@ -788,6 +790,18 @@ button('release',()=>command('release_all'));button('push',()=>command('push',{b
 for(const [id,type,key] of [['motor','configure','motorCoupled'],['cue','cue','enabled'],['food','food','enabled']])$(id).addEventListener('change',()=>command(type,{[key]:$(id).checked}).catch(e=>tell(e.message,true)));
  $('friction').addEventListener('change',()=>command('configure',{friction:Number($('friction').value)}).catch(e=>tell(e.message,true)));
 button('regions-refresh',regions);
+for(const kind of ['native','eyes','odor'])button('observe-'+kind,async()=>{
+ workbench.pause();
+ const ids=['native','eyes','odor'].map(k=>'observe-'+k);ids.forEach(id=>$(id).disabled=true);
+ try{
+  const result=await rpc.request('physical_observation',{kind});
+  $('physical-observation').hidden=false;
+  $('physical-observation-time').textContent=`모델 시각 ${result.time_s.toFixed(4)} s · `+(kind==='eyes'?'왼쪽·오른쪽 복안, 눈당 721개 낱눈':kind==='native'?'실제 MuJoCo 메시':'더듬이 2곳·palp 2곳의 가상 냄새 반응');
+  const img=$('physical-observation-image');img.hidden=!result.image;if(result.image)img.src=result.image;
+  const values=$('physical-observation-values');values.hidden=kind!=='odor';
+  if(kind==='odor')values.textContent=result.sites.map((site,i)=>`${site}: 먹이 ${result.response[i][0].toFixed(4)} · 위험 ${result.response[i][1].toFixed(4)}`).join('\n')+'\npalp 위치는 해부학적 교정 전의 가정입니다.';
+ }finally{ids.forEach(id=>$(id).disabled=false);}
+});
 button('record',async()=>{if(state.recording){applyFrame(await rpc.request('record_stop'));tell('기록을 저장했습니다.');}else{workbench.pause();const r=await rpc.request('record_start',{ids:workbench.recordIds()});applyFrame(r.frame);tell('기록 시작: '+r.name);}});
 button('checkpoint',async()=>{state.playing=false;updatePlay();const r=await rpc.request('checkpoint');tell(`체크포인트 저장: ${r.name} · ${(r.bytes/1048576).toFixed(1)} MB`);await checkpoints();$('checkpoints').value=r.name;});
 button('restore',async()=>{const name=$('checkpoints').value;if(!name)throw Error('복원할 체크포인트를 선택하세요.');state.playing=false;updatePlay();const r=await rpc.request('restore',{name});state.sequence=0;state.spikes=0;state.signals.clear();state.traces.clear();applyReady(r);await regions();await workbench.ready();tell('복원 완료: '+name);});
@@ -808,6 +822,10 @@ playback=F.createPlaybackPump({
 let lastDraw=0;
 function animate(now){requestAnimationFrame(animate);workbench.animate(now,false);if(!document.hidden&&now-lastDraw>=33&&view.needsDraw()){view.draw();workbench.drawPreview();lastDraw=now;}}
 requestAnimationFrame(animate);
-rpc.connect().then(async(config)=>{$('status-dot').className='ready';if(config.hasExperiment){await refreshExperiment(await rpc.request('attach'),'저장된 현재 실험에 연결했습니다. 재생으로 계속 진행하세요.');}else await init();}).catch(e=>{$('waiting').textContent='초기화 실패';tell(e.message,true);});
+rpc.connect().then(async(config)=>{
+ $('status-dot').className='ready';
+ for(const option of $('backend').options){const info=config.backendAvailability?.[option.value];option.disabled=info?.available===false;option.title=info?.reason||info?.device||'';}
+ if(config.hasExperiment){await refreshExperiment(await rpc.request('attach'),'저장된 현재 실험에 연결했습니다. 재생으로 계속 진행하세요.');}else await init();
+}).catch(e=>{$('waiting').textContent='초기화 실패';tell(e.message,true);});
 })(globalThis.Fly);
 </script></body></html>

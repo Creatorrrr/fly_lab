@@ -135,7 +135,10 @@ class SingleJointTests(unittest.TestCase):
 
     @unittest.skipUnless(mps_available(),'Actual MPS required')
     def test_mps_physics_and_selected_spikes_match_cpu(self):
-        cpu=self.loop(); gpu=SingleJointLoop(self.graph,cpu.profile,'exp_lif_mps')
+        self.check_gpu_physics('exp_lif_mps')
+
+    def check_gpu_physics(self,backend):
+        cpu=self.loop(); gpu=SingleJointLoop(self.graph,cpu.profile,backend)
         for _ in range(50): a=cpu.step();b=gpu.step()
         self.assertEqual(a['signals']['spike_count'],b['signals']['spike_count'])
         self.assertAlmostEqual(a['physics']['q_rad'],b['physics']['q_rad'],places=6)

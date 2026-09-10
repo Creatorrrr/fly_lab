@@ -33,7 +33,9 @@ class MotorAdapter:
 class FlyGymBody:
     backend='flygym-2.1.0-neuromechfly'
     test_double=False
-    def __init__(self,seed,world,config,*,optimized=True,initial_pose=None):
+    def __init__(self,seed,world,config,*,optimized=True,initial_pose=None,physics_profile=None):
+        from .physics import profile_values
+        self.physics_profile=profile_values(physics_profile)
         report=dependency_report()
         if not report['ready']:
             raise RuntimeError('물리 엔진 의존성이 없거나 버전이 다릅니다. '+report['hint']+' '+str(report['versions']))
@@ -84,6 +86,9 @@ class FlyGymBody:
         # Keep fixed segment frames addressable (in particular c_head).
         # Otherwise upstream body lookup returns -1 for fused segments.
         w.mjcf_root.compiler.fusestatic=False
+        w.mjcf_root.option.noslip_iterations=self.physics_profile.noslip_iterations
+        if not self.physics_profile.multiccd:
+            w.mjcf_root.option.disableflags |= int(mj.mjtDisableBit.mjDSBL_MULTICCD)
         self.sim=Simulation(w,timestep=PHYSICS_DT)
         self.sim.reset()  # official neutral-keyframe initialization before settling
         self.m=self.sim.mj_model; self.d=self.sim.mj_data
@@ -123,13 +128,16 @@ class FlyGymBody:
         self.fault=None; self.walk_ticks=0
         self.set_world(world); self.set_config(config)
         # Neutral-pose physical settling; model clocks start AFTER these 0.2 s.
-        for _ in range(2000): self.sim.step()
+        for _ in range(2000): self._step_physics()
         mj.mj_forward(self.m,self.d)
         self.t0=float(self.d.time); self.last_position=self.d.xpos[self.thorax].copy()
         identity=dict(commit=FLYGYM_COMMIT,adapter='B-0.2.1',mujoco=version('mujoco'),numpy=version('numpy'),joints=self.joint_names,nq=self.m.nq,nv=self.m.nv,nu=self.m.nu,body_names=[b.name for b in self.body_order])
         # Spawn transforms affect the compiled model. Keep the default identity
         # byte-compatible with B/C checkpoints, but distinguish explicit poses.
         if initial_pose is not None: identity['initial_pose']=clone(initial_pose)
+        # Retain the default CPU model identity for existing checkpoints.
+        from .physics import PhysicsProfile
+        if self.physics_profile != PhysicsProfile(): identity['physics_profile']=self.physics_profile.hash
         self.model_hash=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()
         if not np.isfinite(self.d.qpos).all(): raise RuntimeError('Non-finite state after neutral settling')
 
@@ -152,6 +160,24 @@ class FlyGymBody:
             if name in ('c_thorax','c_head') or name.startswith('c_abdomen'):self._core_mask[self.body_ids[i]]=True
         self._panorama_directions=np.array([[math.cos(k/64*math.tau-math.pi),-math.sin(k/64*math.tau-math.pi),0.] for k in range(64)])
         self._near_directions=np.array([[math.cos((k-4)*math.pi/8),-math.sin((k-4)*math.pi/8),0.] for k in range(9)])
+
+    def _step_physics(self):
+        self.sim.step()
+
+    def _forward_physics(self):
+        self.mj.mj_forward(self.m,self.d)
+
+    def physics_identity(self):
+        """Compiled options, separate from the neural runtime and model clock."""
+        from dataclasses import asdict
+        return dict(profile=asdict(self.physics_profile), profile_hash=self.physics_profile.hash,
+                    integrator=int(self.m.opt.integrator), solver=int(self.m.opt.solver),
+                    iterations=int(self.m.opt.iterations), noslip_iterations=int(self.m.opt.noslip_iterations),
+                    cone=int(self.m.opt.cone), jacobian=int(self.m.opt.jacobian),
+                    enableflags=int(self.m.opt.enableflags), disableflags=int(self.m.opt.disableflags),
+                    tolerance=float(self.m.opt.tolerance), timestep=float(self.m.opt.timestep),
+                    precision='float64', observation_source='CPU MuJoCo',
+                    length_unit='mm', force_unit='MuJoCo model units; not SI calibrated')
 
     def _contact_forces(self,key,*,floor_only=False):
         mapping,size=self._force_maps[key]
@@ -235,6 +261,19 @@ class FlyGymBody:
         return dict(target_lift_mm=np.asarray(lifts), velocity_mm_s=np.asarray(velocities),
                     model='first-order tip displacement from actuated joints; flat-floor normal')
 
+    def contact_probe(self):
+        """Measured tip position/velocity and floor contact at this control boundary."""
+        motion=self.foot_kinematics(self.d.qpos[self.qpos_ids])
+        velocity=motion['velocity_mm_s']
+        floor=self._contact_forces('feet',floor_only=True).reshape(6,5,3).sum(axis=1)
+        normal=np.maximum(0.,floor[:,2])/max(self.weight0,1e-30)
+        contact=normal>1e-6
+        return dict(time_s=self.physics_time(),legs=list(LEGS),
+            tip_position_native_mm=self.d.xpos[self._tip_ids].tolist(),
+            tip_velocity_native_mm_s=velocity.tolist(),floor_normal_bw=normal.tolist(),
+            floor_contact=contact.tolist(),slip_speed_mm_s=np.where(contact,np.linalg.norm(velocity[:,:2],axis=1),0.).tolist(),
+            sampling='control boundary; tip body origin, not a measured pad-surface clearance')
+
     def step_joint_targets(self, targets, adhesion, dt=CONTROL_DT):
         """Direct neural muscle adapter. Does not advance the predefined CPG."""
         targets, adhesion = np.asarray(targets), np.asarray(adhesion)
@@ -254,11 +293,11 @@ class FlyGymBody:
             if self.push_left > 0:
                 self.d.xfrc_applied[self.thorax, :3] = self.push_force
                 self.push_left = max(0., self.push_left-PHYSICS_DT)
-            self.sim.step()
+            self._step_physics()
             if not np.isfinite(self.d.qpos).all() or not np.isfinite(self.d.qvel).all():
                 self.fault = 'non-finite physics state'
                 raise RuntimeError(self.fault)
-        self.mj.mj_forward(self.m, self.d)
+        self._forward_physics()
         p, R, _ = self.pose()
         self.travel += float(np.linalg.norm(p-self.last_position))
         self.last_position = p
@@ -363,12 +402,12 @@ class FlyGymBody:
             self.d.xfrc_applied[:]=0
             if self.push_left>0:
                 self.d.xfrc_applied[self.thorax,:3]=self.push_force; self.push_left=max(0,self.push_left-PHYSICS_DT)
-            self.sim.step()
+            self._step_physics()
             if not np.isfinite(self.d.qpos).all() or not np.isfinite(self.d.qvel).all():
                 self.fault='non-finite physics state'; raise RuntimeError(self.fault)
         # mj_step leaves some derived fields at the previous integration point.
         # Recompute for timestamp-consistent displayed poses/contact force telemetry.
-        self.mj.mj_forward(self.m,self.d)
+        self._forward_physics()
         p,R,_=self.pose(); self.travel+=float(np.linalg.norm(p-self.last_position)); self.last_position=p
         collision=self.nonfoot_contact()
         if collision and not self.prev_contact: self.collisions+=1
@@ -456,5 +495,14 @@ class FlyGymBody:
         except Exception as e:
             self.camera_error='MuJoCo offscreen renderer: '+str(e)
             raise RuntimeError(self.camera_error) from e
+
+    def compound_eye_observation(self):
+        from .flygym_senses import CompoundEyeObserver
+        if not hasattr(self,'_eye_observer'):
+            self._eye_observer=CompoundEyeObserver(self)
+        return self._eye_observer.observe()
+
     def close(self):
+        if hasattr(self,'_eye_observer'):
+            self._eye_observer.close(); del self._eye_observer
         if self.renderer is not None: self.renderer.close(); self.renderer=None

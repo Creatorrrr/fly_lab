@@ -187,7 +187,10 @@ class GraphStore:
                 raise ValueError('Graph file hash mismatch: ' + name)
         with (path / 'nodes.jsonl').open() as f:
             nodes = [json.loads(line) for line in f]
-        arrays = [np.load(path / (k + '.npy'), mmap_mode='r', allow_pickle=False) for k in ARRAYS]
+        # Windows mapped files cannot be released/replaced while a graph view
+        # exists. Own the arrays there; retain read-only mappings on POSIX.
+        import os
+        arrays = [np.load(path / (k + '.npy'), mmap_mode=None if os.name=='nt' else 'r', allow_pickle=False) for k in ARRAYS]
         graph = cls(nodes, *arrays, manifest)
         graph.path = path.resolve()
         return graph

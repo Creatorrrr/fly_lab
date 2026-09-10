@@ -214,6 +214,27 @@ class FlyGymBody:
                     torque_unit='MuJoCo model units; SI conversion not calibrated',
                     actuator_mode='position; force is servo force, not reconstructed muscle force')
 
+    def foot_kinematics(self, targets):
+        """Read local pad motion without advancing or repositioning the body.
+
+        Native lengths are mm. The target displacement is a first-order
+        estimate using only actuated leg joints; floating-root displacement
+        is deliberately excluded. It is not measured future pad clearance.
+        The current arena has a flat floor with a +z normal.
+        """
+        targets = np.asarray(targets)
+        if targets.shape != (42,) or not np.isfinite(targets).all():
+            raise ValueError('Invalid targets for pad kinematics')
+        delta = targets - self.d.qpos[self.qpos_ids]
+        lifts, velocities = [], []
+        jacobian = np.zeros((3, self.m.nv))
+        for body_id in self._tip_ids:
+            self.mj.mj_jacBody(self.m, self.d, jacobian, None, int(body_id))
+            lifts.append(float(jacobian[2, self.qvel_ids] @ delta))
+            velocities.append(jacobian @ self.d.qvel)
+        return dict(target_lift_mm=np.asarray(lifts), velocity_mm_s=np.asarray(velocities),
+                    model='first-order tip displacement from actuated joints; flat-floor normal')
+
     def step_joint_targets(self, targets, adhesion, dt=CONTROL_DT):
         """Direct neural muscle adapter. Does not advance the predefined CPG."""
         targets, adhesion = np.asarray(targets), np.asarray(adhesion)

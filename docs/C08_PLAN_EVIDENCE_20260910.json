@@ -1,0 +1,371 @@
+{
+  "schema": "flylab.development-plan-evidence.v1",
+  "captured_at_utc": "2026-09-10T08:58:11.143772+00:00",
+  "review_mode": "read_only_source_and_saved_results",
+  "new_tests_run": 0,
+  "new_physics_campaigns_run": 0,
+  "source_snapshot": {
+    "head": "45309118cb4ae3c452bad289a729efdc15cfa176",
+    "status_before_plan": "",
+    "files": {
+      "FLY_LAB_C.html": "9e3e2b15af4355023dbeb5aea6fbc4607174ba24c7c72efc7f3dbb870653109a",
+      "build_c.py": "3e2158364ffa0724e96447c86d082184c62b97523e10af314a06f6256dee4ad5",
+      "flylab/__init__.py": "92ae09dfc5c95b37226c939133e5c43cb1484b505e0dc6f8725dd420bf88560d",
+      "flylab/_reflex.py": "2d17d2ec57becff37cea75b190d50d58d96ee1ed274d88f6452631365be8d08c",
+      "flylab/_spline.py": "f18e64303438b783e5f9da313620808db07a98600ce3f0c680a5cf72fad6a15e",
+      "flylab/body.py": "95ae2634d97de4a423760a835caa87a618d6f6ce0eb8a556021b60e6004c4427",
+      "flylab/brain.py": "f99115382675f2be97a634b8c206402abdc22314ddaba951e0f2e9751c9ab3b4",
+      "flylab/c/__init__.py": "7b8aeab9234aeb89be2f7cd5879de036aa7dbac77f192b5154001e61ad7cecff",
+      "flylab/c/behavior.py": "4fe18a3c262d3fb22080eef4909674602f947973192f52967892cf0a833728ef",
+      "flylab/c/body_identity.py": "c7c9cbe3cfa0bb9aa4a97e5c43969d9e9be1307707852382ad86d5436b720f68",
+      "flylab/c/campaign.py": "afb2921a51b78bab5951c1f7292bb987f8dc00bff9c5302c05c7b55b72b06650",
+      "flylab/c/cns.py": "966c26b37910ed38c2f9a50b5344a253628c37cb7d5c534843fc0c186961fb1d",
+      "flylab/c/contracts.py": "bc0d49ac0bdedb15dca5d943450d6d8794dcf3aee9914ba984568fb99793c485",
+      "flylab/c/data_identity.py": "eae5da5ffb37a6682186918b7a846815b695587f300db81ce90c95dbd7a00230",
+      "flylab/c/diagnostics.py": "824b47b31fa036b26ae54568f643cba847512b5526c01a88b70b8715ea8f1de5",
+      "flylab/c/engine.py": "88be0cb5e940d387e27fd461ce8cd39e805f0a8704a1baadc8c1c14e968a4227",
+      "flylab/c/evidence.py": "54ddf81ec5a670e688ec5564781d5b8fc47e1bd6be5b5643b717a0cc013310b3",
+      "flylab/c/experiments.py": "d14dd99aa4f7208fce6a93c5a280ae0e11629c211137e0120411cbe15e36e12e",
+      "flylab/c/flight.py": "d7e9d34aa96791735918bec3dc6850e7edcb4815cce81fdaaec5446c0c23e0c9",
+      "flylab/c/graph.py": "c5855c70673d9e7d0dfbc27343ed0eb0e98aaf7c7cb388aa83146bc5191c10f6",
+      "flylab/c/inputs.py": "fe225dcdd4769111a64577351a6a931672cffc4c99b5b8627f3a4b3f5c3120b3",
+      "flylab/c/integrity.py": "f9a2c18ec9d3bd3f2cddef8d8db05094eb10704853317f1900edb099746e37f0",
+      "flylab/c/jobs.py": "2efdc820fe45f2e451a3f05f62f6ec78c9de97c672a1fa5ebfe956a0f220195e",
+      "flylab/c/lif.metal": "fe22d24951461ea39dbfe054422d4af8222dc20be05c3f7e1c321284f1fe6ef6",
+      "flylab/c/locking.py": "75ff57dcffa5dc8e4c35291c8fc5a70d28b81c8a3b0f859a9dca2f5a049f80af",
+      "flylab/c/metabolism.py": "dc072b8d4815acda8a4bc00f7bf49cf65dcdcb0b06c414a13a7429cc32be284a",
+      "flylab/c/model_config.py": "1e1de1d57fa166247f2624a90a6e11d87f63c5807808d736c08f246e34be99b9",
+      "flylab/c/muscle_calibration.py": "2581c351c0df4471f9b380701cde314955529cfa75b89673db056a695922e99d",
+      "flylab/c/muscles.py": "eaabe653434f1b79a11d98a69412c641c61352df5307ea6be4a6afb08f7a7ae9",
+      "flylab/c/neural.py": "5e76da3c7687b9e0bb04e31dbad0d7eb8fd197be1050623c965d651c78ff7972",
+      "flylab/c/neural_api.py": "972b0eadeaa11c300b2e11e3737285705a17f85f11cdbf153135c1fa94abf65a",
+      "flylab/c/neural_mps.py": "a174f59f2647f2bce543f5f9a85898ca8313a03a26d07039bde3a7bbd4edf165",
+      "flylab/c/neural_state.py": "f9037a324fc816ef33cb139de8bedcdc215e4bd04c235a3bc35cdfa0e7844a1d",
+      "flylab/c/neuromuscular.py": "fba75b384a35d6e9acc43dbb6d731bf90adb636a68f45e6b6464b3d4072c1c62",
+      "flylab/c/observation.metal": "fb0cf6c38cb5395283820f13d00f6fdbb9d97236d82b419fb50741fa8ea89bbd",
+      "flylab/c/pathways.py": "5e8d7d1253b467c64bd4d32315b678091f4bbe3564bdd24bae0297bfca95703a",
+      "flylab/c/ports.py": "c4033d3b1826b3f12749f98729225671d0f0039bc65e3f11f50ed50100c2ab15",
+      "flylab/c/protocol.py": "e4e4b21b0e2906394478f3df16b88125bb868667fc89bdc0747fa63543fb2754",
+      "flylab/c/receptors.py": "01c6f21c46d4a0a9cb288f49683daa2ca9edadb83c47f6bb3d0e0604f70536a0",
+      "flylab/c/research_neural.py": "848faea6f0d65790fd03ff2091b7262dfd613c4cdc279dedb94a22b201c9e57a",
+      "flylab/c/sensorimotor_campaign.py": "9545ae7947ecf4d6ce9f5292ed78ed132430fed1560d35cb36ca9169f7fbcb18",
+      "flylab/c/sensors.py": "73105f8cb646d6a4e12bbd796f2201f161528d7843a9bc01703d562513305781",
+      "flylab/c/server.py": "abad77aa8968f1118c62db3d8620e2ea63ddfbef610aec6a3b19f9f0dc9190cf",
+      "flylab/c/single_joint.py": "02055af90b534c98ee78c1006f539719c5d5a723f2117b06b78c4ecfc2614286",
+      "flylab/c/storage.py": "c05a76f3c09810656545563f053b850a1eb3ebd5767547a4939ffc4393104677",
+      "flylab/c/tasks.py": "d7eb91c673d78eae3491531c9526a7f1e81a700ce0aa6896152315186d0e4038",
+      "flylab/c/workbench.py": "3a9ae921374123a55e958bac89076199b920a7103e0a33c1843db9f7312eb297",
+      "flylab/common.py": "26cb360b626880bcaa84d7dcdb21b2c359544ba09a75026f42e9e00f76f78e86",
+      "flylab/contracts.py": "d6ac94ef9b71b08a829a842f42fdd7394229f7aa3e8169e56ed2a028f1970fde",
+      "flylab/dependencies.py": "f4ebfd0bf782c20d30fc6d93f69db588406b7e95ed60288d5e63e9647b6ac6c2",
+      "flylab/engine.py": "226da7bd9dce7149e6f8750e746ff97c1c3440038328960a2b320d98278245dd",
+      "flylab/legacy.py": "234df3dedbc48ec42ea79afb21455781bef3790ff866bf88cfcbfb1324663d46",
+      "flylab/locomotion.py": "65ff9fca2da05ba4a076aaf8898468b7cecf3babff44d34b14284345a2bbe679",
+      "flylab/navigation_checks.py": "00a8985fe0bb32a0280cd12a6456fb36f2ba7d0853e5020c56b769ebb492655b",
+      "flylab/sensors.py": "c3383efca3fa0f025e6a697cc9c1b46983fc8992e9ae39ce3c43a917139c662a",
+      "flylab/server.py": "fb663367fea260a04ba4f1bec9812b24c68bc846167445b18a88e4181ccc0e79",
+      "requirements-c.txt": "a155c0cec39b10fc645c7a105520098620c61fb25e1d651aee72d94ca068f4c0",
+      "requirements-data.txt": "4c2ffb5040433fb82946495bebb7dc10a0691a8aa3f2cee6d1e6190db35d63dd",
+      "requirements-mjx-probe.txt": "4b814cbee53549ee9ccc53734b274181b4fe32eb181724d2870686b6ef9bca90",
+      "requirements-mps.txt": "6f79c83eadfa75bb72f80b0992fe44cce7092e22e78a860906d659b84420280a",
+      "requirements-research.txt": "79070c4cd72b23ebd41d455016bf138972efb175d0ba088de732f2cabb846571",
+      "requirements-test.txt": "1ff46733f697c440ba094400b4812394ba31979fb454f1ccd326cf9a2958c94b",
+      "requirements.txt": "221e8c46a545101c1d19bf694955ed27507dbbecc28b78cf1eea5d5ea7dffaaa",
+      "run_c.py": "b76cdfc065ee4aff1427c14555a4b3016f3d9abe85267c21c4a0e286efb0458b",
+      "src/c/app.js": "07689fcae1a315c451bedd23756081f6051ad18e424df389a32b2ddbb0b2ec24",
+      "src/c/playback.js": "a9f48a16298905d4e35bf6331ea67a1f7b0fb8618ce86656ed98888dfab77e9e",
+      "src/c/signals.js": "937aa2c9525fab8b181e15a68c646bdd3bf4cd71282696df09b626bc87de1849",
+      "src/c/style.css": "31f1e0f3cc560727586de23b3b21b777a5cba5cebbf3cc1e7ac6d000a692e036",
+      "src/c/template.html": "cb5c638cd1b565b2aeb84093dfe1ed387e91e22278342a49264c183abce7abdc",
+      "src/c/workbench.js": "8b756302162093a31b819e1b7244794366c37dbf9cd6eba3262158fe4d797f54",
+      "src/core/brain.js": "d49507dc775f4ac3969b08f4b5b081f06fcccfb9f5d5511a1393a0e27871d58d",
+      "src/core/connectome.js": "8875caf62b2e3a27b4dec80821189812d9e17f53f4d4bba016ce0af6f7f45c1c",
+      "src/core/math.js": "3e24cca0f4a6a913c8b151094fe37da99ebc90d853d6ed3e4fbebf4a69d08842",
+      "src/runtime/b-transport.js": "52d4e82c556a198acccd786a051c665773d5f3fb67d09580fdb8684fdcac5641",
+      "src/style.css": "ba500ffb7f3a89117f59de2a1483e684cb3a6ec63c9e3704588d95f547bc50b0",
+      "src/template.html": "7aacfbb3e1767bc142b85d01d55a8624e1eea9a28a19df3315bbae457ab93a4c",
+      "src/ui/app.js": "d42a24c8cca538ae0a8d2c232478f85b86cbe258847335b15b812418ab7c09e2",
+      "src/ui/monitor.js": "5c81d50761d3bceeeeb6ceccbefc9b3fab4817560049e3a46b0fdbd8475b0479",
+      "src/ui/world-view.js": "07c4578acdadbebae4d9d31f501c5bee87987f926796b5dc53ecb806b51805aa",
+      "tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tests/browser_smoke.py": "736731b7da944d6129c156d3ae7037381c79f436f3fcff0aac313efe1ba07aa0",
+      "tests/c_fixtures.py": "f7159050248c481e4bff74d21a4b7003e2fa182d44206aee4f7835f0ba87acab",
+      "tests/fixture_body.py": "cd6355b33aa1cfa69a8e3c3806026cabc1745cc5716155ab362cad6ee6ac0131",
+      "tests/fixture_server.py": "67a47f630f6ce3740fec7216b1a1e84965835d7eada662c2e5bca664ce21b15f",
+      "tests/parity.cjs": "4364a0e09830a9553e1bae7a936d44fc60bb876490126d36854f31f65a135c60",
+      "tests/playback.test.cjs": "0596c69f6e4c1362d4de5cad4f83302ec76cfcaa0b9e503423dda9b1e1728fc4",
+      "tests/test_avoidance.py": "57ff6f5451ef470be309d637cf576160adc683213c85a92fa467c6d43f139a8e",
+      "tests/test_c.py": "e1f3d4a642c38fe54ab59cd00ef5a4adcbfec9134d1c3475d14def0e41699f45",
+      "tests/test_c_campaign.py": "305bee0b58bb48e495c7941f877f2f0358ef0bd4b7872719e72eb296eabfec43",
+      "tests/test_c_contracts.py": "1a67e8d91e2177c1e39a62e85919864367c6082436b006405c4fd131ff06454f",
+      "tests/test_c_delivery.py": "4bcf971f9126841ad4b969bccca84fc139d87f0f3081858ac96aed5fc78b6571",
+      "tests/test_c_evidence.py": "14d74ab01c018ce6c7e8ab0a7cd61fb20749ffa905a71a292154dd6013b75a2b",
+      "tests/test_c_identity.py": "a3cd7a18ad768058d7aa9ac92a72aa4804d139028e30e16b6d550e180386916e",
+      "tests/test_c_mps.py": "c8d57a83843ae7f54e7479be09cbb38a1817c2d56df8c7fff145d3a2635f4f35",
+      "tests/test_c_muscles.py": "0d8e2c2ec78b677281ccadc0443e5bcebb796413f34a61ae6704570e6b4e3160",
+      "tests/test_c_recovery.py": "ae49d885918c4707e6ac7a33ab48be2af611b4f0ea18ec09b625fb2922a6a19f",
+      "tests/test_c_repairs.py": "a3cc60f1c1eceb284e88428437837da732168f6aa25b4804958bc9707b0c0f9a",
+      "tests/test_c_research.py": "bfa20f9cdf45ee25ec1de7bcdfac2cc86f40baf9c496b59f68a180591dce3ae8",
+      "tests/test_c_sensorimotor.py": "3ddd3048c1f98b6bc6490d05de223d79044a93a209df0c1ef82d8e2dca53ab56",
+      "tests/test_c_single_joint.py": "8ae96223dcfae2f9f8e66f16b768c13c5e743c2a10d386008908495bafa56be6",
+      "tests/test_c_workbench.py": "eb30ce70e65b5d82982e5f449cbff3d38c5ecbc6f837c8e19483c0d84dc44517",
+      "tests/test_core.py": "de422de288a3cb9624be4d83ce21ed3e75190d283f353541a5136522b3be2a02",
+      "tests/test_fix2.py": "83cc6a2dfe1d5978c70f1f2e7480d515f95590a041b565604d0f18feebda5fa3",
+      "tests/test_runtime_optimization.py": "ade670d97a2d7a99c2e536747f15ce56cc46f97a7ae275f6bee009ef366c8883",
+      "tests/test_server.py": "37b0419b9691e3fff70129a530be07c24c05542394180e3f881f5d3b9310b4e5",
+      "tests/test_validation.py": "6835313935106752b63224aab2a12d7391f7826f7d5f3b6e5a169071e181ecb8",
+      "tools/acquire_c_research_data.py": "42695d2b9c68d639f86a939c9a1dedc43e8d005f4beffa5cb889c41d482b6386",
+      "tools/assess_c_hazards.py": "40507daceba6f6406e11e7d4446888326eca51a7b97d70416d4cff7c86d7b0cd",
+      "tools/assess_c_obstacles.py": "f9e9ab2040dc280a19a24f6029632357a172ddca31763bfa4a553ef103d3b963",
+      "tools/benchmark_c_backends.py": "2320b378008cd978ab1ed2d9a752be684bf21c8b0f46244ca569bbe583e0ccc4",
+      "tools/benchmark_c_runtime.py": "53af11c2dd19f1f688cfb6f35d1856f3a2f769a24bb1fff5e99a64604284f9be",
+      "tools/benchmark_c_workbench.py": "e7506bc3813856cb70f5aa9c8532d4c4712be87cbb33ca1744ccad13f5e29360",
+      "tools/build_c_banc.py": "be8a52ef784b521e8c9b3e14472e234b2a28f51ed5f506c5ca30974738d92152",
+      "tools/build_c_banc_sensorimotor.py": "0bbce91d60f966408c4b02329c4e15430eaa16fc3c3b9933a85166de633b36a4",
+      "tools/build_c_bindings.py": "da5173eb776501c0928868de516dcc56c89f653674b0ef82824ba7d77470a743",
+      "tools/build_c_graph.py": "43813cc01da39eb9c250dd5536c9904f2824e3fd9bf9b7e59a7d7f8a4c225a1d",
+      "tools/build_c_halting_profile.py": "644726372566d447d7605c8891ee8b0f52ce93b4d3a3a4e08abf2cee42705845",
+      "tools/build_c_odor_profile.py": "d84f3fcdf4cf2cb1005e09cee803c1135361f7b86f8b9bbb6e93c829e5924a13",
+      "tools/build_c_poisson_profile.py": "735fd8dc901bb21bcd4749a8226116956cc8b5da8629d0e640388488540304fd",
+      "tools/build_c_sensor_profile.py": "2868f75f7d8796e4965258acc521a66133dc3de72e4657c4291525e2847f2c72",
+      "tools/build_c_walking_profile.py": "2c87d936369d274651ee7bfee27ac4fe731a3e27a24ec3ced154dfaa41520a20",
+      "tools/c_topology_control.py": "fcf61bf8c205df793dd363d8bcc2071bf12e47d1724c4955c9dcff4752029dbc",
+      "tools/diagnose_c_motor.py": "2930491549a87fede039dd9ca5ca54c228d93c11532bc3bf8cbc0100abb691d5",
+      "tools/diagnose_c_pathways.py": "c7cc4c840c7dd14bc12a3cb9b07df2f223a1808c8c01df4e5315bf70c764b01f",
+      "tools/evaluate_c_motor.py": "cc07eecea9d4eeb3a0aa50feac8b33829be2f0c1a400ab80b25b0c91f61a5819",
+      "tools/migrate_a.py": "733349f887aaaf33fb29ce72562c268992c6daf8a44f3e519e3ee0e886c99c16",
+      "tools/navigation_checks.py": "6f6890f0a540abc8ab43f47a4600eb7a5ae8b44dcbc8460e7ab52baa57cabfa3",
+      "tools/pack_c_evidence.py": "2b1db913a0affda303b3f247720988d5e7d1bd023fafe667e66b6412558e913a",
+      "tools/plot_c_single_joint.py": "5e2a215a12c923157c243a907df5dbaeb30f9a8bb2d26b7cb73c9145b261f109",
+      "tools/prepare_c.py": "884f4a47baf31e582e093af4de0358596025ec1d47a499f49f6efb21c74912f9",
+      "tools/prepare_c_control_assays.py": "4638777a877e9a053431d1be2b727bdb8cface1f57204432b7f6318334890b87",
+      "tools/prepare_c_repair_assays.py": "cca66603aa87dce53cc0d26838c59857d7be2a57b7c611585423b3a4d3965675",
+      "tools/prepare_c_sensorimotor_campaign.py": "bfdcc1534df6e537cca331808bbc422297e56c322e3690cc89f9ebf469b27655",
+      "tools/preserve_c_session.py": "80651d3e6a9c008e5c40212961505f65aff17507025db013973e0472a9757b50",
+      "tools/probe_c_joint_feedback.py": "6fa9d4cccc895f9bad7bd878cb92a2c0966688ac06990f20ca9b914e470839c5",
+      "tools/probe_c_steering.py": "991da3469a3477189933664a91ca25108c06f327aac45192a0a9c8dc4f0c74c9",
+      "tools/probe_mjx_metal.py": "b50816653737f8d9fe4390953fca8f191cdd833df115b129f638bcc1fcd73d41",
+      "tools/profile_c_runtime.py": "64fe43c10364afa34d5877efa87d7911f4cc86bf88205efde2fae4c157341d94",
+      "tools/reevaluate_c_joint.py": "27bd537ce0aed97cedca01067b59ca82d9a3c1c944a43189904a995928055cee",
+      "tools/reevaluate_evidence.py": "ff9c4abe750f9afcdac4a9c54d24cdb3fe5eac1e39f4c91b86c6dd3875d5cdfa",
+      "tools/run_c_campaign.py": "2263b8c28ad88953b9683d0a130c2d0d7aa8b6e690f63d1847d080ad9ebdea88",
+      "tools/run_c_checks.py": "ce5e94d9725e8ab4a647a78a11b0ec4fd557c04ebd8df0ea4d02917af5107504",
+      "tools/run_c_research_neural.py": "6be65bfc82107c9260750b3828f525277802b37568fcdbabcf5790673b31268d",
+      "tools/run_physics_campaign.py": "a08677dd4c99cdecdcbfa0468b880aa3d63c4de61cb3531b946a2945c93259fc",
+      "tools/verify_c.py": "c54212f6141ce3f4946110308ff15dfaeb2d4dcf7d2b9e41d3548c15382817be",
+      "tools/verify_c_cns.py": "cebf1b462b708f4c7e4e6bf99bfea02f93649869c74f29e10db16aa6a3aea590",
+      "tools/verify_c_flight.py": "e7fbe20a36767466c4c898d914d2509d4bc4b1cd024b481743bff6c63b7bae16",
+      "tools/verify_c_head_contact.py": "c125061e908b42f2c6a95f5bd72a5b1b3510fa9abdbba5706026a3e31033b083",
+      "tools/verify_c_muscle_geometry.py": "b9d4c2748714f2a051b779d16db84e33ca95a756c2f67597d5701bcbf2bf292d",
+      "tools/verify_c_muscle_guard.py": "79688c2e9e897b65e94d9fc53783deb2f4f78e3c964272ccd02897fa200545c7",
+      "tools/verify_c_muscles.py": "6d6a77ce2ef9a9e718b1e676cbea374af0b3dd49a313fe7c59a4de51069c967e",
+      "tools/verify_c_neural_variants.py": "4b1b2fde0bc8ac0d1f6e91ff22022e42ffd4ae607fc7ee3c893726a2411153dc",
+      "tools/verify_c_numerics.py": "af4406ea4847094fdb026dd87c6141b81eab3d7e8c8f0bda4a4bab38cd9bbce1",
+      "tools/verify_c_recovery_native.py": "49e943ae4e57dfe0c20ef8514aa005b716b4b066874775a332f6829062ee24e1",
+      "tools/verify_c_sensor_ports.py": "a7afde5faa6b85ca1fdd16a17034cfe9a70e8753284928342a5cbe04d476d459",
+      "tools/verify_c_sensorimotor.py": "c371c7481da0b05c796b43e909546fc40736dc5868696df0b00f5d911ccb8829",
+      "tools/verify_c_single_joint.py": "7c2f5e98d8e3bfff1882d43c3b475d498807d2aa540dc3efd8eb1f8300569997",
+      "tools/verify_c_workbench.py": "e04f90719ea5830008635b33494ac862d43bc90dd4797326b0a82c0dd09e5092",
+      "tools/verify_navigation.py": "ef24f6a94ebacc7c545f141af8197014287fc7039857cc678fd8166cf28b979b",
+      "tools/verify_physics.py": "865b8b1c5d4547dda0c045acaed2c0a8fdebaf20282cb7737ec286647c888c61"
+    },
+    "identity": "d25b8e576a486c37931fbf90394a04c7613da775efb63bef5cd501d4e3f4b8d5"
+  },
+  "evidence_files": {
+    "verification/c07_implementation_20260910/delivery.json": {
+      "sha256": "39a301abc62f26a81f7fcf17e8d89da1e3e0722697252ef46a2446bbbef8e841",
+      "bytes": 3117
+    },
+    "verification/c07_followup_20260910/delivery.json": {
+      "sha256": "d64f977c5acdea547051d91847e7cbe11b853d3c374532d6e7f77e5b92ff5f44",
+      "bytes": 1456
+    },
+    "verification/c07_followup_20260910/banc_joint/report.json": {
+      "sha256": "031393380b532417d0c56d4190b6bbd9318b569693077b66620b6e7234358671",
+      "bytes": 12129
+    },
+    "verification/c07_followup_20260910/banc_joint_gain72/report.json": {
+      "sha256": "b8376af440de30573576ab4cadeba5e3df4929d183c6c79fe99f8e1590e2a92d",
+      "bytes": 12423
+    },
+    "verification/c07_followup_20260910/fixed_feedback/report.json": {
+      "sha256": "2189bdc5986ff984037d7251cd895f16603341d93ed88a1ec2d6b1e1022aa6ea",
+      "bytes": 17776
+    },
+    "verification/c07_followup_20260910/geometry/report.json": {
+      "sha256": "7060f4db7a30317588e470ac5928ee73495b9238d10b696c92f68b3d8be39878",
+      "bytes": 596233
+    },
+    "verification/c07_followup_20260910/guard_probe/report.json": {
+      "sha256": "51f378bf3473ae9796d7e52674586f9ee8b9452d937169d839b728eabc4d8467",
+      "bytes": 1166
+    },
+    "verification/c_runtime_opt_20260910/regression/report.json": {
+      "sha256": "1b131fff4280c925a9316301598a9209bb43137563773b40270faccb43621993",
+      "bytes": 23293
+    },
+    "verification/c_runtime_opt_20260910/playback_tests.log": {
+      "sha256": "18861185405fb61fdbc30bf68d17dea8e64f03ccf17c8fcdbf8d03e0d3d6b843",
+      "bytes": 1248
+    },
+    "verification/c_runtime_opt_20260910/benchmark_final/report.json": {
+      "sha256": "fa2f1bc00df6d1d0f55ed660e586c671c226b056343795cf1cd2c2631e6ead17",
+      "bytes": 42225
+    },
+    "verification/c_runtime_opt_20260910/benchmark_final/report_rechecked.json": {
+      "sha256": "d85378cc4338a49023c3d8fa28eb18a195da73088b597b967e9552dc73f1552e",
+      "bytes": 27904
+    },
+    "verification/c_runtime_opt_20260910/physics_gate.json": {
+      "sha256": "9c6e7da4a969e0c35762324e84f2cee2f3cb02b8ae98c02d937ee09299d3ccbd",
+      "bytes": 2317
+    },
+    "verification/c_runtime_opt_20260910/live_verification.json": {
+      "sha256": "9c43c89916138f4f67c99dab865b62a0451584131e0f5627380b5c12325d2916",
+      "bytes": 1262
+    },
+    "verification/c_runtime_opt_20260910/modified_source_sha256.json": {
+      "sha256": "ada778125827a71234b0aa3f857ec8bf81bc66afd876883695bdfaee4c073dc1",
+      "bytes": 1409
+    },
+    "docs/C06_REPAIR_RESULTS_20260910.md": {
+      "sha256": "93acf8e39bfb380ad0639c19650aafcd7d5689c3d93dcf8e8ce773ff8ec34b18",
+      "bytes": 13347
+    },
+    "docs/C07_SINGLE_JOINT_RESULTS_20260910.md": {
+      "sha256": "1e37568a17fb36d76217a1c7ad0c235b74bb9c6ba61f5ff51bb7de14581b3a1c",
+      "bytes": 15135
+    },
+    "docs/C_RUNTIME_OPTIMIZATION_20260910.md": {
+      "sha256": "bd18b56a681a93c2eea8740721c2b6badf07201eb529e7509597e749f482c2c0",
+      "bytes": 7165
+    },
+    "data/fafb783/bundle/manifest.json": {
+      "sha256": "3861d4f97796d4b31c318f48883d9df7195a4601293c191e98e9f971609033aa",
+      "bytes": 2631
+    },
+    "data/acquisitions/banc888-v2-20260909/bundle/manifest.json": {
+      "sha256": "9032e3db1e190929857ac1f0fe32427302a5aed23bbea5a76ecf86d864d372ad",
+      "bytes": 2748
+    }
+  },
+  "latest_regression": {
+    "status": "PASS",
+    "total": 257,
+    "passed": 257,
+    "skipped": [],
+    "failures": [],
+    "errors": []
+  },
+  "runtime_optimization_source_drift": [],
+  "runtime_benchmark": {
+    "initial_status": "FAIL",
+    "rechecked_status": "PASS",
+    "comparison_note": "Rechecked existing artifacts without rerunning or changing measurements. Exclude frame.performance and normalize only recording.path and recording_start.details.path. The initial comparison normalized absolute paths but these artifacts stored relative paths.",
+    "scope": "Separate processes, alternating order, 0.1 ms integration unchanged; warm-up excluded; 2 control ticks/frame with JSON and binary encoding; browser excluded",
+    "cases": [
+      {
+        "case": "fafb_current",
+        "median_wall_s": {
+          "baseline": 1.2461073330014187,
+          "modified": 1.103999416998704
+        },
+        "speedup": 1.128721006383359,
+        "modified_ratio": 0.2717392739350986,
+        "exact": true
+      },
+      {
+        "case": "banc_current",
+        "median_wall_s": {
+          "baseline": 0.9989642910004477,
+          "modified": 0.8742265000000771
+        },
+        "speedup": 1.142683607738223,
+        "modified_ratio": 0.34316049673622745,
+        "exact": true
+      },
+      {
+        "case": "fafb_walking",
+        "median_wall_s": {
+          "baseline": 1.383608500000264,
+          "modified": 1.2383849159996316
+        },
+        "speedup": 1.1172685343017175,
+        "modified_ratio": 0.24225101268924792,
+        "exact": true
+      },
+      {
+        "case": "fafb_recording",
+        "median_wall_s": {
+          "baseline": 1.2805695829993056,
+          "modified": 1.1137731249982608
+        },
+        "speedup": 1.1497580200647284,
+        "modified_ratio": 0.26935467669905255,
+        "exact": true
+      },
+      {
+        "case": "banc_recording",
+        "median_wall_s": {
+          "baseline": 0.9885664579996956,
+          "modified": 0.8929117500010761
+        },
+        "speedup": 1.1071267210880629,
+        "modified_ratio": 0.3359794514963415,
+        "exact": true
+      }
+    ]
+  },
+  "graphs": [
+    {
+      "path": "data/fafb783/bundle/manifest.json",
+      "graph_hash": "56fb288462f35781af1df7c66b6b0d36e1a2a1205ace3b155092b225bedfb6d0",
+      "simulated_node_count": 139255,
+      "pair_edge_count": 3732460,
+      "effective_edge_count": 3421226,
+      "masked_edge_count": 311234,
+      "unknown_neurotransmitter_count": 19658,
+      "modulatory_neuron_count": 1677,
+      "weight_model": {
+        "modulatory_policy": "mask_zero",
+        "receptor_model": false,
+        "signs": {
+          "ACH": 1,
+          "GABA": -1,
+          "GLUT": -1
+        },
+        "unit_weight_mV": 0.275,
+        "unknown_policy": "mask_zero"
+      }
+    },
+    {
+      "path": "data/acquisitions/banc888-v2-20260909/bundle/manifest.json",
+      "graph_hash": "9bd8468f5e5e40c3e6daaffde9f444466825ba8e69189f1e347568bff85920ff",
+      "simulated_node_count": 158706,
+      "pair_edge_count": 11584852,
+      "effective_edge_count": 10085782,
+      "masked_edge_count": 1499070,
+      "unknown_neurotransmitter_count": 16899,
+      "modulatory_neuron_count": 10797,
+      "weight_model": {
+        "modulatory_policy": "mask_zero",
+        "receptor_model": false,
+        "signs": {
+          "ACH": 1,
+          "GABA": -1,
+          "GLUT": -1
+        },
+        "unit_weight_mV": 0.275,
+        "unknown_policy": "mask_zero"
+      }
+    }
+  ],
+  "reference_conversation": {
+    "conversation_id": "6a9f7834-0674-83e8-ad6c-528ba2bba9d9",
+    "title": "예쁜꼬마선충 뇌 분석超碰在线",
+    "last_turn_id": "28741cb3-2cbf-4d37-a8e6-4c0c40c5dba5",
+    "last_assistant_message_id": "8fc42f53-2740-4511-b1cc-f57bcc403029",
+    "updated_at": 1789029510.418182,
+    "adjudication": "Latest external audit explicitly incomplete; used as a checklist, not evidence of current defects."
+  }
+}

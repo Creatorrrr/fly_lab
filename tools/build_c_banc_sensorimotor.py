@@ -50,7 +50,8 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--graph', default='data/acquisitions/banc888-v2-20260909/bundle')
     p.add_argument('--out', type=Path, required=True)
-    p.add_argument('--version',type=int,choices=(1,2),default=1)
+    p.add_argument('--version',type=int,choices=(1,2,3),default=1,
+                   help='Adapter version; v3 is an unvalidated actuator experiment, not a walking preset')
     a = p.parse_args()
     if a.out.exists(): raise SystemExit('Choose a new profile path')
     s = build(GraphStore.load(a.graph),a.version)

@@ -58,7 +58,7 @@ def sensory_kind(node):
 
 
 def build_spec(graph, version=1):
-    if version not in (1, 2): raise ValueError('Unsupported neuromuscular version')
+    if version not in (1, 2, 3): raise ValueError('Unsupported neuromuscular version')
     if (graph.manifest['dataset_id'], graph.manifest['snapshot_id']) != ('flywire_banc', '888'):
         raise ValueError('BANC v888 required; no cross-specimen neural IDs')
     motors, sensory, exclusions = {}, {}, []
@@ -99,7 +99,7 @@ def build_spec(graph, version=1):
                 tuning='Claw: normalized tibia angle; hook/club: speed magnitude. Subtype polarity, preferred angle and vibration response are unresolved; these are population proxies.',
                 muscle_model='Signed rate-to-position map with fixed position actuators. No measured force-length curves, moment arms, motor-unit recruitment or reconstructed muscle tissue.',
                 imposed_cpg=False)
-    if version == 2:
+    if version >= 2:
         for row in rows:
             ports=[]
             for p in row['sensory']:
@@ -122,7 +122,32 @@ def build_spec(graph, version=1):
                     'Load uses flat-floor normal force minus commanded pad adhesion; tactile bristles get '
                     'non-floor contact only, not every foot support. Per-bristle receptive fields remain unresolved.'),
             evidence=[SOURCE,FECO,FECO_CIRCUIT])
+    if version == 3:
+        for row in rows:
+            for muscle in row['muscles']:
+                muscle['units'] = [dict(id=graph.nodes[i]['id'], cell_type=graph.nodes[i]['cell_type'])
+                                   for i in graph.resolve(muscle['ids'])]
+        spec.update(schema='flylab.neuromuscular.v3',
+            motor_pooling='sum-saturating-units-v3', rate_half_Hz=100.,
+            adhesion_policy='neural-tarsus-lift-release-v3', lift_release_mm=.02,
+            muscle_model=('Additive bounded per-neuron rate-to-position proxy; equal unit capacities are an '
+                          'engineering hypothesis, not measured slow/fast muscle forces. Cell types remain '
+                          'individually inspectable. Position actuators and v2 signed vectors are retained.'),
+            adhesion_model=('Neural tarsal balance requests adhesion. A local joint-Jacobian estimate vetoes '
+                            'attachment if the neural joint target lifts the pad along the flat-floor normal. '
+                            'This is an explicit peripheral actuator rule, without imposed gait timing.'),
+            adoption_status='EXPERIMENTAL_NOT_VALIDATED')
     return spec
+
+
+def motor_unit_response(rates, rate_half_Hz):
+    """Additive equal-capacity unit proxy, in equivalent Hz, not muscle force.
+
+    Saturating each unit before summing avoids both population-size dilution
+    and a single high-rate unit dominating without bound. Unknown cell types
+    are not relabeled as slow, intermediate or fast units.
+    """
+    return rate_half_Hz * (rates / (rate_half_Hz + rates))
 
 
 def typed_receptor_feature(kind, cell_type, angle, velocity, velocity_lowpass, load, touch, spec):
@@ -143,7 +168,8 @@ class NeuromuscularLoop:
     def __init__(self, graph, specification, body):
         self.spec = copy.deepcopy(specification)
         s = self.spec
-        self.version={'flylab.neuromuscular.v1':1,'flylab.neuromuscular.v2':2}.get(s.get('schema'))
+        self.version={'flylab.neuromuscular.v1':1,'flylab.neuromuscular.v2':2,
+                      'flylab.neuromuscular.v3':3}.get(s.get('schema'))
         if self.version is None or s.get('graph_hash') != graph.hash:
             raise ValueError('Neuromuscular graph identity mismatch')
         # Verify all anatomical memberships independently of the supplied IDs.
@@ -158,14 +184,25 @@ class NeuromuscularLoop:
                             ('sensory_tau_s', .001, 1.), ('motor_gain_rad_per_Hz', 0., .02),
                             ('activation_tau_s', .001, 1.), ('maximum_offset_rad', .001, 1.)):
             finite(s.get(key), key, lo, hi)
-        if s.get('sensory_delay_controls') != 1 or s.get('adhesion_policy') != expected['adhesion_policy']:
+        policies = ({'neural-tarsus-active-v2', 'neural-tarsus-lift-release-v3'}
+                    if self.version == 3 else {expected['adhesion_policy']})
+        if s.get('sensory_delay_controls') != 1 or s.get('adhesion_policy') not in policies:
             raise ValueError('Unsupported sensory latency or adhesion policy')
-        if self.version==2:
+        if self.version>=2:
             for key,lo,hi in (('adhesion_threshold_Hz',0.,100.),('load_half_bw',.01,10.),
                                ('touch_half_bw',.001,10.),('velocity_filter_tau_s',.001,1.)):
                 finite(s.get(key),key,lo,hi)
             for key in ('motor_response','receptor_model'):
                 if s.get(key)!=expected[key]:raise ValueError('Unsupported '+key)
+        if self.version == 3:
+            finite(s.get('rate_half_Hz'), 'unit half-rate', 1., 1000.)
+            finite(s.get('lift_release_mm'), 'pad release lift', .001, 1.)
+            if s.get('motor_pooling') not in ('mean-linear-v2', 'sum-saturating-units-v3'):
+                raise ValueError('Unsupported motor unit pooling')
+            if s.get('adoption_status') != 'EXPERIMENTAL_NOT_VALIDATED':
+                raise ValueError('This candidate is not validated for adoption')
+            if not callable(getattr(body, 'foot_kinematics', None)):
+                raise ValueError('v3 requires physical foot kinematics')
         if s.get('imposed_cpg') is not False: raise ValueError('No imposed CPG allowed in this adapter')
         self.graph, self.body, self.hash = graph, body, digest(s)
         self.joints, self.muscles, self.ports = [], [], []
@@ -186,7 +223,7 @@ class NeuromuscularLoop:
         if len(np.unique(self.joints)) != 42: raise ValueError('42 unique physical DOFs required')
         self.motor_indices = np.array(sorted({int(i) for groups in self.muscles for _, ids, _ in groups for i in ids}), np.int32)
         self.channels = {'leg_feedback'} | {f'leg_{leg}' for leg in LEGS} | {f'leg_{leg}_{kind}' for leg, kind, _ in self.ports}
-        self.port_names=[f'leg_{leg}_{kind}'+('_'+self.port_types[i] if self.version==2 else '')
+        self.port_names=[f'leg_{leg}_{kind}'+('_'+self.port_types[i] if self.version>=2 else '')
                          for i,(leg,kind,_) in enumerate(self.ports)]
         self.channels.update(self.port_names)
         self._port_legs = [LEGS.index(leg) for leg, _, _ in self.ports]
@@ -207,7 +244,7 @@ class NeuromuscularLoop:
         q, v, load = [np.asarray(observation[k], dtype=float) for k in ('angles_rad', 'velocities_rad_s', 'load_bw')]
         if q.shape != (42,) or v.shape != (42,) or load.shape != (6,) or not all(np.isfinite(x).all() for x in (q, v, load)) or np.any(load < 0):
             raise ValueError('Invalid physical leg observation')
-        if self.version==2:
+        if self.version>=2:
             contact={key:np.asarray(observation.get(key),float) for key in
                      ('load_bw','support_load_bw','non_support_load_bw','adhesion_force_bw','floor_normal_load_bw')}
             if any(x.shape!=(6,) or not np.isfinite(x).all() or np.any(x<0) for x in contact.values()):
@@ -237,13 +274,13 @@ class NeuromuscularLoop:
             value = float(self.delayed[j]) if enabled else 0.
             np.add.at(drive, ids, value)
             diagnostics.append(dict(name=name, feature=port_features[j], value=value, unit='mV', enabled=enabled, targets=len(ids)))
-            if self.version==2:
+            if self.version>=2:
                 diagnostics[-1].update(cell_type=self.port_types[j],receptor_kind=kind,
                     polarity_unresolved=kind in ('claw','hook') and self.port_types[j] not in ('SNpp50','SNpp51','SNpp39','SNpp41'))
         self.filtered[:], self.delayed[:] = filtered, filtered
         self.sensor_tick += 1
         self.last_sensory = diagnostics
-        if self.version==2:
+        if self.version>=2:
             self.velocity_lowpass+=(1-math.exp(-dt/self.spec['velocity_filter_tau_s']))*(v-self.velocity_lowpass)
             self.last_contact={key:value.tolist() for key,value in contact.items()}
         return drive, diagnostics
@@ -258,31 +295,62 @@ class NeuromuscularLoop:
         diagnostics, adhesion = [], np.ones(6, bool)
         for i, groups in enumerate(self.muscles):
             vector = np.zeros(7)
-            values = {}
+            values, outputs, units = {}, {}, []
             for name, ids, moment in groups:
-                rate = float(np.mean([table[int(j)] for j in ids]))
+                unit_rates = np.array([table[int(j)] for j in ids])
+                rate = float(np.mean(unit_rates))
                 values[name] = rate
-                vector += rate * moment * self.spec['motor_gain_rad_per_Hz']
+                output = rate
+                if self.version == 3:
+                    contributions = (motor_unit_response(unit_rates, self.spec['rate_half_Hz'])
+                                     if self.spec['motor_pooling']=='sum-saturating-units-v3'
+                                     else unit_rates / len(ids))
+                    if self.spec['motor_pooling'] == 'sum-saturating-units-v3':
+                        output = float(contributions.sum())
+                    units.extend(dict(id=self.graph.nodes[int(j)]['id'],
+                                      cell_type=self.graph.nodes[int(j)]['cell_type'], muscle=name,
+                                      rate_Hz=float(r), equivalent_output_Hz=float(c))
+                                 for j, r, c in zip(ids, unit_rates, contributions))
+                outputs[name] = output
+                vector += output * moment * self.spec['motor_gain_rad_per_Hz']
             limit=self.spec['maximum_offset_rad']
             requested[self.joints[i]] = (np.clip(vector,-limit,limit) if self.version==1 else limit*np.tanh(vector/limit))
             # A pad is released by the relative tarsal elevator drive. This is
             # an explicit actuator assumption; it does not create gait timing.
-            close = values.get('tarsus_depressor_muscle', 0.) + values.get('long_tendon_muscle', 0.)
-            opened=values.get('tarsus_levator_muscle',0.)
+            close = outputs.get('tarsus_depressor_muscle', 0.) + outputs.get('long_tendon_muscle', 0.)
+            opened=outputs.get('tarsus_levator_muscle',0.)
             adhesion[i] = (opened<=close+1. if self.version==1 else close>opened+self.spec['adhesion_threshold_Hz'])
             diagnostics.append(dict(leg=LEGS[i], muscle_rates_Hz=values, requested_offset_rad=requested[self.joints[i]].tolist()))
-            if self.version==2:
+            if self.version>=2:
                 diagnostics[-1].update(raw_offset_rad=vector.tolist(),bounded_axes=(np.abs(vector)>limit).tolist(),
                                        adhesion_requested=bool(adhesion[i]))
+            if self.version == 3:
+                diagnostics[-1].update(motor_units=units, muscle_output_equivalent_Hz=outputs,
+                                       motor_disconnected=bool(disconnected))
         if disconnected:
             # Immediate zero neural contribution, retaining neutral support.
-            self.offset.fill(0.)
+            next_offset = np.zeros_like(self.offset)
             adhesion[:] = self.version==1
         else:
-            self.offset += (1-math.exp(-dt/self.spec['activation_tau_s']))*(requested-self.offset)
+            next_offset = self.offset + (1-math.exp(-dt/self.spec['activation_tau_s']))*(requested-self.offset)
+        targets = self.body.neutral + next_offset
+        if self.version == 3:
+            feet = self.body.foot_kinematics(targets)
+            lift = np.asarray(feet['target_lift_mm'])
+            velocity = np.asarray(feet['velocity_mm_s'])
+            if (lift.shape != (6,) or velocity.shape != (6, 3) or
+                    not np.isfinite(lift).all() or not np.isfinite(velocity).all()):
+                raise ValueError('Invalid pad kinematics')
+            release = ((lift > self.spec['lift_release_mm']) & adhesion &
+                       (self.spec['adhesion_policy'] == 'neural-tarsus-lift-release-v3'))
+            adhesion[release] = False
+            for i, row in enumerate(diagnostics):
+                row.update(adhesion_applied=bool(adhesion[i]), lift_release=bool(release[i]),
+                           target_lift_mm=float(lift[i]), foot_velocity_mm_s=velocity[i].tolist())
+        self.offset[:] = next_offset
         self.motor_tick += 1
         self.last_motor = diagnostics
-        return self.body.neutral + self.offset, adhesion
+        return targets, adhesion
 
     def summary(self):
         result = dict(enabled=True, hash=self.hash, covered_dofs=self.spec['covered_dofs'], total_leg_dofs=42,
@@ -293,11 +361,15 @@ class NeuromuscularLoop:
                     unbound_dofs=[f"{r['leg']}_{d}" for r in self.spec['rows'] for d in DOFS
                                   if not any(d in g['vector'] for g in r['muscles'])],
                     tuning=self.spec['tuning'], muscle_model=self.spec['muscle_model'])
-        if self.version==2:
+        if self.version>=2:
             result.update(schema=self.spec['schema'],contact=copy.deepcopy(self.last_contact),
                 unresolved_polarity_targets=sum(len(ids) for j,(_,kind,ids) in enumerate(self.ports)
                     if kind in ('claw','hook') and self.port_types[j] not in ('SNpp50','SNpp51','SNpp39','SNpp41')),
                 adhesion_policy=self.spec['adhesion_policy'],motor_response=self.spec['motor_response'])
+        if self.version == 3:
+            result.update(motor_pooling=self.spec['motor_pooling'],
+                          adoption_status=self.spec['adoption_status'],
+                          adhesion_model=self.spec['adhesion_model'])
         return result
 
     def snapshot(self, *, copy_diagnostics=True):
@@ -308,7 +380,7 @@ class NeuromuscularLoop:
         result = dict(hash=self.hash, sensor_tick=self.sensor_tick, motor_tick=self.motor_tick,
                     filtered=self.filtered.copy(), delayed=self.delayed.copy(), offset=self.offset.copy(),
                     last_sensory=clone(self.last_sensory), last_motor=clone(self.last_motor))
-        if self.version==2:result.update(velocity_lowpass=self.velocity_lowpass.copy(),last_contact=clone(self.last_contact))
+        if self.version>=2:result.update(velocity_lowpass=self.velocity_lowpass.copy(),last_contact=clone(self.last_contact))
         return result
 
     def restore(self, state):
@@ -323,7 +395,7 @@ class NeuromuscularLoop:
             if a.dtype != getattr(self, key).dtype or a.shape != getattr(self, key).shape or not np.isfinite(a).all() or np.any((a < low) | (a > high)):
                 raise ValueError('Neuromuscular state out of range: ' + key)
             arrays[key] = a.copy()
-        if self.version==2:
+        if self.version>=2:
             a=np.asarray(state.get('velocity_lowpass'))
             if a.dtype!=self.velocity_lowpass.dtype or a.shape!=(42,) or not np.isfinite(a).all():
                 raise ValueError('Invalid receptor velocity history')
@@ -339,4 +411,4 @@ class NeuromuscularLoop:
         self.sensor_tick, self.motor_tick = st, mt
         self.last_sensory = copy.deepcopy(state.get('last_sensory', []))
         self.last_motor = copy.deepcopy(state.get('last_motor', []))
-        if self.version==2:self.last_contact=contact
+        if self.version>=2:self.last_contact=contact

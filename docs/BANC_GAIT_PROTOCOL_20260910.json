@@ -1,0 +1,63 @@
+{
+  "schema": "flylab.banc-gait-improvement.v1",
+  "registered_utc": "2026-09-10T09:16:16.984739+00:00",
+  "baseline_commit": "45309118cb4ae3c452bad289a729efdc15cfa176",
+  "preserved_files": {
+    "docs/C08_DEVELOPMENT_PLAN_20260910.md": "1cbd327ac826424ebfb59e6141f417112dde14acd49056b457d114caeadef565",
+    "docs/C08_PLAN_EVIDENCE_20260910.json": "d2a0d0b9a29d15ed7967f298b9a08b441501f8be67248f0b30c7e434384af834"
+  },
+  "baseline": "Current v2 adapter; full BANC v888; C_STRICT; exp_lif_mps; MuJoCo position actuators",
+  "question": "Does eliminating population-size dilution and/or releasing adhesion when a neural joint target lifts a pad improve forward movement?",
+  "hypotheses": [
+    {
+      "name": "unit_response",
+      "change": "Replace mean linear population response with an additive, bounded per-neuron rate response: equivalent Hz = sum(100*r/(100+r)). Equal unit capacity is an engineering hypothesis, not measured slow/fast force calibration."
+    },
+    {
+      "name": "lift_release",
+      "change": "Veto neural pad adhesion when the current neural target would lift its tip by >0.02 mm along the floor normal, estimated using the current physical joint Jacobian. No imposed phase, clock, route or root force."
+    },
+    {
+      "name": "combined",
+      "change": "Both registered changes, with individual ablations above."
+    }
+  ],
+  "fixed": {
+    "seconds": 10.0,
+    "seed": 42,
+    "initial_pose": null,
+    "world": "default_world with sources and obstacles empty",
+    "inputs": [
+      "feedback",
+      "DNg100 20mV continuously on the two annotated DNg100 IDs"
+    ],
+    "neural_dt_s": 0.0001,
+    "physical_dt_s": 0.0001,
+    "control_dt_s": 0.005,
+    "rate_half_Hz": 100.0,
+    "lift_release_mm": 0.02
+  },
+  "screening": {
+    "candidates": 3,
+    "baseline_cases": 2,
+    "candidate_cases": 6,
+    "maximum_physical_seconds": 80.0,
+    "no_parameter_search": true
+  },
+  "walking_gate": {
+    "seconds": 10.0,
+    "horizontal_net_mm": 5.0,
+    "signed_forward_mm": 5.0,
+    "stuck": "NOT_DETECTED",
+    "fault": null
+  },
+  "selection": "A candidate must pass the unchanged walking gate in both inputs to qualify for live/default adoption. Report partial movement changes separately without promoting a failed walk.",
+  "followup": "Only a qualifying candidate gets baseline/candidate comparisons at yaw \u00b10.15 rad, friction 0.7 and 1.3 (four predeclared pairs per input), plus sensor-off and motor-disconnect causal controls. No default change if screening fails.",
+  "stop": "Stop each case on physics/neural fault. If all three candidates fail walking, preserve all raw evidence, leave v2 as default, and do not run the larger matrix or add more candidates in this experiment.",
+  "excluded_claims": [
+    "muscle-force actuation",
+    "physiological slow/fast unit calibration",
+    "autonomous gait from evoked DNg100 response",
+    "biological validation"
+  ]
+}

@@ -52,12 +52,18 @@ def behavior_metrics(trace, world, *, motion_expected=True):
 
 def trace_sample(frame):
     b = frame['body']; basis = b['basis']; c = frame['command']
-    return dict(simTime=frame['simTime'], tick=frame['tick'], position=b['position'], yaw=b['yaw'],
+    sample = dict(simTime=frame['simTime'], tick=frame['tick'], position=b['position'], yaw=b['yaw'],
                 forward_axis=[row[0] for row in basis], contact=bool(frame['sensors']['contact']),
                 avoidance=bool(c.get('assist_reason') or (frame.get('legacy') or {}).get('avoidanceActive') or
                                (frame.get('legacy') or {}).get('recoveryActive')),
                 motion_enabled=bool(c.get('motor_coupled')) and not frame.get('stopped'),
                 obstacle_engaged=bool(frame['sensors']['contact'] or min(frame['sensors']['nearRanges'][3:6])<3.5),
                 sensor_diagnostics=frame.get('sensor_diagnostics',{}),motor_diagnostics=frame.get('motor_diagnostics',{}),
+                neuromuscular=frame.get('neuromuscular',{'enabled':False}),
                 command=c, sensors=frame['sensors'], sensory_ports=frame['sensory_ports'],
                 motor_rates_Hz=frame['motor_rates_Hz'], fault=frame['fault'])
+    if frame.get('neuromuscular',{}).get('enabled'):
+        physics=frame.get('physics',{})
+        sample['leg_physics']={key:physics[key] for key in ('jointAngles','jointVelocities','jointTargets',
+            'actuatorForces','contactsBW','contactVectorsBW','adhesion') if key in physics}
+    return sample

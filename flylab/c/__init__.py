@@ -1,5 +1,5 @@
 """FLY LAB C: sparse connectome dynamics and explicit sensorimotor ports."""
-VERSION = '0.4.0'
+VERSION = '0.6.0'
 PROTOCOL = 'flylab.protocol.v3'
 CONTROL_DT = 0.005
 NEURAL_DT = 0.0001

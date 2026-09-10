@@ -56,11 +56,18 @@ function applyFrame(f){
  $('neural-scope-note').textContent=f.mode==='B_COMPAT'?'현재 B 부분 신경 모델을 사용하며 C 전뇌 계산은 꺼져 있습니다.':`${f.scope.simulatedNodes.toLocaleString()}개 모델 뉴런을 계산하며 선택한 신호만 전송합니다. 전체 스냅샷 판정: ${f.scope.fullBrain?'확인':'미승인'}`;
  $('distance').textContent=f.body.travel.toFixed(2)+' mm';$('speed').textContent=f.body.speed.toFixed(2)+' mm/s';
  $('mean-rate').textContent=f.neural?f.neural.mean_rate_Hz.toFixed(3)+' Hz':'B rate';$('performance').textContent=f.performance.sim_wall_ratio.toFixed(3)+'×';
- $('command-source').textContent=f.command.command_source;$('neural-command').textContent=commandText(f.command.u_neural);
- $('assist-command').textContent=commandText(f.command.u_assist);$('final-command').textContent=commandText(f.command.u_final);
+ $('command-source').textContent=f.neuromuscular?.enabled?'BANC 운동뉴런 → 관절':f.command.command_source;$('neural-command').textContent=commandText(f.command.u_neural)+(f.neuromuscular?.enabled?' (관측값)':'');
+ $('assist-command').textContent=commandText(f.command.u_assist);$('final-command').textContent=f.neuromuscular?.enabled?'근육별 관절 목표 적용':commandText(f.command.u_final);
  const dt=f.neuralDt||.0001;$('causal-time').textContent=`감각 ${(f.command.sensor_tick*dt).toFixed(4)}s → 신경 출력 ${(f.command.neural_readout_tick*dt).toFixed(4)}s → 몸 구동 [${(f.command.interval_start_tick*dt).toFixed(4)}, ${(f.command.interval_end_tick*dt).toFixed(4)})s`+(f.command.assist_reason?' · '+f.command.assist_reason:'');
  $('port-note').textContent='현재 C 입력: '+f.binding.sensory.map(p=>`${p.channel} → ${p.targets} 뉴런 (${p.method})`).join(', ')+` · 미연결: ${f.binding.unused_observations.join(', ')} · 위험 입력: ${f.binding.hazard_semantics==='unbound'?'미연결':'geosmin 가정 (실험)'} · 미확정 전달물질 ${f.scope.unknownNeurotransmitters.toLocaleString()} 뉴런 / 효력 0인 연결 ${f.scope.maskedEdges.toLocaleString()}개`;
  $('port-values').textContent='현재 입력 세기: '+(f.sensory_ports.map(p=>`${p.name} ${p.value.toFixed(3)} ${p.unit}${p.enabled?'':' (차단)'}`).join(' · ')||'아직 계산 전')+' · 출력 집단: '+Object.entries(f.motor_rates_Hz).map(([name,rate])=>`${name} ${rate.toFixed(2)} Hz`).join(' · ');
+ const legLoop=f.neuromuscular;
+ $('neuromuscular-status').textContent=legLoop?.enabled?`BANC 다리 폐루프 · 감각 ${legLoop.sensory_neurons.toLocaleString()}개 → 전체 신경망 → 운동 ${legLoop.motor_neurons}개 · 관절 ${legLoop.covered_dofs}/${legLoop.total_leg_dofs} 연결 · 사전 보행 궤적 CPG 꺼짐 · 미연결: ${legLoop.unbound_dofs.join(', ')||'없음'} · 근육 힘과 감각 세부 반응은 검증되지 않은 공학적 변환입니다.`:(['B_COMPAT','C_SHADOW'].includes(f.mode)?'현재 몸 구동: 기존 B 제어기와 보행 CPG를 사용합니다. C 전뇌 출력으로 구동하는 모드는 아닙니다.':'현재 몸 구동: 하행뉴런의 전진·회전 출력을 기존 CPG 보행기에 전달합니다.');
+ $('leg-feedback-off').disabled=!legLoop?.enabled;
+ const contact=legLoop?.contact?.support_load_bw?legLoop.contact:null;
+ $('leg-contact-diagnostics').textContent=contact?['LF','LM','LH','RF','RM','RH'].map((leg,i)=>`${leg}: 지지 ${contact.support_load_bw[i].toFixed(3)} BW · 부착력 ${contact.adhesion_force_bw[i].toFixed(3)} BW · 지면 외 접촉 ${contact.non_support_load_bw[i].toFixed(3)} BW · 부착 ${f.physics.adhesion[i]?'켜짐':'꺼짐'}`).join('\n'):'하중 보정 진단은 BANC v2 프로파일에서 표시됩니다.';
+ $('leg-contact-diagnostics').hidden=!legLoop?.enabled;
+ $('leg-receptor-diagnostics').textContent=legLoop?.schema==='flylab.neuromuscular.v2'?`방향 미확정 수용체 ${legLoop.unresolved_polarity_targets}개: 외부 각도·방향 자극 보류 · 출력 제한 범위를 넘은 축 ${(legLoop.muscles||[]).reduce((sum,m)=>sum+(m.bounded_axes||[]).filter(Boolean).length,0)}/42 · 보행 성공 여부는 별도 행동 검사로 판정합니다.`:'';
  $('motor').checked=f.config.motorCoupled;$('cue').checked=f.world.cueOn;$('food').checked=f.world.foodOn;
  $('body-status').textContent=f.physics.testDouble?'TEST DOUBLE':`${f.physics.jointNames.length} 관절 · ${f.physics.backend}`;
  const feet=$('feet');
@@ -105,6 +112,14 @@ async function regions(){const rows=await rpc.request('regions');$('regions').re
 async function checkpoints(){const rows=await rpc.request('checkpoints');$('checkpoints').replaceChildren();const blank=document.createElement('option');blank.value='';blank.textContent='저장한 체크포인트';$('checkpoints').append(blank);rows.forEach(r=>{const o=document.createElement('option');o.value=o.textContent=r.name;$('checkpoints').append(o);});}
 function applyReady(result){state.dataset=result.manifest.dataset_id+' v'+result.manifest.snapshot_id;$('dataset-label').textContent=state.dataset+' · NeuroMechFly';
  const labels={'bindings.json':'기존 평균 냄새','bindings-bilateral-geosmin-v1.json':'좌우 먹이·geosmin v1 (실험)','bindings-bilateral-geosmin-v2.json':'좌우 먹이·geosmin v2 · 농도 압축 (실험)','bindings-visual-head-contact-research-v1.json':'좌우 냄새·물체 시야·머리 접촉 (연구)','bindings-odor-poisson-current-hypothesis-v1.json':'후각 Poisson 전류 입력 (검증 가설)'};
+ labels['bindings-walking-population-v1.json']='DNg100·DNg97 보행 출력 (실험)';
+ labels['bindings-walking-reset-current-v2.json']='보행 출력·발화 후 전류 초기화 (가설)';
+ labels['bindings-walking-poisson-reset-current-v3.json']='약한 냄새 Poisson 입력·보행 출력 (가설)';
+ labels['bindings-walking-voltage-events-v4.json']='Poisson 전압 사건·보행 출력 (가설)';
+ labels['bindings-neuromuscular-v1.json']='BANC 뇌·VNC·다리 폐루프 (연구)';
+ labels['bindings-neuromuscular-v2.json']='BANC 하중 보정·방향 감각 v2 (보행 미검증)';
+ labels['bindings-walking-visual-contact-v5.json']='보행·시각·머리 접촉 v5 (연구)';
+ labels['bindings-walking-visual-contact-walk-off-v6.json']='보행·시각·접촉·Bluebell 정지 v6 (연구)';
  applyFrame(result.frame);$('binding-profile').replaceChildren(...(result.profiles||[]).map(p=>{const label=labels[p.name]||p.profile||p.name;const option=new Option(label+(p.available===false?' · 사용 불가':''),p.name,p.current,p.current);option.disabled=p.available===false;option.title=p.reason||'';return option;}));$('mode').value=result.frame.mode;$('seed').value=result.frame.seed;
  state.backend=result.capabilities.backend;$('backend').value=state.backend==='legacy_b_rate'?'exp_lif_cpu_reference':state.backend;$('backend').disabled=state.backend==='legacy_b_rate';
  const friction=String(result.frame.config.friction);
@@ -120,13 +135,17 @@ async function refreshExperiment(result,message){
 }
 async function init(){
  state.playing=false;updatePlay();$('waiting').hidden=false;
- let result;try{result=await rpc.request('init',{mode:$('mode').value,seed:Number($('seed').value),profile:$('binding-profile').value,metabolism:$('metabolism-enabled').checked?{}:null});}catch(e){$('waiting').hidden=!!state.frame;throw e;}
+ const payload={mode:$('mode').value,seed:Number($('seed').value),metabolism:$('metabolism-enabled').checked?{}:null};
+ // Before attach/init there is no catalog: honor the server's --bindings.
+ if(state.frame)payload.profile=$('binding-profile').value;
+ let result;try{result=await rpc.request('init',payload);}catch(e){$('waiting').hidden=!!state.frame;throw e;}
  state.signals.clear();state.traces.clear();state.spikes=0;state.sequence=0;applyReady(result);
  const recovery=result.recovery?.kind==='fault_reset'?(result.recovery.diagnostic_saved?' 오류 진단 저장: '+result.recovery.diagnostic_id:' 오류 진단은 메모리에 보존했습니다. 파일 저장 실패: '+result.recovery.diagnostic_save_error):'';
  $('search').value='DNa02';await search();await regions();await checkpoints();await workbench.ready();tell('실험을 준비했습니다.'+(result.source_checkpoint?' 이전 상태 저장: '+result.source_checkpoint:'')+recovery+(result.cleanup_error?' 이전 실험 정리 오류: '+result.cleanup_error:'')+' 재생 또는 한 단계로 진행하세요.');
 }
 async function command(type,payload={}){const r=await rpc.request('command',{type,payload});if(r.schema==='flylab.frame.v3')applyFrame(r);return r;}
 button('play',()=>{state.playing=!state.playing;updatePlay();});
+button('leg-feedback-off',async()=>{workbench.pause();await command('intervene',{kind:'sensor_off',channels:['leg_feedback'],duration_controls:200});applyFrame(await rpc.request('frame'));tell('다리 감각만 1모델초 차단하도록 예약했습니다. 후각 입력은 유지됩니다.');});
 button('step',async()=>{state.playing=false;updatePlay();applyFrame(await rpc.request('advance',{steps:10}));});
 button('init',init);button('track',()=>view.track());button('wide',()=>view.home());button('top',()=>view.top());button('eye',()=>{view.follow=true;view.firstPerson=true;});
 $('backend').addEventListener('change',async()=>{
@@ -139,7 +158,7 @@ button('search-button',()=>search());$('search').addEventListener('keydown',e=>{
 button('previous',()=>{state.offset=Math.max(0,state.offset-50);return search(false);});button('next',()=>{state.offset+=50;return search(false);});
 button('clear-selection',async()=>{applyFrame(await rpc.request('subscribe',{ids:[]}));state.traces.clear();drawTrace();});
 button('intervene',async()=>{workbench.pause();const result=await command('intervene',workbench.interventionSpec());applyFrame(await rpc.request('frame'));tell(`개입 #${result.serial} 예약: tick ${result.at_tick}. 재생 또는 한 단계로 진행하세요.`);});
-button('forward-stim',async()=>{const r=await rpc.request('catalog',{query:'DNp09',limit:50});const ids=r.items.filter(n=>n.cell_type==='DNp09').map(n=>n.id);if(ids.length!==2)throw Error('검토된 DNp09 쌍을 찾을 수 없습니다.');workbench.pause();workbench.state.intervention=ids;await command('intervene',{kind:'stimulate',ids,amplitude_mV:20.,duration_controls:100});applyFrame(await rpc.request('frame'));tell('DNp09에 20mV / 0.5모델초 직접 자극을 예약했습니다. 재생 또는 한 단계로 진행하세요.');});
+button('forward-stim',async()=>{const presets=await rpc.request('presets');const ids=presets.find(p=>p.name==='Forward output population')?.ids||[];if(!ids.length)throw Error('현재 프로파일에 전진 출력 집단이 없습니다.');workbench.pause();workbench.state.intervention=ids;await command('intervene',{kind:'stimulate',ids,amplitude_mV:20.,duration_controls:100});applyFrame(await rpc.request('frame'));tell('현재 전진 출력 집단 '+ids.length+'개에 20mV / 0.5모델초 직접 자극을 예약했습니다. 재생 또는 한 단계로 진행하세요.');});
 button('release',()=>command('release_all'));button('push',()=>command('push',{bw:.5,duration:.05}));
 for(const [id,type,key] of [['motor','configure','motorCoupled'],['cue','cue','enabled'],['food','food','enabled']])$(id).addEventListener('change',()=>command(type,{[key]:$(id).checked}).catch(e=>tell(e.message,true)));
  $('friction').addEventListener('change',()=>command('configure',{friction:Number($('friction').value)}).catch(e=>tell(e.message,true)));

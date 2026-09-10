@@ -14,7 +14,10 @@ from flylab.c.ports import PortBindings
 from flylab.c.integrity import read_json, write_json
 
 def build(graph,base):
-    spec=copy.deepcopy(base);template=spec['sensory'][0]
+    spec=copy.deepcopy(base)
+    # A Poisson odor template has Hz gains and a pulse amplitude. Visual and
+    # contact proxies are held mV drives, independently of the parent's units.
+    template=dict(method='drive_mV',baseline=0.,offset=0.,scale=1.,tau_s=.02)
     source='https://www.sciencedirect.com/science/article/pii/S0960982219301381'
     for side in ('left','right'):
         ids=[n['id'] for n in graph.nodes if n.get('cell_type')=='LC4' and n.get('soma_side')==side and n.get('super_class')=='visual_projection']
@@ -35,7 +38,7 @@ def build(graph,base):
         uncertainty='Contact area, force and bristle mechanics are not reconstructed. This is an explicit coarse head-contact injection; '
                     'leg contact and leg proprioception are not mapped to these head neurons.',review_status='engineering_reviewed'))
     spec['sensor_model']=dict(spec.get('sensor_model',{}),extended_observations=True)
-    spec.update(profile='fafb783-coarse-visual-head-contact-research-v1',profile_version=1,
+    spec.update(profile='fafb783-coarse-visual-head-contact-research-v2',profile_version=2,
                 biological_validation=False,parent_binding_hash=PortBindings(graph,base).hash)
     PortBindings(graph,spec);return spec
 

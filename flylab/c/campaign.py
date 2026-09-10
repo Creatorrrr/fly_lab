@@ -7,7 +7,7 @@ from . import CONTROL_DT, MODES
 from .engine import CEngine
 from .body_identity import source_identity
 from .behavior import trace_sample
-from .tasks import evaluate
+from .tasks import evaluate, control_parameters
 from .storage import StateStore, runtime_versions
 from .integrity import canonical, read_json, write_json, digest, finite, bounded_int, checked_name, file_hash
 from .diagnostics import fault_report
@@ -25,13 +25,17 @@ def validate_spec(spec):
     if not isinstance(spec['cases'],list) or not 1<=len(spec['cases'])<=1000: raise ValueError('1..1000 cases required')
     names=set()
     for c in spec['cases']:
-        if set(c)-{'name','seed','mode','scene','seconds','config','intervention','world','task'}: raise ValueError('Unknown case field')
+        if set(c)-{'name','seed','mode','scene','seconds','config','intervention','interventions','world','task','task_parameters','initial_pose'}: raise ValueError('Unknown case field')
+        if 'intervention' in c and 'interventions' in c: raise ValueError('Use one intervention field')
+        if 'interventions' in c and (not isinstance(c['interventions'],list) or len(c['interventions'])>100 or any(not isinstance(e,dict) for e in c['interventions'])):
+            raise ValueError('At most 100 intervention objects required')
         name=checked_name(c['name'])
         if name in names:raise ValueError('Duplicate case name')
         names.add(name);bounded_int(c['seed'],'seed',0,2**32-1)
         if c['mode'] not in MODES or c['scene'] not in SCENES:raise ValueError('Unknown campaign scene/mode')
-        if c.get('task','diagnostic') not in ('walking','backward','food','hazard','obstacle','diagnostic'):
+        if c.get('task','diagnostic') not in ('walking','backward','food','hazard','obstacle','diagnostic','yaw_left','yaw_right','stop_resume'):
             raise ValueError('Unknown campaign task')
+        control_parameters(c.get('task','diagnostic'),c.get('task_parameters'))
         seconds=finite(c['seconds'],'case model seconds',.005,3600.)
         if abs(seconds/CONTROL_DT-round(seconds/CONTROL_DT))>1e-8:raise ValueError('Integral control duration required')
     return copy.deepcopy(spec)
@@ -107,8 +111,9 @@ def run_campaign(graph, bindings, spec, out, *, backend='exp_lif_mps', resume=Fa
                         if file_hash(directory/chunk['signals_file'])!=chunk['signals_sha256']:raise ValueError('Signal chunk hash mismatch')
                 else:
                     e=CEngine(graph,bindings,mode=case['mode'],seed=case['seed'],config=case.get('config'),
-                              world=case.get('world',scene_world(case['scene'])),backend=backend,body_factory=body_factory)
-                    if case.get('intervention'):e.schedule(case['intervention'])
+                              world=case.get('world',scene_world(case['scene'])),backend=backend,body_factory=body_factory,
+                              initial_pose=case.get('initial_pose'))
+                    for event in case.get('interventions', [case['intervention']] if case.get('intervention') else []):e.schedule(event)
                     StateStore.save(directory/'initial',e.checkpoint());chunks=[]
                     write_json(progress_path,dict(checkpoint='initial',chunks=chunks,control_tick=0))
                 manifest['physicalExecuted'] |= not e.body.test_double
@@ -151,7 +156,7 @@ def run_campaign(graph, bindings, spec, out, *, backend='exp_lif_mps', resume=Fa
                         import json
                         trace.extend(json.loads(line) for line in f)
                 task=case.get('task',{'baseline':'walking','front_obstacle':'obstacle'}.get(case['scene'],case['scene'].split('_')[0]))
-                verdict=evaluate(trace,e.world,task,required_seconds=case['seconds'])
+                verdict=evaluate(trace,e.world,task,required_seconds=case['seconds'],task_parameters=case.get('task_parameters'))
                 result=dict(name=case['name'],seconds=case['seconds'],execution_status='COMPLETE',case=case,
                             physical=not e.body.test_double,provenance=e.provenance(),performance=e.performance(),**verdict)
                 write_json(directory/'result.json',result)

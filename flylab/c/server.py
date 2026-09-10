@@ -108,7 +108,7 @@ class CDispatcher:
         if not isinstance(payload, dict): raise ValueError('Payload object required')
         op = message.get('op')
         if op == 'init':
-            if set(payload)-{'mode', 'seed', 'config', 'motion_expected', 'profile','metabolism'}: raise ValueError('Unknown initialization field')
+            if set(payload)-{'mode', 'seed', 'config', 'motion_expected', 'profile','metabolism','initial_pose'}: raise ValueError('Unknown initialization field')
             self.load()
             profile = payload.get('profile', self.binding_path.name)
             bindings = self.profiles().get(profile)
@@ -137,7 +137,8 @@ class CDispatcher:
                 recovery.update(kind='checkpoint_reset', restorable_source=True)
             new = CEngine(self.graph, bindings, mode=payload.get('mode', self.default_mode),
                           seed=payload.get('seed', 42), config=payload.get('config'), backend=self.backend,
-                          body_factory=self.factory, motion_expected=payload.get('motion_expected', True),metabolism=payload.get('metabolism'))
+                          body_factory=self.factory, motion_expected=payload.get('motion_expected', True),metabolism=payload.get('metabolism'),
+                          initial_pose=payload.get('initial_pose'))
             result = self.replace(new)
             result['source_checkpoint'] = saved
             result['recovery'] = recovery
@@ -178,13 +179,22 @@ class CDispatcher:
         elif op == 'presets':
             e = self.need()
             result = [dict(name=name, ids=port['ids'], binding_hash=e.bindings.hash)
-                      for name, port in [('DNp09', e.bindings.spec['motor']['forward']),
+                      for name, port in [('Forward output population', e.bindings.spec['motor']['forward']),
                                          ('MDN', e.bindings.spec['motor']['backward']),
                                          ('DNa02 left', e.bindings.spec['motor']['yaw_left']),
                                          ('DNa02 right', e.bindings.spec['motor']['yaw_right'])] if port['ids']]
             result.append(dict(name='Motor outputs', ids=[e.graph.nodes[int(i)]['id'] for i in e.bindings.motor_indices], binding_hash=e.bindings.hash))
             result.extend(dict(name=p['name'], ids=p['ids'], binding_hash=e.bindings.hash)
                           for p,_ in e.bindings.sensory if len(p['ids'])<=512)
+            result.extend(dict(name=p['name'],ids=p['ids'],binding_hash=e.bindings.hash,
+                               review_status=p['review_status'],uncertainty=p['uncertainty'])
+                          for p,_ in e.bindings.research_cohorts)
+            if e.neuromuscular:
+                result.append(dict(name='BANC leg motor neurons',
+                    ids=[e.graph.nodes[int(i)]['id'] for i in e.neuromuscular.motor_indices], binding_hash=e.bindings.hash))
+                for row in e.neuromuscular.spec['rows']:
+                    result.extend(dict(name=f"{row['leg']} {p['kind']}"+(' '+p['cell_type'] if p.get('cell_type') else ''), ids=p['ids'], binding_hash=e.bindings.hash)
+                                  for p in row['sensory'] if len(p['ids'])<=512)
             directory = self.artifacts/'cohorts'
             if directory.exists():
                 for p in sorted(directory.glob('*.json')):

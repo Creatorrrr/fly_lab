@@ -50,7 +50,8 @@ class RecoveryTests(unittest.TestCase):
         try:
             e.step(4);restored.step(4)
             for field in ('neural','body','encoder','sensors'):same_state(e.checkpoint()[field],restored.checkpoint()[field])
-            self.assertEqual(restored.checkpoint()['app_version'],'0.4.0')
+            from flylab.c import VERSION
+            self.assertEqual(restored.checkpoint()['app_version'],VERSION)
         finally:restored.close()
 
     def test_negative_overlap_and_cancel(self):

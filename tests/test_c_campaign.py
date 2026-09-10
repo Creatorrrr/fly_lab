@@ -52,6 +52,21 @@ class CampaignTests(unittest.TestCase):
         detail['task_status']='changed';path.write_text(json.dumps(detail))
         with self.assertRaisesRegex(ValueError,'Case result hash mismatch'):
             self.run_case('compact',resume=True)
+    def test_multiple_interventions_and_committed_evidence_loader(self):
+        from flylab.c.sensorimotor_campaign import load_case
+        case=self.spec['cases'][0]
+        ids=[self.g.nodes[1]['id']]
+        case['interventions']=[dict(kind='stimulate',ids=ids,amplitude_mV=20.,duration_controls=6),
+                               dict(kind='suppress_spiking',ids=ids,at_tick=50,duration_controls=2)]
+        self.run_case('multiphase')
+        root=self.path/'multiphase';loaded=load_case(root,case['name'])
+        self.assertEqual(loaded['interventions'],case['interventions'])
+        self.assertEqual(len(loaded['trace']),7)
+        progress=json.loads((root/case['name']/'progress.json').read_text())
+        trace=root/case['name']/progress['chunks'][0]['file'];trace.write_text(trace.read_text()+'\n')
+        with self.assertRaisesRegex(ValueError,'Trace chunk hash mismatch'):load_case(root,case['name'])
+        case['intervention']=case['interventions'][0]
+        with self.assertRaisesRegex(ValueError,'one intervention'):validate_spec(self.spec)
     def test_bad_spec_is_rejected_before_output_created(self):
         self.spec['cases'][0]['seconds']=.007
         with self.assertRaises(ValueError):self.run_case('bad')

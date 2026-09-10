@@ -2,7 +2,7 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import dijkstra
-from .neural import create_backend
+from .neural import create_backend, LIFParameters
 from .ports import SensoryEncoder, MotorDecoder
 
 
@@ -33,7 +33,7 @@ def packet(odor=(0.,0.), danger=0.):
 def propagate(graph, bindings, case, *, backend='exp_lif_cpu_reference', seconds=.2, seed=42):
     controls=round(seconds/.005)
     if not 1<=controls<=24000 or abs(controls*.005-seconds)>1e-9: raise ValueError('Integral 5 ms duration up to 120 s required')
-    neural=create_backend(graph,backend=backend); encoder=SensoryEncoder(bindings,seed); decoder=MotorDecoder(bindings)
+    neural=create_backend(graph,LIFParameters(**bindings.spec.get('neural_parameters',{})),backend=backend); encoder=SensoryEncoder(bindings,seed); decoder=MotorDecoder(bindings)
     capture=np.asarray(sorted({int(i) for _, ids in bindings.sensory for i in ids}|set(bindings.motor_indices)),dtype=np.int32)
     if len(capture)>512: raise ValueError('Choose a diagnostic cohort <=512 cells')
     rows=[]

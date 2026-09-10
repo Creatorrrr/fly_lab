@@ -16,6 +16,10 @@ class PortBindings:
         self.graph = graph
         self.spec = copy.deepcopy(specification)
         s = self.spec
+        if s.get('neural_parameters') is not None:
+            from .neural import LIFParameters
+            if not isinstance(s['neural_parameters'], dict): raise ValueError('Neural parameter object required')
+            LIFParameters(**s['neural_parameters'])
         if s.get('schema') != 'flylab.bindings.v3' or s.get('graph_hash') != graph.hash:
             raise ValueError('BLOCKED_PORT_BINDING: schema or graph identity mismatch')
         if not isinstance(s.get('sensory'), list) or not 1 <= len(s['sensory']) <= 128:
@@ -68,9 +72,35 @@ class PortBindings:
             finite(p.get('gain'), 'motor gain', 0, 10)
             self.motor[role] = (p, ids)
         self.motor_indices = np.asarray(sorted({int(i) for _, ids in self.motor.values() for i in ids}), dtype=np.int32)
+        decoder = s.get('motor_decoder')
+        if decoder is not None:
+            if decoder.get('kind') not in ('bounded-opponent-v1','bounded-walk-off-v2'):
+                raise ValueError('Unknown motor decoder model')
+            finite(decoder.get('speed_limit'), 'speed limit', .01, 3.3)
+            finite(decoder.get('yaw_limit'), 'yaw limit', .01, 3.)
+            key='stop_half_drive' if decoder['kind']=='bounded-opponent-v1' else 'stop_full_drive'
+            finite(decoder.get(key), key, .001, 100.)
+        self.research_cohorts=[]
+        cohorts=s.get('research_cohorts',[])
+        if not isinstance(cohorts,list) or len(cohorts)>32:raise ValueError('At most 32 reviewed research cohorts')
+        cohort_names=set()
+        for cohort in cohorts:
+            if not isinstance(cohort,dict):raise ValueError('Research cohort object required')
+            self._review(cohort)
+            name=cohort.get('name')
+            if not isinstance(name,str) or not 1<=len(name)<=100 or name in cohort_names:
+                raise ValueError('Invalid research cohort name')
+            ids=graph.resolve(cohort.get('ids'),maximum=512)
+            if not len(ids):raise ValueError('Empty research cohort')
+            cohort_names.add(name);self.research_cohorts.append((cohort,ids))
         self.hash = digest(s)
         self.sensory_hash = digest(s['sensory'])
         self.motor_hash = digest(s['motor'])
+        if s.get('motor_decoder'):
+            self.motor_hash = digest(dict(ports=s['motor'], decoder=s['motor_decoder']))
+        if s.get('neuromuscular'):
+            self.sensory_hash = digest(dict(ports=s['sensory'], neuromuscular=s['neuromuscular']))
+            self.motor_hash = digest(dict(ports=s['motor'], neuromuscular=s['neuromuscular']))
 
     @staticmethod
     def _review(p):
@@ -81,6 +111,13 @@ class PortBindings:
         if not isinstance(p.get('uncertainty'), str) or not p['uncertainty']:
             raise ValueError('Mapping uncertainty must be explicit')
 
+    @property
+    def motor_execution(self):
+        model = self.spec.get('neuromuscular')
+        if not model:
+            return 'descending-CPG-adapter'
+        return 'BANC-neuron-muscle-joints-' + model['schema'].rsplit('.', 1)[-1]
+
     def summary(self):
         return dict(hash=self.hash, profile=self.spec.get('profile', 'custom'),
                     hazard_semantics=self.spec.get('hazard_semantics', 'unbound'),
@@ -88,6 +125,10 @@ class PortBindings:
                     sensory=[dict(name=p['name'], channel=p['channel'], input_kind=p['input_kind'],
                                   targets=len(ids), method=p['method'], review_status=p['review_status']) for p, ids in self.sensory],
                     motor={k: dict(targets=len(ids), gain=p['gain']) for k, (p, ids) in self.motor.items()},
+                    motor_decoder=self.spec.get('motor_decoder', {'kind':'legacy-subtractive-v1'}),
+                    research_cohorts=[dict(name=c['name'],targets=len(ids),review_status=c['review_status'])
+                                      for c,ids in self.research_cohorts],
+                    motor_execution=self.motor_execution,
                     unused_observations=self.spec.get('unused_observations', []),
                     biological_validation=all(p['review_status'] == 'biologically_validated' for p, _ in self.sensory)
                     and all(p.get('review_status') == 'biologically_validated' for p, ids in self.motor.values() if len(ids)))
@@ -195,8 +236,25 @@ class MotorDecoder:
                        yawRate=float(np.clip(scaled['yaw_right'] - scaled['yaw_left'], -3., 3.)), verticalSpeed=0.)
         raw = dict(forwardSpeed=scaled['forward']-scaled['backward']-scaled['stop'],
                    yawRate=scaled['yaw_right']-scaled['yaw_left'])
+        model = self.bindings.spec.get('motor_decoder')
+        if model:
+            if model['kind']=='bounded-walk-off-v2':
+                # BB is a Walk-OFF population, not a universal brake. This
+                # explicit adapter hypothesis gates only forward recruitment.
+                gate=float(np.clip(1-scaled['stop']/model['stop_full_drive'],0.,1.))
+                longitudinal=scaled['forward']-scaled['backward']
+                raw=dict(forwardSpeed=longitudinal*gate if longitudinal>0 else longitudinal,
+                         yawRate=scaled['yaw_right']-scaled['yaw_left'])
+            else:
+                # Stop reduces all locomotion. It cannot create reverse movement.
+                gate = 1. / (1. + scaled['stop'] / model['stop_half_drive'])
+                raw = dict(forwardSpeed=(scaled['forward']-scaled['backward'])*gate,
+                           yawRate=(scaled['yaw_right']-scaled['yaw_left'])*gate)
+            command = dict(forwardSpeed=float(np.clip(raw['forwardSpeed'], -model['speed_limit'], model['speed_limit'])),
+                           yawRate=float(np.clip(raw['yawRate'], -model['yaw_limit'], model['yaw_limit'])), verticalSpeed=0.)
         self.diagnostics = dict(scaled=scaled, before_limits=raw, after_limits=command,
                                 clipped={k:raw[k]!=command[k] for k in raw})
+        if model:self.diagnostics.update(stop_gate=gate,stop_scope='forward_only' if model['kind']=='bounded-walk-off-v2' else 'all_locomotion')
         return command, values
 
 

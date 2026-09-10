@@ -28,17 +28,20 @@ KINDS = {'stimulate', 'suppress_spiking', 'mute_outgoing', 'mute_edges',
 class CEngine:
     def __init__(self, graph, bindings, *, mode='C_SHADOW', seed=42, config=None,
                  world=None, backend='exp_lif_cpu_reference', parameters=None,
-                 body_factory=FlyGymBody, motion_expected=True, metabolism=None):
+                 body_factory=FlyGymBody, motion_expected=True, metabolism=None, initial_pose=None):
         if mode not in MODES: raise ValueError('Unknown C control mode')
         self.graph, self.bindings = graph, bindings
         if graph.hash != bindings.graph.hash: raise ValueError('Graph/port mismatch')
         self.seed = bounded_int(seed, 'seed', 0, 2**32-1)
         self.mode = mode
+        if bindings.spec.get('neuromuscular') and mode != 'C_STRICT':
+            raise ValueError('The BANC neuromuscular profile requires C_STRICT')
         self.motion_expected = boolean(motion_expected, 'motion_expected')
         self.metabolism = Metabolism(metabolism) if metabolism is not None else None
         self.config = config_values(config)
         self.world = copy.deepcopy(validate_world(world if world is not None else default_world()))
-        self.parameters = parameters or LIFParameters()
+        self.initial_pose = copy.deepcopy(initial_pose)
+        self.parameters = parameters or LIFParameters(**bindings.spec.get('neural_parameters', {}))
         self.substeps = round(CONTROL_DT / self.parameters.dt)
         self.neural = None if mode == 'B_COMPAT' else create_backend(graph, self.parameters, backend)
         if hasattr(self.neural, 'set_readout_cohort') and len(bindings.motor_indices)<=512:
@@ -49,10 +52,17 @@ class CEngine:
         self.legacy = LegacyBRate(Circuit(default_graph()), seed)
         self.sensors = CSensorAdapter(seed, bindings.spec.get('sensor_model'))
         self.body_factory = body_factory
-        self.body = body_factory(seed, self.world, self.config)
+        self.body = body_factory(seed, self.world, self.config, **({'initial_pose': initial_pose} if initial_pose is not None else {}))
+        self.neuromuscular = None
         self.control_tick = 0
         self.sensor_tick = 0
         try:
+            if bindings.spec.get('neuromuscular'):
+                from .neuromuscular import NeuromuscularLoop
+                self.neuromuscular = NeuromuscularLoop(graph, bindings.spec['neuromuscular'], self.body)
+                if hasattr(self.neural, 'set_readout_cohort'):
+                    cohort = np.union1d(bindings.motor_indices, self.neuromuscular.motor_indices)
+                    if len(cohort) <= 512: self.neural.set_readout_cohort(cohort)
             self.last_sensors = self.sensors.observe(self.body, self.world, CONTROL_DT, self.config)
         except Exception:
             self.body.close()
@@ -97,9 +107,12 @@ class CEngine:
                     neural_dt=self.parameters.dt if self.neural else CONTROL_DT, physical_dt=.0001,
                     control_dt=CONTROL_DT, coupling_profile='readout-at-start-held-sensor-one-control-latency-v1' if self.neural else 'legacy-B-step-order',
                     motion_expected=self.motion_expected, dataset=self.graph.manifest,
+                    initial_pose=self.initial_pose,
                     bindings=self.bindings.summary(), physical=not self.body.test_double,
                     full_brain=self.graph.full_brain and self.neural is not None,
                     metabolism_model=(dict(parameters=asdict(self.metabolism.p), parameter_hash=digest(asdict(self.metabolism.p))) if self.metabolism else None),
+                    motor_execution=self.bindings.motor_execution,
+                    neuromuscular_hash=self.neuromuscular.hash if self.neuromuscular else None,
                     biological_validation=False, versions=runtime_versions())
 
     def event(self, kind, details):
@@ -166,6 +179,7 @@ class CEngine:
         elif kind == 'sensor_off':
             channels = data.get('channels')
             known = {p['name'] for p, _ in self.bindings.sensory} | {p['channel'] for p, _ in self.bindings.sensory} | {'*'}
+            if self.neuromuscular: known |= self.neuromuscular.channels
             if not isinstance(channels, list) or not channels or any(not isinstance(c, str) or c not in known for c in channels):
                 raise ValueError('Known sensory channels required')
             item['channels'] = list(channels)
@@ -220,6 +234,7 @@ class CEngine:
         prepared = self._prepare_interventions()
         sensor_state = self.sensors.snapshot()
         encoder_state = self.encoder.snapshot() if self.neural else None
+        leg_state = self.neuromuscular.snapshot() if self.neuromuscular else None
         try:
             packet = self.sensors.observe(self.body, self.world, CONTROL_DT, self.config)
             drive = pulses = None
@@ -228,10 +243,15 @@ class CEngine:
                 drive, pulses, ports = self.encoder.encode(packet, CONTROL_DT, self.parameters.dt, prepared['disabled'],
                                                            self.sensors.diagnostics.get('features'))
                 drive += prepared['stimulus']
+                if self.neuromuscular:
+                    feedback, leg_ports = self.neuromuscular.encode(prepared['disabled'], CONTROL_DT)
+                    drive += feedback
+                    ports.extend(leg_ports)
                 validate_input(self.graph.n, drive, self.substeps, capture, pulses)
         except Exception:
             self.sensors.restore(sensor_state)
             if self.neural: self.encoder.restore(encoder_state)
+            if self.neuromuscular: self.neuromuscular.restore(leg_state)
             raise
         return prepared, packet, drive, pulses, ports
 
@@ -261,6 +281,12 @@ class CEngine:
                 command.update(sensor_tick=start, neural_readout_tick=start,
                                interval_start_tick=start, interval_end_tick=start + self.substeps)
                 self.last_command = command
+                joint_targets = adhesion = None
+                if self.neuromuscular:
+                    joint_targets, adhesion = self.neuromuscular.decode(self.neural, disconnected=not coupled or self.stopped)
+                    command.update(motor_execution=self.bindings.motor_execution,
+                                   high_level_command_applied=False, joint_targets_rad=joint_targets.tolist(),
+                                   adhesion=adhesion.tolist())
                 if self.neural:
                     self.last_ports = ports
                 self.timings['ports_s'] += time.perf_counter() - began
@@ -271,7 +297,10 @@ class CEngine:
                     self.timings['neural_s'] += time.perf_counter() - began
                 began = time.perf_counter()
                 try:
-                    self.body.step(command['u_final'], CONTROL_DT)
+                    if self.neuromuscular:
+                        self.body.step_joint_targets(joint_targets, adhesion, CONTROL_DT)
+                    else:
+                        self.body.step(command['u_final'], CONTROL_DT)
                 finally:
                     self.timings['physics_s'] += time.perf_counter() - began
                     if overlap:
@@ -338,6 +367,8 @@ class CEngine:
         body_time = self.body.physics_time() if hasattr(self.body,'physics_time') else self.body.frame()[1]['physicsTime']
         if abs(body_time - expected) > 1e-5: raise RuntimeError('Physics/control clock mismatch')
         if self.neural and self.encoder.control_tick != self.control_tick: raise RuntimeError('Encoder/control clock mismatch')
+        if self.neuromuscular and (self.neuromuscular.sensor_tick != self.control_tick or self.neuromuscular.motor_tick != self.control_tick):
+            raise RuntimeError('Neuromuscular/control clock mismatch')
 
     def frame(self):
         body, physics = self.body.frame()
@@ -350,6 +381,7 @@ class CEngine:
                     command=copy.deepcopy(self.last_command), sensory_ports=copy.deepcopy(self.last_ports),
                     motor_rates_Hz=dict(self.last_motor_rates), neural=self.neural.summary() if self.neural else None,
                     motor_diagnostics=copy.deepcopy(self.decoder.diagnostics),
+                    neuromuscular=self.neuromuscular.summary() if self.neuromuscular else dict(enabled=False),
                     legacy=self.legacy.readout([]) if self.mode in ('B_COMPAT', 'C_SHADOW') else None,
                     scope=dict(fullBrain=self.graph.full_brain and self.neural is not None,
                                sourceNodes=self.graph.n, simulatedNodes=self.graph.n if self.neural else 0,
@@ -427,10 +459,12 @@ class CEngine:
                     last_motor_rates=dict(self.last_motor_rates), pending=copy.deepcopy(self.pending),
                     active=copy.deepcopy(self.active), event_serial=self.event_serial, object_serial=self.object_serial,
                     metabolism=self.metabolism.snapshot() if self.metabolism else None,
+                    neuromuscular=self.neuromuscular.snapshot() if self.neuromuscular else None,
                     environment_history=copy.deepcopy(self.environment_history), environment_updated_tick=self.environment_updated_tick,
                     intervention_history=copy.deepcopy(self.intervention_history),
                     record_cohort_ids=[self.graph.nodes[int(i)]['id'] for i in self.record_indices],
                     motion_expected=self.motion_expected, stopped=self.stopped,
+                    initial_pose=copy.deepcopy(self.initial_pose),
                     subscription=[self.graph.nodes[int(i)]['id'] for i in self.subscription],
                     subscription_epoch=self.subscription_epoch)
 
@@ -440,9 +474,9 @@ class CEngine:
         if backend_override is not None and (backend_override not in NEURAL_BACKENDS or not s.get('neural')):
             raise ValueError('A C neural checkpoint and known backend are required for transfer')
         # 0.3 checkpoints have the same baseline equations/coupling/state.
-        # Optional new state is validated below. New saves use 0.4 so an older
-        # executable cannot silently discard metabolism or sensory history.
-        if s.get('schema') != 'flylab.checkpoint.v3' or s.get('app_version') not in ('0.3.0', VERSION) or s.get('versions') != runtime_versions():
+        # New saves use 0.6 so older code cannot discard typed receptor history.
+        # Legacy profiles retain their equations and body identity.
+        if s.get('schema') != 'flylab.checkpoint.v3' or s.get('app_version') not in ('0.3.0', '0.4.0', '0.5.0', VERSION) or s.get('versions') != runtime_versions():
             raise ValueError('C version/runtime checkpoint required; B neural state cannot be converted')
         if s.get('graph_hash') != graph.hash or s.get('binding_hash') != bindings.hash:
             raise ValueError('Checkpoint data or binding mismatch')
@@ -457,7 +491,8 @@ class CEngine:
         e = cls(graph, bindings, mode=s['mode'], seed=s['seed'], config=s['config'], world=s['world'],
                 backend=backend_override or (s['neural']['backend'] if s.get('neural') else 'exp_lif_cpu_reference'),
                 parameters=parameters, body_factory=body_factory, motion_expected=s['motion_expected'],
-                metabolism=s['metabolism']['parameters'] if s.get('metabolism') else None)
+                metabolism=s['metabolism']['parameters'] if s.get('metabolism') else None,
+                initial_pose=s.get('initial_pose'))
         try:
             if e.body.frame()[1]['bodyModelHash'] != s.get('body_model_hash'): raise ValueError('Body model hash mismatch')
             e.body.restore(s['body'])
@@ -478,6 +513,11 @@ class CEngine:
             elif s.get('neural') is not None: raise ValueError('B_COMPAT cannot restore a C neural state')
             e.sensors.restore(s['sensors']); e.legacy.restore(s['legacy']); e.supervisor.restore(s['supervisor'])
             e.control_tick, e.sensor_tick = ct, st
+            if e.neuromuscular:
+                if not s.get('neuromuscular'): raise ValueError('Missing neuromuscular checkpoint state')
+                e.neuromuscular.restore(s['neuromuscular'])
+            elif s.get('neuromuscular') is not None:
+                raise ValueError('Checkpoint requires a neuromuscular model')
             if e.metabolism:
                 e.metabolism.restore(s['metabolism'])
                 if e.metabolism.tick!=ct:raise ValueError('Metabolism/control clock mismatch')

@@ -33,7 +33,7 @@ class MotorAdapter:
 class FlyGymBody:
     backend='flygym-2.1.0-neuromechfly'
     test_double=False
-    def __init__(self,seed,world,config,*,optimized=True):
+    def __init__(self,seed,world,config,*,optimized=True,initial_pose=None):
         report=dependency_report()
         if not report['ready']:
             raise RuntimeError('물리 엔진 의존성이 없거나 버전이 다릅니다. '+report['hint']+' '+str(report['versions']))
@@ -68,7 +68,17 @@ class FlyGymBody:
             radius=obj['r'] if obj else 1.
             geom=w.mjcf_root.worldbody.add_geom(name=f'obstacle_{i}',type=mj.mjtGeom.mjGEOM_SPHERE,pos=pos,size=(radius,0,0),rgba=(.35,.40,.46,1),contype=0,conaffinity=0,group=0)
             w.ground_geoms.append(geom)
-        w.add_fly(self.fly,[0,0,.8],Rotation3D('quat',[1,0,0,0]),
+        spawn, quaternion = [0,0,.8], [1,0,0,0]
+        if initial_pose is not None:
+            if not isinstance(initial_pose,dict) or set(initial_pose)!={'position','yaw_rad'}:
+                raise ValueError('Initial position and yaw_rad required')
+            p = initial_pose['position']
+            if not isinstance(p,list) or len(p)!=3: raise ValueError('Initial UI position requires three values')
+            number(p[0],'initial x',-bx+2,bx-2);number(p[1],'initial height',.3,3.)
+            number(p[2],'initial z',-bz+2,bz-2)
+            yaw=number(initial_pose['yaw_rad'],'initial yaw',-math.pi,math.pi)
+            spawn=to_physics(p);quaternion=[math.cos(yaw/2),0.,0.,-math.sin(yaw/2)]
+        w.add_fly(self.fly,spawn,Rotation3D('quat',quaternion),
                   bodysegs_with_ground_contact=ContactBodiesPreset.LEGS_THORAX_ABDOMEN_HEAD,
                   add_ground_contact_sensors=False)
         # Keep fixed segment frames addressable (in particular c_head).
@@ -116,7 +126,11 @@ class FlyGymBody:
         for _ in range(2000): self.sim.step()
         mj.mj_forward(self.m,self.d)
         self.t0=float(self.d.time); self.last_position=self.d.xpos[self.thorax].copy()
-        self.model_hash=hashlib.sha256(json.dumps(dict(commit=FLYGYM_COMMIT,adapter='B-0.2.1',mujoco=version('mujoco'),numpy=version('numpy'),joints=self.joint_names,nq=self.m.nq,nv=self.m.nv,nu=self.m.nu,body_names=[b.name for b in self.body_order]),sort_keys=True).encode()).hexdigest()
+        identity=dict(commit=FLYGYM_COMMIT,adapter='B-0.2.1',mujoco=version('mujoco'),numpy=version('numpy'),joints=self.joint_names,nq=self.m.nq,nv=self.m.nv,nu=self.m.nu,body_names=[b.name for b in self.body_order])
+        # Spawn transforms affect the compiled model. Keep the default identity
+        # byte-compatible with B/C checkpoints, but distinguish explicit poses.
+        if initial_pose is not None: identity['initial_pose']=clone(initial_pose)
+        self.model_hash=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()
         if not np.isfinite(self.d.qpos).all(): raise RuntimeError('Non-finite state after neutral settling')
 
     def _prepare_execution(self):
@@ -127,7 +141,7 @@ class FlyGymBody:
         self._ground_mask=np.zeros(self.m.ngeom,dtype=bool)
         self._ground_mask[list(self.world_geom_ids)]=True
         self._force_maps={}
-        for key,links in [('stumble',('tibia','tarsus1','tarsus2')),('feet',('tarsus1','tarsus2','tarsus3','tarsus4','tarsus5'))]:
+        for key,links in [('stumble',('tibia','tarsus1','tarsus2')),('feet',('tarsus1','tarsus2','tarsus3','tarsus4','tarsus5')),('legs',LINKS)]:
             indices=np.full(self.m.ngeom,-1,dtype=np.int32)
             for i,name in enumerate(f'{leg}_{link}' for leg in LEGS for link in links):
                 indices[geom_by_segment[self.BodySegment(name)]]=i
@@ -139,7 +153,7 @@ class FlyGymBody:
         self._panorama_directions=np.array([[math.cos(k/64*math.tau-math.pi),-math.sin(k/64*math.tau-math.pi),0.] for k in range(64)])
         self._near_directions=np.array([[math.cos((k-4)*math.pi/8),-math.sin((k-4)*math.pi/8),0.] for k in range(9)])
 
-    def _contact_forces(self,key):
+    def _contact_forces(self,key,*,floor_only=False):
         mapping,size=self._force_maps[key]
         forces=np.zeros((size,3))
         contacts=self.d.contact
@@ -147,6 +161,7 @@ class FlyGymBody:
         g1=contacts.geom1[:n];g2=contacts.geom2[:n]
         i1=mapping[g1];i2=mapping[g2]
         active=(((i1>=0)&self._ground_mask[g2])|((i2>=0)&self._ground_mask[g1]))&(contacts.exclude[:n]==0)
+        if floor_only: active &= (g1==self.floor_id)|(g2==self.floor_id)
         wrench=np.zeros(6)
         for j in np.flatnonzero(active):
             self.mj.mj_contactForce(self.m,self.d,int(j),wrench)
@@ -163,6 +178,59 @@ class FlyGymBody:
 
     def physics_time(self):
         return float(self.d.time-self.t0)
+
+    def leg_observation(self):
+        """Local joint receptors and physical leg contact, without world pose."""
+        forces = self._contact_forces('legs').reshape(6, len(LINKS), 3)
+        floor = self._contact_forces('legs',floor_only=True).reshape(6,len(LINKS),3)
+        adhesion_ids=self.sim._intern_adhesionactuatorids_by_fly[self.fly.name]
+        adhesion=np.maximum(0.,self.d.actuator_force[adhesion_ids])/max(self.weight0,1e-30)
+        # The flat floor's normal is +z. Adhesion presses the pad into this
+        # surface and adds a reaction force; report that contribution separately.
+        # This is an engineering support-load estimate, not receptor strain.
+        normal=np.maximum(0.,floor.sum(axis=1)[:,2])/max(self.weight0,1e-30)
+        return dict(angles_rad=self.d.qpos[self.qpos_ids].copy(),
+                    velocities_rad_s=self.d.qvel[self.qvel_ids].copy(),
+                    load_bw=np.linalg.norm(forces, axis=2).sum(axis=1)/max(self.weight0, 1e-30),
+                    support_load_bw=np.maximum(0.,normal-adhesion),
+                    adhesion_force_bw=adhesion,
+                    floor_normal_load_bw=normal,
+                    non_support_load_bw=np.linalg.norm(forces-floor,axis=2).sum(axis=1)/max(self.weight0,1e-30),
+                    segment_contact_bw=np.linalg.norm(forces,axis=2)/max(self.weight0,1e-30))
+
+    def step_joint_targets(self, targets, adhesion, dt=CONTROL_DT):
+        """Direct neural muscle adapter. Does not advance the predefined CPG."""
+        targets, adhesion = np.asarray(targets), np.asarray(adhesion)
+        if targets.shape != (42,) or not np.isfinite(targets).all() or np.max(np.abs(targets)) > 10:
+            raise ValueError('Invalid neural joint targets')
+        if adhesion.shape != (6,) or adhesion.dtype != np.dtype(bool):
+            raise ValueError('Six boolean adhesion states required')
+        number(dt, 'joint control dt', PHYSICS_DT, .05)
+        n = round(dt/PHYSICS_DT)
+        if abs(n*PHYSICS_DT-dt) > 1e-10: raise ValueError('Integral physical steps required')
+        if self.fault: raise RuntimeError(self.fault)
+        self.descending.fill(0.)
+        self.last_action = self.Action(joint_angles=targets.copy(), adhesion_onoff=adhesion.copy())
+        for _ in range(n):
+            self.apply(self.sim, self.fly.name, self.last_action)
+            self.d.xfrc_applied[:] = 0
+            if self.push_left > 0:
+                self.d.xfrc_applied[self.thorax, :3] = self.push_force
+                self.push_left = max(0., self.push_left-PHYSICS_DT)
+            self.sim.step()
+            if not np.isfinite(self.d.qpos).all() or not np.isfinite(self.d.qvel).all():
+                self.fault = 'non-finite physics state'
+                raise RuntimeError(self.fault)
+        self.mj.mj_forward(self.m, self.d)
+        p, R, _ = self.pose()
+        self.travel += float(np.linalg.norm(p-self.last_position))
+        self.last_position = p
+        collision = self.nonfoot_contact()
+        if collision and not self.prev_contact: self.collisions += 1
+        self.prev_contact = collision
+        self.walk_ticks += 1
+        if R[2, 2] < .15 or p[2] < 0 or np.linalg.norm(p[:2]) > 80:
+            self.fault = 'Neural muscle body fell or left physical domain; no automatic pose correction'
 
     def set_config(self,config):
         self.config=clone(config)

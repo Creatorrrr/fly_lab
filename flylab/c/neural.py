@@ -44,7 +44,7 @@ class LIFParameters:
             finite(getattr(self, key), key, -200, 200)
         if self.threshold_mV <= max(self.rest_mV, self.reset_mV):
             raise ValueError('Threshold must exceed rest and reset')
-        if self.dtype not in ('float32', 'float64') or self.integration != 'exact-exponential-held-drive-v1':
+        if self.dtype not in ('float32', 'float64') or self.integration not in ('exact-exponential-held-drive-v1','exact-exponential-reset-current-v1','exact-exponential-voltage-events-v1'):
             raise ValueError('Unsupported LIF precision or integration scheme')
         for value in (self.delay_s, self.refractory_s, .005):
             if abs(value / self.dt - round(value / self.dt)) > 1e-8:
@@ -139,13 +139,21 @@ class ExpLIF:
             slot = self.tick % self.slots
             self.h += self.queue[slot]
             self.queue[slot].fill(0)
+            voltage_events = self.p.integration == 'exact-exponential-voltage-events-v1'
             if pulses is not None:
-                xp.add.at(self.h, pi, pv[k])
+                xp.add.at(self.v if voltage_events else self.h, pi, pv[k])
             eligible = self.tick >= self.refractory_until
+            if voltage_events and pulses is not None: eligible[pi] = True
             v_next = self.p.rest_mV + x + (self.v - self.p.rest_mV - x) * self.em + self.h * self.syn_factor
-            self.h *= self.es
+            if voltage_events:
+                # Multiplying by a float64 where-result changes CPU rounding.
+                # Evaluate in the declared state dtype, as in the Metal kernel.
+                self.h[:] = xp.where(eligible, self.h * self.es, self.h)
+            else:
+                self.h *= self.es
             self.v[:] = xp.where(eligible, v_next, self.p.reset_mV)
-            spikes = eligible & (self.v >= self.p.threshold_mV) & ~self.suppress
+            crossing = self.v > self.p.threshold_mV if voltage_events else self.v >= self.p.threshold_mV
+            spikes = eligible & crossing & ~self.suppress
             self.tick += 1
             emitted = (spikes & ~self.mute).astype(self.p.dtype)
             # CPU can skip an empty emission. CUDA always launches SpMV, without
@@ -153,6 +161,8 @@ class ExpLIF:
             if xp is not np or np.any(emitted):
                 self.queue[(self.tick + self.delay_ticks) % self.slots] += self.W @ emitted
             self.v[:] = xp.where(spikes, self.p.reset_mV, self.v)
+            if self.p.integration in ('exact-exponential-reset-current-v1','exact-exponential-voltage-events-v1'):
+                self.h[:] = xp.where(spikes, 0., self.h)
             self.refractory_until[:] = xp.where(spikes, self.tick + self.refractory_ticks, self.refractory_until)
             self.rate *= self.er
             self.rate += spikes * ((1 - self.er) / self.p.dt)

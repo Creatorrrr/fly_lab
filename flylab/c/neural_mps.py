@@ -5,6 +5,7 @@ addition. This retains the CPU summation order. The CPU reference remains a
 separate backend; sparse MPS operations never silently fall back to the CPU.
 """
 from pathlib import Path
+import hashlib
 from types import SimpleNamespace
 import numpy as np
 from .neural import ExpLIF, LIFParameters
@@ -63,8 +64,26 @@ class MetalLIF(ExpLIF):
                                          self.em, self.es, self.er, self.syn_factor,
                                          (1-self.er)/p.dt], np.float32)
         self.kernel_path = Path(__file__).with_name('lif.metal')
-        self.library = torch.mps.compile_shader(self.kernel_path.read_text())
-        self.runtime_identity = dict(torch=torch.__version__, shader_sha256=file_hash(self.kernel_path),
+        source = self.kernel_path.read_text()
+        if p.integration in ('exact-exponential-reset-current-v1','exact-exponential-voltage-events-v1'):
+            original = 'if (spike) { next = c[1];'
+            if source.count(original) != 1: raise RuntimeError('Reset-current shader transform does not match source')
+            source = source.replace(original, 'if (spike) { current = 0.0f; next = c[1];', 1)
+        if p.integration == 'exact-exponential-voltage-events-v1':
+            replacements = {
+                'for (int j=pulse_ptr[i]; j<pulse_ptr[i+1]; ++j) current = current + pulses[k*pulse_width+j];':
+                    'float external = v[i]; for (int j=pulse_ptr[i]; j<pulse_ptr[i+1]; ++j) external = external + pulses[k*pulse_width+j];',
+                'bool eligible = tick >= ulong(refractory[i]);':
+                    'bool eligible = tick >= ulong(refractory[i]) || pulse_ptr[i] < pulse_ptr[i+1];',
+                'float delta = v[i] - c[0];': 'float delta = external - c[0];',
+                'current = current * c[4];': 'if (eligible) current = current * c[4];',
+                'next >= c[2]': 'next > c[2]',
+            }
+            for before, after in replacements.items():
+                if source.count(before)!=1: raise RuntimeError('Voltage-event shader transform does not match source')
+                source=source.replace(before,after,1)
+        self.library = torch.mps.compile_shader(source)
+        self.runtime_identity = dict(torch=torch.__version__, shader_sha256=hashlib.sha256(source.encode()).hexdigest(),
                                      numerical_policy='float32-serial-csr-no-fma-v1')
         self.observation_library = torch.mps.compile_shader(Path(__file__).with_name('observation.metal').read_text())
         self._readout_indices = None

@@ -17,7 +17,8 @@ class CompoundEyeObserver:
         from flygym import assets_dir
         from flygym.vision.retina import Retina
         self.body,self.mj=body,mj
-        path=assets_dir/'model/neuromechfly/vision.yaml'
+        model_name=getattr(getattr(body,'body_options',None),'model','neuromechfly')
+        path=assets_dir/f'model/{model_name}/vision.yaml'
         config=yaml.safe_load(path.read_text(encoding='utf-8'))
         spec=body.native_world.mjcf_root.copy()
         camera_names=[]
@@ -58,7 +59,7 @@ class CompoundEyeObserver:
         if len(state)!=mj.mj_stateSize(self.model,mask):
             raise ValueError('Eye observation state layout differs')
         # Only the private observation model is forwarded/rendered.
-        for name in ('geom_rgba','geom_friction','pair_friction'):
+        for name in ('geom_rgba','geom_friction','pair_friction','geom_pos','geom_quat'):
             getattr(self.model,name)[:]=getattr(b.m,name)
         self.model.opt.gravity[:]=b.m.opt.gravity
         mj.mj_setState(self.model,self.data,state,mask)
@@ -89,23 +90,57 @@ class FourSiteOdor:
            ('palp_left','c_rostrum',(0.,.06,-.04)),
            ('palp_right','c_rostrum',(0.,-.06,-.04)))
 
-    def __init__(self,*,field='gaussian',half_concentration=1.,sigma_mm=30.**.5,core_radius_mm=.1):
-        if field not in ('gaussian','inverse-square'):
+    def __init__(self,*,field='gaussian',half_concentration=1.,sigma_mm=30.**.5,core_radius_mm=.1,
+                 wind_mm_s=(2.,0.,0.),pulse_hz=2.,site_calibration=None):
+        if field not in ('gaussian','inverse-square','plume'):
             raise ValueError('Unknown odor field')
         for name,value in (('half_concentration',half_concentration),('sigma_mm',sigma_mm),('core_radius_mm',core_radius_mm)):
             if type(value) not in (int,float) or not np.isfinite(value) or not 0<value<=100:
                 raise ValueError('Invalid odor parameter: '+name)
         self.model=dict(kind='four-site-odor-v1',field=field,half_concentration=half_concentration,
                         sigma_mm=sigma_mm,core_radius_mm=core_radius_mm)
+        if field=='plume':
+            wind=np.asarray(wind_mm_s,dtype=float)
+            if wind.shape!=(3,) or not np.isfinite(wind).all() or not 0<np.linalg.norm(wind)<=100:
+                raise ValueError('Plume requires a finite nonzero wind vector in mm/s')
+            if type(pulse_hz) not in (int,float) or not 0<pulse_hz<=100:
+                raise ValueError('Invalid plume frequency')
+            self.model.update(wind_mm_s=wind.tolist(),pulse_hz=pulse_hz,
+                plume_model='advected periodic Gaussian packets; engineering field, not CFD')
+        self.placement='antenna body origins; palp sites are rostrum-relative engineering offsets'
+        if site_calibration is not None:
+            if not isinstance(site_calibration,dict) or set(site_calibration)!={'sites','evidence','uncertainty'}:
+                raise ValueError('Site calibration requires sites, evidence and uncertainty')
+            if not site_calibration['evidence'] or not site_calibration['uncertainty']:
+                raise ValueError('Site calibration provenance required')
+            rows=site_calibration['sites']
+            if not isinstance(rows,list) or len(rows)!=4:raise ValueError('Four calibrated sites required')
+            sites=[]
+            for expected,row in zip(self.sites,rows):
+                offset=np.asarray(row.get('offset_mm'),dtype=float)
+                if row.get('name')!=expected[0] or not isinstance(row.get('body'),str) or offset.shape!=(3,) or not np.isfinite(offset).all() or np.max(np.abs(offset))>5:
+                    raise ValueError('Invalid calibrated olfactory site')
+                sites.append((row['name'],row['body'],tuple(offset)))
+            self.sites=tuple(sites)
+            self.model['site_calibration']=copy.deepcopy(site_calibration)
+            self.placement='external site calibration; see evidence and uncertainty'
 
     def observe(self,body,world):
         from .common import to_physics
+        sites=self.sites;placement=self.placement
+        flybody=getattr(getattr(body,'body_options',None),'model',None)=='flybody'
+        if flybody and 'site_calibration' not in self.model:
+            sites=tuple((name,{'l_funiculus':'l_antenna','r_funiculus':'r_antenna'}.get(segment,segment),offset) for name,segment,offset in sites)
+            placement='FlyBody antenna origins; palp engineering offsets from rostrum origin in thorax frame; not anatomically calibrated'
         points=[]
-        for _,segment,offset in self.sites:
+        for name,segment,offset in sites:
             if segment not in body.body_indices:
                 raise ValueError('Olfactory body segment unavailable: '+segment)
             index=int(body.body_ids[body.body_indices[segment]])
-            points.append(body.d.xpos[index]+body.d.xmat[index].reshape(3,3)@np.asarray(offset))
+            basis=body.d.xmat[index].reshape(3,3)
+            if flybody and name.startswith('palp') and 'site_calibration' not in self.model:
+                basis=body.d.xmat[body.thorax].reshape(3,3)
+            points.append(body.d.xpos[index]+basis@np.asarray(offset))
         points=np.asarray(points)
         raw=np.zeros((4,2))
         for source in world['sources']:
@@ -114,13 +149,22 @@ class FourSiteOdor:
             dist2=np.sum((points-np.asarray(to_physics(source['p'])))**2,axis=1)
             if self.model['field']=='gaussian':
                 field=np.exp(-dist2/(2*self.model['sigma_mm']**2))
-            else:
+            elif self.model['field']=='inverse-square':
                 field=1./(dist2+self.model['core_radius_mm']**2)
+            else:
+                wind=np.asarray(self.model['wind_mm_s']);speed=np.linalg.norm(wind)
+                relative=points-np.asarray(to_physics(source['p']))
+                downstream=relative@(wind/speed)
+                cross2=np.maximum(0.,dist2-downstream**2)
+                age=body.physics_time()-downstream/speed
+                pulse=(.5+.5*np.cos(2*np.pi*self.model['pulse_hz']*age))**4
+                field=np.exp(-cross2/(2*self.model['sigma_mm']**2))*pulse*np.exp(-np.maximum(0.,downstream)/(10*self.model['sigma_mm']))
+                field=np.where(downstream>=0,field,0.)
             raw[:,component]+=source['strength']*field
         transduced=raw/(raw+self.model['half_concentration'])
         return dict(schema='flylab.four-site-odor.v1',time_s=body.physics_time(),
             model=copy.deepcopy(self.model),sites=[r[0] for r in self.sites],components=['food','hazard'],
             positions_native_mm=points.tolist(),concentration=raw.tolist(),response=transduced.tolist(),
             concentration_unit='analytic field units; not calibrated molar concentration',
-            placement='antenna body origins; palp sites are rostrum-relative engineering offsets',
+            placement=placement,site_bodies=[r[1] for r in sites],
             neural_mapping='explicit sensor profile only',biological_validation=False)

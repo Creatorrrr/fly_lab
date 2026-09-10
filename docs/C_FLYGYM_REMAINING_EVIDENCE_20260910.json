@@ -1,0 +1,221 @@
+{
+  "schema": "flylab.flygym-remaining-evidence.v1",
+  "date": "2026-09-10",
+  "flygym_commit": "ca65a510c2afe6ac61c51df4f274c8d190c2f95f",
+  "versions": {
+    "flygym": "2.1.0",
+    "mujoco": "3.9.0",
+    "mujoco-warp": "3.9.0",
+    "warp-lang": "1.14.0",
+    "cupy-cuda13x": "14.2.0",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "torch": "2.14.0+cu130",
+    "stable-baselines3": "2.9.0",
+    "gymnasium": "1.3.0"
+  },
+  "gpu": "NVIDIA GeForce RTX 4080 16 GB",
+  "implementation_status": "implemented selectable research extensions",
+  "biological_validation": false,
+  "default_physics": "CPU",
+  "default_neural_selection": "CUDA when available, then MPS, then CPU",
+  "warp_adopted": false,
+  "regression": {
+    "total": 300,
+    "passed": 272,
+    "skipped": 28,
+    "failed": 0
+  },
+  "explicit_native_cuda_tests": {
+    "total": 7,
+    "passed": 7,
+    "overlap_with_regression": 3
+  },
+  "full_connectome": {
+    "neurons_per_world": 139255,
+    "worlds_tested": [
+      2,
+      32
+    ],
+    "world32_restore_and_continue": true
+  },
+  "ui": {
+    "url": "http://127.0.0.1:8766/",
+    "batch_checkpoint": "batch-d16024093c0d",
+    "batch_observed_states": [
+      {
+        "0": 0.01,
+        "1": 0.01,
+        "state1": "PAUSED"
+      },
+      {
+        "0": 0.015,
+        "1": 0.01,
+        "state1": "PAUSED"
+      },
+      {
+        "0": 0.02,
+        "1": 0.01,
+        "state1": "CANCELLED"
+      }
+    ],
+    "continuous_native_image": {
+      "width": 400,
+      "observed_image_time_s": 21.71,
+      "observed_live_time_s": 22.31,
+      "playback_running": true
+    },
+    "browser_errors": [],
+    "recordings": [
+      {
+        "path": "artifacts/c/runs/batch-world-0-0254c8bad2dd",
+        "status": "COMPLETE",
+        "channels": 8,
+        "chunks": 0,
+        "dropped": 0,
+        "end_tick": 0
+      },
+      {
+        "path": "artifacts/c/runs/batch-world-0-5122155e455d",
+        "status": "COMPLETE",
+        "channels": 8,
+        "chunks": 1,
+        "dropped": 0,
+        "end_tick": 150
+      }
+    ]
+  },
+  "preservation": {
+    "before": "checkpoint-02658835728c",
+    "after": "checkpoint-b29cb0a60ed1",
+    "differences": [
+      "/body_options",
+      "/physics_profile/control_backend",
+      "/subscription_epoch"
+    ],
+    "model_seconds": 14.75,
+    "mode": "C_STRICT",
+    "clock_preserved": true,
+    "neural_body_sensor_state_unchanged": true
+  },
+  "artifacts": [
+    {
+      "path": "verification/flygym-remaining-20260910/replay-01/report.json",
+      "bytes": 9699,
+      "sha256": "9f5f2261b5677e249ad59a207acae8c7b9eaf13641ff84846811bdfd6cdb0564"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/calibration-01/report.json",
+      "bytes": 42528,
+      "sha256": "a5aa204fb6dffa817ef65f7c1e9755b7681035e951d165891dc5f1315f720801"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/muscle-01/report.json",
+      "bytes": 1230,
+      "sha256": "2fee6ab9bbf73a411a63b9c48d21c3571b8f972a24055448ac165899a2437e0e"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/imitation-train-01/report.json",
+      "bytes": 437,
+      "sha256": "0737ecdf241f64010d4428fc41dbcb61272c7b52cd230ba1bb5395e0e76cba1f"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/imitation-resume-01/report.json",
+      "bytes": 595,
+      "sha256": "fc84752c3682fa1db97497656234dabf5028035cdd22ab8f06a7254c6c89d56f"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/blocks-01/report.json",
+      "bytes": 5892,
+      "sha256": "458a48044c8bff8e6479cb3313fbc4aa16d57b10161f65b109d306bfe8669dc3"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/flybody-01/report.json",
+      "bytes": 5844,
+      "sha256": "3c77976ea4266e666c1a6d23048d56cd481bb31c631a2fbb54467a8825b65a4c"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/flybody-senses-02/report.json",
+      "bytes": 36580,
+      "sha256": "a20dc792238798f91849e88abcf163dee0fc960f0e676d6b6073fc44bad911f5"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/terrain-and-senses-01/report.json",
+      "bytes": 3015,
+      "sha256": "af641db2dfcb69575eb20ef07e9c1a598b06852368b391abdd8a32c3862e9c98"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/full-batch-01/report.json",
+      "bytes": 1655,
+      "sha256": "db371c2cdb52b0dc3d38e1022352b3776232e83f7f1d8ca48dd58362e14761dd"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/full-batch-restore-01/report.json",
+      "bytes": 1710,
+      "sha256": "0c2f7da02ad900a28818acc756d8b42b73f1e57ce029179fcf5941026452ee2c"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/full-batch-32-01/report.json",
+      "bytes": 6915,
+      "sha256": "795da3c8887c5389bb09768e651c9aea524bbc9cea3853fc5a7490bf5325200d"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/full-batch-32-01/restore-02.json",
+      "bytes": 12517,
+      "sha256": "e1738dc8bf39b442b2dbcf0cbddd6ed2c1f6e5609e478a29c7887342e05b5b85"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/resident-verify-01/report.json",
+      "bytes": 13042,
+      "sha256": "ab5f1db629e10a981c91cde42c2b0ac9425bfe8249b62ff57e991a1ea465a322"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/live-state-comparison.json",
+      "bytes": 323,
+      "sha256": "67bb4138c157299ede54824c2597101849156b20024e608db5798699984f8df9"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/live-before.json",
+      "bytes": 270,
+      "sha256": "67293eb3fe9d280151bc6249136ddc4d1f207242a64fd8a56680fa0a8273eec2"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/regression-final-02.log",
+      "bytes": 41906,
+      "sha256": "c8706c42cfd191cdc44bb2d933cbcc7063b8577c7c37b09366d8b0699b5da145"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/remaining-final.log",
+      "bytes": 5384,
+      "sha256": "591fdb830eeee8fe48acd4555c577484c4fe5d6d3d534ff65c5b436d999cdb56"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/sensors-after-fix.log",
+      "bytes": 1554,
+      "sha256": "6b46b474d27b1d359d3a7f6cd0b5c3e4d0a016632fed6c1083d28fea1a503c98"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/nsight-nodes-01/capture.json",
+      "bytes": 1265,
+      "sha256": "eb5ac285a235537f69313a2f2f68620d27b671795d2ccf11ea5cf4a68309b27c"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/nsight-nodes-01/analyzed.json",
+      "bytes": 3224,
+      "sha256": "8f7b8edc24a9f6c3e6211df5d2635e9bd468abe4a5c2a060a706801ade77a49e"
+    },
+    {
+      "path": "verification/flygym-remaining-20260910/nsight-nodes-01/worker.json",
+      "bytes": 1902,
+      "sha256": "f79d50b07a87f3aad0520e4dfb4c29c23f4151048b2105a14ac291a8c08b3ec2"
+    }
+  ],
+  "limitations": [
+    "Warp fails unchanged CPU trajectory and exact future restore criteria",
+    "Eye-wide intensity proxy is not retinotopy",
+    "Palp geometry and chemistry are not anatomically calibrated",
+    "LF 15-MTU training is tethered single-leg execution, not six-leg connectome muscle control",
+    "Terrain tests are short mechanical comparisons",
+    "32-world test uses 10 ms per world and no selected-neuron recording; 512 channels verified at 2 worlds"
+  ]
+}

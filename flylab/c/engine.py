@@ -30,7 +30,7 @@ class CEngine:
     def __init__(self, graph, bindings, *, mode='C_SHADOW', seed=42, config=None,
                  world=None, backend='exp_lif_cpu_reference', parameters=None,
                  body_factory=FlyGymBody, motion_expected=True, metabolism=None, initial_pose=None,
-                 physics_profile=None):
+                 physics_profile=None,body_options=None):
         if physics_profile is not None:
             from ..physics import body_factory as select_body, profile_values, PhysicsBodyFactory
             profile = profile_values(physics_profile)
@@ -61,7 +61,10 @@ class CEngine:
         self.legacy = LegacyBRate(Circuit(default_graph()), seed)
         self.sensors = CSensorAdapter(seed, bindings.spec.get('sensor_model'))
         self.body_factory = body_factory
-        self.body = body_factory(seed, self.world, self.config, **({'initial_pose': initial_pose} if initial_pose is not None else {}))
+        body_kwargs={}
+        if initial_pose is not None:body_kwargs['initial_pose']=initial_pose
+        if body_options is not None:body_kwargs['body_options']=body_options
+        self.body = body_factory(seed, self.world, self.config, **body_kwargs)
         self.neuromuscular = None
         self.control_tick = 0
         self.sensor_tick = 0
@@ -462,6 +465,7 @@ class CEngine:
                     config_hash=digest(self.config), environment_hash=digest(self.world),
                     body_model_hash=self.body.frame()[1]['bodyModelHash'],
                     physics_profile=asdict(self.body.physics_profile) if hasattr(self.body,'physics_profile') else None,
+                    body_options=asdict(self.body.body_options) if hasattr(self.body,'body_options') else None,
                     control_tick=self.control_tick, sensor_tick=self.sensor_tick,
                     body=self.body.snapshot(), neural=self.neural.snapshot() if self.neural else None,
                     encoder=self.encoder.snapshot(), sensors=self.sensors.snapshot(), legacy=self.legacy.snapshot(),
@@ -503,7 +507,7 @@ class CEngine:
                 backend=backend_override or (s['neural']['backend'] if s.get('neural') else 'exp_lif_cpu_reference'),
                 parameters=parameters, body_factory=body_factory, motion_expected=s['motion_expected'],
                 metabolism=s['metabolism']['parameters'] if s.get('metabolism') else None,
-                initial_pose=s.get('initial_pose'), physics_profile=s.get('physics_profile'))
+                initial_pose=s.get('initial_pose'), physics_profile=s.get('physics_profile'),body_options=s.get('body_options'))
         try:
             if e.body.frame()[1]['bodyModelHash'] != s.get('body_model_hash'): raise ValueError('Body model hash mismatch')
             e.body.restore(s['body'])

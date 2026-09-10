@@ -1,0 +1,3 @@
+# Optional official 15-MTU LF imitation experiments. Install CUDA torch first.
+gymnasium==1.3.0
+stable-baselines3==2.9.0

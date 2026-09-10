@@ -34,6 +34,7 @@ class CDispatcher:
         self.profile_fingerprints = {}
         self.last_fault_report = None
         self.jobs = CampaignJobs(self.artifacts/'campaigns', self.graph_path)
+        self.batch=None
 
     def load(self):
         if self.graph is None:
@@ -112,7 +113,7 @@ class CDispatcher:
         if not isinstance(payload, dict): raise ValueError('Payload object required')
         op = message.get('op')
         if op == 'init':
-            if set(payload)-{'mode', 'seed', 'config', 'motion_expected', 'profile','metabolism','initial_pose'}: raise ValueError('Unknown initialization field')
+            if set(payload)-{'mode', 'seed', 'config', 'motion_expected', 'profile','metabolism','initial_pose','body_options'}: raise ValueError('Unknown initialization field')
             self.load()
             profile = payload.get('profile', self.binding_path.name)
             bindings = self.profiles().get(profile)
@@ -143,7 +144,7 @@ class CDispatcher:
             new = CEngine(self.graph, bindings, mode=payload.get('mode', self.default_mode),
                           seed=payload.get('seed', 42), config=payload.get('config'), backend=self.backend,
                           body_factory=self.factory, motion_expected=payload.get('motion_expected', True),metabolism=payload.get('metabolism'),
-                          initial_pose=payload.get('initial_pose'))
+                          initial_pose=payload.get('initial_pose'),body_options=payload.get('body_options'))
             result = self.replace(new)
             result['source_checkpoint'] = saved
             result['recovery'] = recovery
@@ -233,6 +234,69 @@ class CDispatcher:
                 raise ValueError('Environment identity mismatch')
             result = self.need().command('load_environment', {'world': saved['world']})
         elif op == 'regions': result = self.need().region_summary()
+        elif op == 'batch_init':
+            if set(payload)-{'worlds','seed','profile','mode','body_options'}:raise ValueError('Unknown batch initialization option')
+            if self.batch is not None:raise ValueError('Save and close the current batch before preparing another')
+            self.load()
+            count=bounded_int(payload.get('worlds',2),'batch worlds',1,32)
+            seed=bounded_int(payload.get('seed',42),'batch seed',0,2**32-count)
+            bindings=self.profiles().get(payload.get('profile',self.binding_path.name))
+            if bindings is None:raise ValueError('Unknown batch binding profile')
+            from .batch import BatchSession
+            candidate=BatchSession(self.graph,bindings,[seed+i for i in range(count)],mode=payload.get('mode','C_SHADOW'),body_options=payload.get('body_options'))
+            previous=self.batch;self.batch=candidate
+            if previous:previous.close()
+            result=self.batch.summary()
+        elif op == 'batch_checkpoints':
+            if payload:raise ValueError('Batch checkpoint catalog takes no options')
+            directory=self.artifacts/'batch-checkpoints'
+            result=[dict(name=p.name) for p in sorted(directory.glob('batch-*')) if (p/'manifest.json').is_file()]
+        elif op == 'batch_restore':
+            if set(payload)!={'name'}:raise ValueError('Select a batch checkpoint')
+            if self.batch is not None:raise ValueError('Save and close the current batch before restoring another')
+            self.load();path=self.artifacts/'batch-checkpoints'/checked_name(payload['name'])
+            saved=StateStore.load(path,max_files=4096);binding=self.checkpoint_bindings(saved)
+            from .batch import BatchSession
+            self.batch=BatchSession.restore(self.graph,binding,path);result=self.batch.summary()
+        elif op in ('batch_advance','batch_control','batch_summary','batch_checkpoint','batch_observation','batch_close','batch_record','batch_intervention'):
+            if self.batch is None:raise ValueError('Initialize a CUDA batch first')
+            if op=='batch_advance':
+                if set(payload)-{'steps'}:raise ValueError('Unknown batch advance option')
+                result=self.batch.step(bounded_int(payload.get('steps',1),'batch steps',1,10))
+            elif op=='batch_control':
+                if set(payload)!={'action','world'} or payload['action'] not in ('pause','resume','cancel'):raise ValueError('Invalid batch control')
+                getattr(self.batch,payload['action'])(str(payload['world']));result=self.batch.summary()
+            elif op in ('batch_record','batch_intervention'):
+                if str(payload.get('world')) not in self.batch.engines:raise ValueError('Unknown batch world')
+                key=str(payload['world']);e=self.batch.engines[key]
+                if self.batch.status[key] not in ('RUNNING','PAUSED'):raise ValueError('World is no longer active')
+                if op=='batch_record':
+                    if set(payload)-{'world','action','ids'} or payload.get('action') not in ('start','stop'):raise ValueError('Invalid batch recording request')
+                    if payload['action']=='start':
+                        name='batch-world-'+key+'-'+secrets.token_hex(6)
+                        e.start_recording(self.artifacts/'runs'/name,payload.get('ids'))
+                    else:e.stop_recording()
+                else:
+                    if set(payload)!={'world','type','payload'} or payload['type'] not in ('intervene','release_all'):raise ValueError('Invalid batch intervention')
+                    e.command(payload['type'],payload['payload'])
+                result=self.batch.summary()
+            elif op=='batch_checkpoint':
+                if payload:raise ValueError('Batch checkpoint takes no options')
+                result=self.batch.checkpoint(self.artifacts/'batch-checkpoints'/('batch-'+secrets.token_hex(6)))
+            elif op=='batch_observation':
+                if set(payload)!={'world'}:raise ValueError('Select a batch world')
+                key=str(payload['world'])
+                if key not in self.batch.engines:raise ValueError('Unknown batch world')
+                import base64,io
+                from PIL import Image
+                if key in self.batch.active:
+                    pixels=self.batch.physics.render(self.batch.active.index(key));renderer='GPU batch'
+                else:pixels=self.batch.engines[key].body.preview();renderer='CPU paused-world view'
+                buffer=io.BytesIO();Image.fromarray(pixels).save(buffer,format='PNG')
+                result=dict(world=key,time_s=self.batch.engines[key].control_tick*.005,renderer=renderer,
+                    image='data:image/png;base64,'+base64.b64encode(buffer.getvalue()).decode('ascii'))
+            elif op=='batch_close':self.batch.close();self.batch=None;result=dict(closed=True)
+            else:result=self.batch.summary()
         elif op == 'physical_observation':
             if set(payload)-{'kind'}: raise ValueError('Unknown observation option')
             e=self.need(); kind=payload.get('kind')
@@ -304,6 +368,7 @@ class CDispatcher:
 
     def close(self):
         self.jobs.close()
+        if self.batch:self.batch.close();self.batch=None
         if self.engine: self.engine.close(); self.engine = None
 
 
@@ -327,7 +392,7 @@ class CServer(BServer):
         d = self.dispatcher
         return web.json_response(dict(protocol=PROTOCOL, token=self.token, dependencies=dependency_report(),
                                       testDouble=self.test_double, backend=d.backend, defaultMode=d.default_mode,
-                                      hasExperiment=d.engine is not None, graphAvailable=(d.graph_path/'manifest.json').is_file(),
+                                      hasExperiment=d.engine is not None,hasBatch=d.batch is not None,graphAvailable=(d.graph_path/'manifest.json').is_file(),
                                       bindingsAvailable=d.binding_path.is_file(),
                                       backendAvailability=backend_availability()), headers={'Cache-Control':'no-store'})
 
@@ -352,6 +417,7 @@ def main():
     parser.add_argument('--physics-backend', choices=('cpu','warp'), default='cpu',
                         help='Independent physics backend; warp is an explicitly selected candidate')
     parser.add_argument('--noslip-iterations', type=int, default=None)
+    parser.add_argument('--physics-control',choices=('cpu','cuda'),default='cpu',help='CUDA hybrid/reflex control requires --physics-backend warp')
     parser.add_argument('--multiccd', action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument('--mode', choices=MODES, default='C_SHADOW')
     parser.add_argument('--doctor', action='store_true')
@@ -361,7 +427,7 @@ def main():
     args.backend = resolve_backend(args.backend)
     from ..physics import PhysicsProfile, body_factory as select_body, physics_availability
     physics_profile=PhysicsProfile(backend=args.physics_backend,
-        noslip_iterations=args.noslip_iterations,multiccd=args.multiccd)
+        noslip_iterations=args.noslip_iterations,multiccd=args.multiccd,control_backend=args.physics_control)
     if not 1024 <= args.port <= 65535: parser.error('Port must be 1024..65535')
     if args.doctor:
         report = dict(physical=dependency_report(), graph=args.graph.is_dir(), bindings=args.bindings.is_file(),

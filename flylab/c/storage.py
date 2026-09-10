@@ -53,10 +53,11 @@ class StateStore:
         return dict(name=path.name, state_hash=digest(files), bytes=sum(p.stat().st_size for p in path.iterdir()))
 
     @staticmethod
-    def load(path):
+    def load(path, *, max_files=1000):
         path = Path(path)
         m = read_json(path / 'manifest.json')
-        if m.get('schema') != 'flylab.state_store.v3' or not isinstance(m.get('files'), dict) or len(m['files']) > 1000:
+        if type(max_files) is not int or not 1<=max_files<=4096:raise ValueError('Invalid checkpoint file limit')
+        if m.get('schema') != 'flylab.state_store.v3' or not isinstance(m.get('files'), dict) or len(m['files']) > max_files:
             raise ValueError('Invalid checkpoint manifest')
         if m.get('versions') != runtime_versions():
             raise ValueError('Checkpoint runtime versions differ; cross-version continuation is not validated')

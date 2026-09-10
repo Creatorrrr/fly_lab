@@ -15,10 +15,13 @@ class PhysicsProfile:
     max_contacts: int = 1024
     max_constraints: int = 4096
     cuda_graph: bool = True
+    control_backend: str = 'cpu'
 
     def __post_init__(self):
         if self.backend not in ('cpu', 'warp'):
             raise ValueError('Physics backend must be cpu or warp')
+        if self.control_backend not in ('cpu','cuda') or (self.control_backend=='cuda' and self.backend!='warp'):
+            raise ValueError('CUDA reflex control requires Warp physics')
         if self.noslip_iterations is None:
             object.__setattr__(self, 'noslip_iterations', 0 if self.backend == 'warp' else 5)
         if self.multiccd is None:
@@ -61,6 +64,9 @@ class PhysicsBodyFactory:
         if self.profile.backend == 'warp':
             from .body_warp import WarpBody
             cls = WarpBody
+            if self.profile.control_backend=='cuda':
+                from .body_warp_resident import ResidentWarpBody
+                cls=ResidentWarpBody
         return cls(seed, world, config, physics_profile=self.profile, **kwargs)
 
 

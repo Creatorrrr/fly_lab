@@ -9,6 +9,9 @@ CHANNELS = {'odor_mean', 'odor_left', 'odor_right', 'panorama_mean', 'panorama_b
             'front_proximity', 'contact', 'angular_velocity', 'danger', 'loom_left','loom_right','head_contact'}
 INPUT_KINDS = {'sensory', 'direct_injection', 'assisted_input'}
 MOTOR_GROUPS = ('forward', 'backward', 'stop', 'yaw_left', 'yaw_right')
+RETINAL_CHANNELS={f'retina_{kind}_{side}' for kind in ('luminance','motion','loom') for side in ('left','right')}|{'retina_ommatidium'}
+ODOR_SITE_CHANNELS={f'odor_{site}_{component}' for site in ('antenna_left','antenna_right','palp_left','palp_right') for component in ('food','hazard')}
+CHANNELS |= RETINAL_CHANNELS|ODOR_SITE_CHANNELS
 
 
 class PortBindings:
@@ -35,6 +38,14 @@ class PortBindings:
                 raise ValueError('BLOCKED_PORT_BINDING: unsupported observation boundary')
             if p['channel'] in ('loom_left','loom_right','head_contact') and not s.get('sensor_model',{}).get('extended_observations'):
                 raise ValueError('BLOCKED_PORT_BINDING: extended observations must be enabled explicitly')
+            if p['channel'] in RETINAL_CHANNELS and s.get('sensor_model',{}).get('retina') is None:
+                raise ValueError('Retinal ports require automatic Retina sampling')
+            if p['channel'] in ODOR_SITE_CHANNELS and s.get('sensor_model',{}).get('kind') not in ('four-site-odor-v1','flygym-multimodal-v2'):
+                raise ValueError('Site-specific ports require the four-site odor model')
+            if p['channel']=='retina_ommatidium':
+                bounded_int(p.get('ommatidium'),'ommatidium',0,720)
+                if p.get('eye') not in ('left','right') or not p.get('retinotopy_evidence'):
+                    raise ValueError('Per-ommatidium ports require an eye and retinotopy evidence')
             self._review(p)
             ids = graph.resolve(p.get('ids'), maximum=10000)
             if len(ids) == 0:
@@ -136,6 +147,12 @@ class PortBindings:
 
 def feature(packet, port, supplemental=None):
     channel = port['channel']
+    if channel=='retina_ommatidium':
+        if supplemental is None or 'retina_ommatidia' not in supplemental:raise ValueError('Retinal image unavailable')
+        return finite(supplemental['retina_ommatidia'][('left','right').index(port['eye'])][port['ommatidium']],channel,0.,1.)
+    if channel in RETINAL_CHANNELS|ODOR_SITE_CHANNELS:
+        if supplemental is None or channel not in supplemental:raise ValueError('Sensory feature unavailable: '+channel)
+        return finite(supplemental[channel],channel,0.,1000.)
     if channel in ('loom_left','loom_right','head_contact'):
         if supplemental is None or channel not in supplemental:raise ValueError('Extended observation unavailable: '+channel)
         return finite(supplemental[channel],channel,0.,1000.)

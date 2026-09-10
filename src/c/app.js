@@ -120,12 +120,14 @@ function applyProfileModes(){
  if(!modes.includes($('mode').value))$('mode').value=modes[0];
 }
 $('binding-profile').addEventListener('change',applyProfileModes);
-function applyReady(result){state.profiles=result.profiles;state.supportedModes=result.capabilities.modes;state.dataset=result.manifest.dataset_id+' v'+result.manifest.snapshot_id;$('dataset-label').textContent=state.dataset+' · NeuroMechFly';
+function applyReady(result){state.profiles=result.profiles;state.supportedModes=result.capabilities.modes;state.dataset=result.manifest.dataset_id+' v'+result.manifest.snapshot_id;$('dataset-label').textContent=state.dataset+' · '+(result.frame.physics.bodyModel==='flybody'?'FlyBody':'NeuroMechFly');
+ $('physical-observation').hidden=true;observationLastModel=-1;
  const labels={'bindings.json':'기존 평균 냄새','bindings-bilateral-geosmin-v1.json':'좌우 먹이·geosmin v1 (실험)','bindings-bilateral-geosmin-v2.json':'좌우 먹이·geosmin v2 · 농도 압축 (실험)','bindings-four-site-odor-v1.json':'4지점 후각 · 더듬이 입력 (실험)','bindings-visual-head-contact-research-v1.json':'좌우 냄새·물체 시야·머리 접촉 (연구)','bindings-odor-poisson-current-hypothesis-v1.json':'후각 Poisson 전류 입력 (검증 가설)'};
  labels['bindings-walking-population-v1.json']='DNg100·DNg97 보행 출력 (실험)';
  labels['bindings-walking-reset-current-v2.json']='보행 출력·발화 후 전류 초기화 (가설)';
  labels['bindings-walking-poisson-reset-current-v3.json']='약한 냄새 Poisson 입력·보행 출력 (가설)';
  labels['bindings-walking-voltage-events-v4.json']='Poisson 전압 사건·보행 출력 (가설)';
+ labels['bindings-multimodal-v2.json']='자동 복안·4지점 후각·plume v2 (연구)';
  labels['bindings-neuromuscular-v1.json']='BANC 뇌·VNC·다리 폐루프 (연구)';
  labels['bindings-neuromuscular-v2.json']='BANC 하중 보정·방향 감각 v2 (보행 미검증)';
  labels['bindings-walking-visual-contact-v5.json']='보행·시각·머리 접촉 v5 (연구)';
@@ -147,6 +149,7 @@ async function refreshExperiment(result,message){
 async function init(){
  state.playing=false;updatePlay();$('waiting').hidden=false;
  const payload={mode:$('mode').value,seed:Number($('seed').value),metabolism:$('metabolism-enabled').checked?{}:null};
+ if($('body-model').value!=='neuromechfly'||$('body-terrain').value!=='flat')payload.body_options={model:$('body-model').value,terrain:$('body-terrain').value};
  // Before attach/init there is no catalog: honor the server's --bindings.
  if(state.frame)payload.profile=$('binding-profile').value;
  let result;try{result=await rpc.request('init',payload);}catch(e){$('waiting').hidden=!!state.frame;throw e;}
@@ -174,8 +177,11 @@ button('release',()=>command('release_all'));button('push',()=>command('push',{b
 for(const [id,type,key] of [['motor','configure','motorCoupled'],['cue','cue','enabled'],['food','food','enabled']])$(id).addEventListener('change',()=>command(type,{[key]:$(id).checked}).catch(e=>tell(e.message,true)));
  $('friction').addEventListener('change',()=>command('configure',{friction:Number($('friction').value)}).catch(e=>tell(e.message,true)));
 button('regions-refresh',regions);
-for(const kind of ['native','eyes','odor'])button('observe-'+kind,async()=>{
- workbench.pause();
+let observationBusy=false,observationLastWall=0,observationLastModel=-1;
+async function observePhysical(kind,pause=true){
+ if(observationBusy)return;
+ if(pause)workbench.pause();
+ observationBusy=true;
  const ids=['native','eyes','odor'].map(k=>'observe-'+k);ids.forEach(id=>$(id).disabled=true);
  try{
   const result=await rpc.request('physical_observation',{kind});
@@ -183,9 +189,50 @@ for(const kind of ['native','eyes','odor'])button('observe-'+kind,async()=>{
   $('physical-observation-time').textContent=`모델 시각 ${result.time_s.toFixed(4)} s · `+(kind==='eyes'?'왼쪽·오른쪽 복안, 눈당 721개 낱눈':kind==='native'?'실제 MuJoCo 메시':'더듬이 2곳·palp 2곳의 가상 냄새 반응');
   const img=$('physical-observation-image');img.hidden=!result.image;if(result.image)img.src=result.image;
   const values=$('physical-observation-values');values.hidden=kind!=='odor';
-  if(kind==='odor')values.textContent=result.sites.map((site,i)=>`${site}: 먹이 ${result.response[i][0].toFixed(4)} · 위험 ${result.response[i][1].toFixed(4)}`).join('\n')+'\npalp 위치는 해부학적 교정 전의 가정입니다.';
- }finally{ids.forEach(id=>$(id).disabled=false);}
-});
+  if(kind==='odor')values.textContent=result.sites.map((site,i)=>`${site}: 먹이 ${result.response[i][0].toFixed(4)} · 위험 ${result.response[i][1].toFixed(4)}`).join('\n')+'\n'+(result.model.site_calibration?'외부 위치 교정 자료: '+JSON.stringify(result.model.site_calibration.evidence):'palp 위치는 해부학적 교정 전의 가정입니다.');
+  const now=performance.now();$('observe-rate').textContent=observationLastWall?`표시 ${(1000/(now-observationLastWall)).toFixed(1)} FPS`:'';
+  observationLastWall=now;observationLastModel=result.time_s;
+ }finally{observationBusy=false;ids.forEach(id=>$(id).disabled=false);}
+}
+for(const kind of ['native','eyes','odor'])button('observe-'+kind,()=>observePhysical(kind));
+setInterval(()=>{
+ if(!$('observe-live').checked||document.hidden||state.closed||!state.frame||observationBusy||state.busy)return;
+ if(performance.now()-observationLastWall<1000/Number($('observe-fps').value))return;
+ if(Math.abs(observationLastModel-state.frame.simTime)<1e-9)return;
+ observePhysical($('observe-kind').value,false).catch(e=>{$('observe-live').checked=false;tell(e.message,true);});
+},50);
+$('observe-kind').addEventListener('change',()=>{observationLastModel=-1;});
+let batchState=null;
+const batchButtons=['step','save','close','observe','pause','resume','cancel','record','intervene','release'];
+function batchControls(){
+ const w=batchState?.worlds[$('batch-world').value];
+ for(const id of batchButtons)$('batch-'+id).disabled=!batchState;
+ $('batch-init').disabled=!!batchState;$('batch-restore').disabled=!!batchState;
+ if(!w)return;
+ $('batch-pause').disabled=w.status!=='RUNNING';$('batch-resume').disabled=w.status!=='PAUSED';
+ for(const id of ['cancel','record','intervene','release'])$('batch-'+id).disabled=!['RUNNING','PAUSED'].includes(w.status);
+ $('batch-record').textContent=w.recording?'선택 세계 기록 종료':'선택 세계 기록';
+}
+function showBatch(result){
+ batchState=result;const selected=$('batch-world').value;$('batch-world').replaceChildren();
+ for(const [id,world] of Object.entries(result.worlds)){const option=document.createElement('option');option.value=id;option.textContent=`세계 ${id} · ${world.status}`;$('batch-world').append(option);}
+ if(result.worlds[selected])$('batch-world').value=selected;
+ $('batch-status').textContent=Object.entries(result.worlds).map(([id,w])=>`세계 ${id}: ${w.model_seconds.toFixed(3)} s · ${w.status}${w.recording?' · 기록 중':''}${w.fault?' · '+w.fault:''}`).join('\n');
+ batchControls();
+}
+async function batchCheckpoints(){const rows=await rpc.request('batch_checkpoints');const selected=$('batch-checkpoints').value;$('batch-checkpoints').replaceChildren(new Option('저장한 CUDA 배치',''),...rows.map(r=>new Option(r.name,r.name)));if(rows.some(r=>r.name===selected))$('batch-checkpoints').value=selected;}
+$('batch-world').addEventListener('change',()=>{batchControls();$('batch-image').hidden=true;$('batch-image-time').textContent='';});
+button('batch-init',async()=>{workbench.pause();$('batch-init').disabled=true;try{showBatch(await rpc.request('batch_init',{worlds:Number($('batch-count').value),seed:Number($('seed').value),profile:$('binding-profile').value,mode:$('mode').value==='B_COMPAT'?'C_SHADOW':$('mode').value,body_options:{model:$('body-model').value,terrain:$('body-terrain').value}}));tell('별도 CUDA 배치를 준비했습니다.');}finally{batchControls();}});
+button('batch-step',async()=>showBatch(await rpc.request('batch_advance',{steps:1})));
+for(const action of ['pause','resume','cancel'])button('batch-'+action,async()=>showBatch(await rpc.request('batch_control',{action,world:$('batch-world').value})));
+button('batch-save',async()=>{const r=await rpc.request('batch_checkpoint');await batchCheckpoints();$('batch-checkpoints').value=r.name;tell('전체 배치 저장: '+r.name);});
+button('batch-refresh',batchCheckpoints);
+button('batch-restore',async()=>{const name=$('batch-checkpoints').value;if(!name)throw Error('복원할 CUDA 배치를 선택하세요.');workbench.pause();showBatch(await rpc.request('batch_restore',{name}));tell('배치 복원 완료: '+name);});
+button('batch-record',async()=>{const world=$('batch-world').value,action=batchState.worlds[world].recording?'stop':'start';showBatch(await rpc.request('batch_record',{world,action,ids:workbench.recordIds()}));});
+button('batch-intervene',async()=>showBatch(await rpc.request('batch_intervention',{world:$('batch-world').value,type:'intervene',payload:workbench.interventionSpec()})));
+button('batch-release',async()=>showBatch(await rpc.request('batch_intervention',{world:$('batch-world').value,type:'release_all',payload:{}})));
+button('batch-observe',async()=>{const r=await rpc.request('batch_observation',{world:$('batch-world').value});$('batch-image').src=r.image;$('batch-image').hidden=false;$('batch-image-time').textContent=`세계 ${r.world} · ${r.time_s.toFixed(3)} s · ${r.renderer}`;tell($('batch-image-time').textContent);});
+button('batch-close',async()=>{await rpc.request('batch_close');batchState=null;batchControls();$('batch-status').textContent='배치를 닫았습니다.';$('batch-image').hidden=true;});
 button('record',async()=>{if(state.recording){applyFrame(await rpc.request('record_stop'));tell('기록을 저장했습니다.');}else{workbench.pause();const r=await rpc.request('record_start',{ids:workbench.recordIds()});applyFrame(r.frame);tell('기록 시작: '+r.name);}});
 button('checkpoint',async()=>{state.playing=false;updatePlay();const r=await rpc.request('checkpoint');tell(`체크포인트 저장: ${r.name} · ${(r.bytes/1048576).toFixed(1)} MB`);await checkpoints();$('checkpoints').value=r.name;});
 button('restore',async()=>{const name=$('checkpoints').value;if(!name)throw Error('복원할 체크포인트를 선택하세요.');state.playing=false;updatePlay();const r=await rpc.request('restore',{name});state.sequence=0;state.spikes=0;state.signals.clear();state.traces.clear();applyReady(r);await regions();await workbench.ready();tell('복원 완료: '+name);});
@@ -209,6 +256,7 @@ requestAnimationFrame(animate);
 rpc.connect().then(async(config)=>{
  $('status-dot').className='ready';
  for(const option of $('backend').options){const info=config.backendAvailability?.[option.value];option.disabled=info?.available===false;option.title=info?.reason||info?.device||'';}
+ await batchCheckpoints();if(config.hasBatch)showBatch(await rpc.request('batch_summary'));
  if(config.hasExperiment){await refreshExperiment(await rpc.request('attach'),'저장된 현재 실험에 연결했습니다. 재생으로 계속 진행하세요.');}else await init();
 }).catch(e=>{$('waiting').textContent='초기화 실패';tell(e.message,true);});
 })(globalThis.Fly);

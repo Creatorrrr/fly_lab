@@ -33,8 +33,11 @@ class MotorAdapter:
 class FlyGymBody:
     backend='flygym-2.1.0-neuromechfly'
     test_double=False
-    def __init__(self,seed,world,config,*,optimized=True,initial_pose=None,physics_profile=None):
+    def __init__(self,seed,world,config,*,optimized=True,initial_pose=None,physics_profile=None,body_options=None):
         from .physics import profile_values
+        from .body_options import BodyOptions,make_world,make_flybody
+        self.body_options=BodyOptions.parse(body_options)
+        if self.body_options.model=='flybody' and self.backend==FlyGymBody.backend:self.backend='flygym-2.1.0-flybody'
         self.physics_profile=profile_values(physics_profile)
         report=dependency_report()
         if not report['ready']:
@@ -50,11 +53,14 @@ class FlyGymBody:
         self.Observation=HybridControllerObservation; self.Action=LocomotionAction; self.apply=apply_locomotion_action
         self.optimized=optimized
         self.motor=MotorAdapter(); self.world_spec=clone(world); self.config=clone(config)
-        self.fly=make_locomotion_fly(name='flylab',add_adhesion=True,colorize=False)
-        self.native_world=FlatGroundWorld(name='flylab_arena',half_size=100)
+        self.fly=make_locomotion_fly(name='flylab',add_adhesion=True,colorize=False) if self.body_options.model=='neuromechfly' else make_flybody('flylab')
+        if self.body_options.render_camera:
+            self.fly.add_tracking_camera(name='batch_view',pos_offset=(0.,-8.,0.),rotation=Rotation3D('euler',(1.57,0.,0.)),fovy=35.)
+        self.native_world=make_world(self.body_options)
         w=self.native_world
+        support_names=[g.name for g in w.ground_geoms]
         # Group 0 is physical world; all fly geoms are excluded from sensor rays.
-        w.ground_geom.group=0
+        for geom in w.ground_geoms:geom.group=0
         bx,_,bz=world['bounds']
         for k,(p,size) in enumerate([((bx+.5,0,2),(.5,bz+1,2)),((-bx-.5,0,2),(.5,bz+1,2)),((0,bz+.5,2),(bx+1,.5,2)),((0,-bz-.5,2),(bx+1,.5,2))]):
             geom=w.mjcf_root.worldbody.add_geom(name=f'wall_{k}',type=mj.mjtGeom.mjGEOM_BOX,pos=p,size=size,rgba=(.16,.21,.26,1),contype=0,conaffinity=0,group=0)
@@ -71,6 +77,7 @@ class FlyGymBody:
             geom=w.mjcf_root.worldbody.add_geom(name=f'obstacle_{i}',type=mj.mjtGeom.mjGEOM_SPHERE,pos=pos,size=(radius,0,0),rgba=(.35,.40,.46,1),contype=0,conaffinity=0,group=0)
             w.ground_geoms.append(geom)
         spawn, quaternion = [0,0,.8], [1,0,0,0]
+        if self.body_options.terrain=='blocks':spawn[2]=1.3
         if initial_pose is not None:
             if not isinstance(initial_pose,dict) or set(initial_pose)!={'position','yaw_rad'}:
                 raise ValueError('Initial position and yaw_rad required')
@@ -80,8 +87,12 @@ class FlyGymBody:
             number(p[2],'initial z',-bz+2,bz-2)
             yaw=number(initial_pose['yaw_rad'],'initial yaw',-math.pi,math.pi)
             spawn=to_physics(p);quaternion=[math.cos(yaw/2),0.,0.,-math.sin(yaw/2)]
+        contact_preset=ContactBodiesPreset.LEGS_THORAX_ABDOMEN_HEAD
+        if self.body_options.model=='flybody':
+            from flygym.flybody import FlyBodyContactBodiesPreset
+            contact_preset=FlyBodyContactBodiesPreset.TIBIA_TARSUS_ONLY
         w.add_fly(self.fly,spawn,Rotation3D('quat',quaternion),
-                  bodysegs_with_ground_contact=ContactBodiesPreset.LEGS_THORAX_ABDOMEN_HEAD,
+                  bodysegs_with_ground_contact=contact_preset,
                   add_ground_contact_sensors=False)
         # Keep fixed segment frames addressable (in particular c_head).
         # Otherwise upstream body lookup returns -1 for fused segments.
@@ -93,12 +104,19 @@ class FlyGymBody:
         self.sim.reset()  # official neutral-keyframe initialization before settling
         self.m=self.sim.mj_model; self.d=self.sim.mj_data
         self.order=self.fly.get_actuated_jointdofs_order(ActuatorType.POSITION)
+        if self.body_options.model=='flybody':
+            from flygym.anatomy import JointDOF,RotationAxis
+            self.order=[JointDOF(BodySegment(d.parent.name),BodySegment(d.child.name),RotationAxis(d.axis.value)) for d in self.order]
         if len(self.order)!=42: raise RuntimeError(f'Expected 42 active DOFs, found {len(self.order)}')
         self.steps=PreprogrammedSteps()
+        if self.body_options.model=='flybody':
+            from flygym_demo.complex_terrain import FlyBodyPreprogrammedSteps
+            self.steps=FlyBodyPreprogrammedSteps()
         self.controller=HybridTurningController(timestep=PHYSICS_DT,preprogrammed_steps=self.steps,output_dof_order=self.order)
         self.controller.reset(seed=int(seed))
+        if self.body_options.model=='flybody':self.controller.enable_adhesion=False
         self.neutral=self.steps.default_pose_by_dof_order(self.order)
-        self.last_action=LocomotionAction(joint_angles=self.neutral.copy(),adhesion_onoff=np.ones(6,dtype=bool))
+        self.last_action=LocomotionAction(joint_angles=self.neutral.copy(),adhesion_onoff=np.full(6,self.controller.enable_adhesion,dtype=bool))
         self.apply(self.sim,self.fly.name,self.last_action)
         self.body_order=self.fly.get_bodysegs_order()
         self.body_indices={b.name:i for i,b in enumerate(self.body_order)}
@@ -117,7 +135,8 @@ class FlyGymBody:
         self.obstacle_ids=[mj.mj_name2id(self.m,mj.mjtObj.mjOBJ_GEOM,f'obstacle_{i}') for i in range(12)]
         self.world_geom_ids=set(int(i) for i in self.sim._internal_ground_geom_ids)
         self.landmark_id=mj.mj_name2id(self.m,mj.mjtObj.mjOBJ_GEOM,'visual_landmark')
-        self.floor_id=mj.mj_name2id(self.m,mj.mjtObj.mjOBJ_GEOM,w.ground_geom.name)
+        self.support_geom_ids=set(mj.mj_name2id(self.m,mj.mjtObj.mjOBJ_GEOM,name) for name in support_names)
+        self.floor_id=mj.mj_name2id(self.m,mj.mjtObj.mjOBJ_GEOM,w.ground_geom.name) if hasattr(w,'ground_geom') else -1
         self.ray_mask=np.array([1,0,0,0,0,0],dtype=np.uint8)
         self.m.geom_group[:]=2
         for gid in self.world_geom_ids: self.m.geom_group[gid]=0
@@ -138,6 +157,9 @@ class FlyGymBody:
         # Retain the default CPU model identity for existing checkpoints.
         from .physics import PhysicsProfile
         if self.physics_profile != PhysicsProfile(): identity['physics_profile']=self.physics_profile.hash
+        if self.body_options!=BodyOptions():
+            from dataclasses import asdict
+            identity['body_options']=asdict(self.body_options)
         self.model_hash=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()
         if not np.isfinite(self.d.qpos).all(): raise RuntimeError('Non-finite state after neutral settling')
 
@@ -152,7 +174,9 @@ class FlyGymBody:
         for key,links in [('stumble',('tibia','tarsus1','tarsus2')),('feet',('tarsus1','tarsus2','tarsus3','tarsus4','tarsus5')),('legs',LINKS)]:
             indices=np.full(self.m.ngeom,-1,dtype=np.int32)
             for i,name in enumerate(f'{leg}_{link}' for leg in LEGS for link in links):
-                indices[geom_by_segment[self.BodySegment(name)]]=i
+                if self.body_options.model=='flybody':
+                    if name in self.body_indices:indices[self.m.geom_bodyid==self.body_ids[self.body_indices[name]]]=i
+                else:indices[geom_by_segment[self.BodySegment(name)]]=i
             self._force_maps[key]=(indices,6*len(links))
         self._fly_body_mask=np.zeros(self.m.nbody,dtype=bool); self._fly_body_mask[self.body_ids]=True
         self._core_mask=np.zeros(self.m.nbody,dtype=bool)
@@ -171,6 +195,7 @@ class FlyGymBody:
         """Compiled options, separate from the neural runtime and model clock."""
         from dataclasses import asdict
         return dict(profile=asdict(self.physics_profile), profile_hash=self.physics_profile.hash,
+                    body_options=asdict(self.body_options),
                     integrator=int(self.m.opt.integrator), solver=int(self.m.opt.solver),
                     iterations=int(self.m.opt.iterations), noslip_iterations=int(self.m.opt.noslip_iterations),
                     cone=int(self.m.opt.cone), jacobian=int(self.m.opt.jacobian),
@@ -187,7 +212,7 @@ class FlyGymBody:
         g1=contacts.geom1[:n];g2=contacts.geom2[:n]
         i1=mapping[g1];i2=mapping[g2]
         active=(((i1>=0)&self._ground_mask[g2])|((i2>=0)&self._ground_mask[g1]))&(contacts.exclude[:n]==0)
-        if floor_only: active &= (g1==self.floor_id)|(g2==self.floor_id)
+        if floor_only: active &= np.isin(g1,list(self.support_geom_ids))|np.isin(g2,list(self.support_geom_ids))
         wrench=np.zeros(6)
         for j in np.flatnonzero(active):
             self.mj.mj_contactForce(self.m,self.d,int(j),wrench)
@@ -215,6 +240,7 @@ class FlyGymBody:
         # surface and adds a reaction force; report that contribution separately.
         # This is an engineering support-load estimate, not receptor strain.
         normal=np.maximum(0.,floor.sum(axis=1)[:,2])/max(self.weight0,1e-30)
+        if self.body_options.terrain!='flat':normal=self.surface_contacts()['normal_bw']
         return dict(angles_rad=self.d.qpos[self.qpos_ids].copy(),
                     velocities_rad_s=self.d.qvel[self.qvel_ids].copy(),
                     load_bw=np.linalg.norm(forces, axis=2).sum(axis=1)/max(self.weight0, 1e-30),
@@ -246,7 +272,7 @@ class FlyGymBody:
         Native lengths are mm. The target displacement is a first-order
         estimate using only actuated leg joints; floating-root displacement
         is deliberately excluded. It is not measured future pad clearance.
-        The current arena has a flat floor with a +z normal.
+        Contact normals are used on terrain, with +z as the no-contact fallback.
         """
         targets = np.asarray(targets)
         if targets.shape != (42,) or not np.isfinite(targets).all():
@@ -254,25 +280,45 @@ class FlyGymBody:
         delta = targets - self.d.qpos[self.qpos_ids]
         lifts, velocities = [], []
         jacobian = np.zeros((3, self.m.nv))
+        normals=np.tile([0.,0.,1.],(6,1)) if self.body_options.terrain=='flat' else self.surface_contacts()['normals']
         for body_id in self._tip_ids:
             self.mj.mj_jacBody(self.m, self.d, jacobian, None, int(body_id))
-            lifts.append(float(jacobian[2, self.qvel_ids] @ delta))
+            normal=normals[len(lifts)]
+            lifts.append(float(normal @ jacobian[:, self.qvel_ids] @ delta))
             velocities.append(jacobian @ self.d.qvel)
         return dict(target_lift_mm=np.asarray(lifts), velocity_mm_s=np.asarray(velocities),
-                    model='first-order tip displacement from actuated joints; flat-floor normal')
+                    model='first-order tip displacement from actuated joints; support normal, +z fallback')
 
     def contact_probe(self):
         """Measured tip position/velocity and floor contact at this control boundary."""
         motion=self.foot_kinematics(self.d.qpos[self.qpos_ids])
         velocity=motion['velocity_mm_s']
         floor=self._contact_forces('feet',floor_only=True).reshape(6,5,3).sum(axis=1)
-        normal=np.maximum(0.,floor[:,2])/max(self.weight0,1e-30)
+        surfaces=self.surface_contacts()
+        normal=surfaces['normal_bw']
         contact=normal>1e-6
         return dict(time_s=self.physics_time(),legs=list(LEGS),
             tip_position_native_mm=self.d.xpos[self._tip_ids].tolist(),
             tip_velocity_native_mm_s=velocity.tolist(),floor_normal_bw=normal.tolist(),
-            floor_contact=contact.tolist(),slip_speed_mm_s=np.where(contact,np.linalg.norm(velocity[:,:2],axis=1),0.).tolist(),
+            floor_contact=contact.tolist(),surface_normals=surfaces['normals'].tolist(),
+            slip_speed_mm_s=np.where(contact,np.linalg.norm(velocity-(velocity*surfaces['normals']).sum(axis=1)[:,None]*surfaces['normals'],axis=1),0.).tolist(),
             sampling='control boundary; tip body origin, not a measured pad-surface clearance')
+
+    def surface_contacts(self):
+        """Compressive support and normals from actual multi-geom contacts."""
+        mapping,_=self._force_maps['feet'];load=np.zeros(6);weighted=np.zeros((6,3));wrench=np.zeros(6)
+        for i,c in enumerate(self.d.contact[:self.d.ncon]):
+            if c.exclude:continue
+            a,b=int(c.geom1),int(c.geom2)
+            segment=mapping[a] if b in self.support_geom_ids else mapping[b] if a in self.support_geom_ids else -1
+            if segment<0:continue
+            self.mj.mj_contactForce(self.m,self.d,i,wrench)
+            normal=c.frame.reshape(3,3)[0]*(1. if a in self.support_geom_ids else -1.)
+            value=max(0.,float(wrench[0]));leg=int(segment)//5
+            load[leg]+=value;weighted[leg]+=value*normal
+        lengths=np.linalg.norm(weighted,axis=1);normals=np.tile([0.,0.,1.],(6,1))
+        np.divide(weighted,lengths[:,None],out=normals,where=lengths[:,None]>1e-12)
+        return dict(normal_bw=load/max(self.weight0,1e-30),normals=normals)
 
     def step_joint_targets(self, targets, adhesion, dt=CONTROL_DT):
         """Direct neural muscle adapter. Does not advance the predefined CPG."""
@@ -394,7 +440,7 @@ class FlyGymBody:
         for _ in range(n):
             if parked:
                 # Park at neutral with position actuators; no hidden root braking.
-                self.last_action=self.Action(joint_angles=self.neutral.copy(),adhesion_onoff=np.ones(6,dtype=bool))
+                self.last_action=self.Action(joint_angles=self.neutral.copy(),adhesion_onoff=np.full(6,self.controller.enable_adhesion,dtype=bool))
             else:
                 obs=self._observation() if self.optimized else self.Observation.from_sim(self.sim,self.fly.name)
                 self.last_action=self._stepper.step(self.descending,obs,drive_prepared=True) if self.optimized else self.controller.step(self.descending,obs)
@@ -422,14 +468,15 @@ class FlyGymBody:
             c=self.d.contact;n=self.d.ncon
             g1=c.geom1[:n];g2=c.geom2[:n];b1=self.m.geom_bodyid[g1];b2=self.m.geom_bodyid[g2]
             w1=self._ground_mask[g1];w2=self._ground_mask[g2]
-            hits=(w1&(g1!=self.floor_id)&self._fly_body_mask[b2])|(w2&(g2!=self.floor_id)&self._fly_body_mask[b1])|(self._core_mask[b1]&w2)|(self._core_mask[b2]&w1)
+            support1=np.isin(g1,list(self.support_geom_ids));support2=np.isin(g2,list(self.support_geom_ids))
+            hits=(w1&~support1&self._fly_body_mask[b2])|(w2&~support2&self._fly_body_mask[b1])|(self._core_mask[b1]&w2)|(self._core_mask[b2]&w1)
             return bool(np.any(hits&(c.exclude[:n]==0)))
         target={int(self.body_ids[i]) for n,i in self.body_indices.items() if n in ('c_thorax','c_head') or n.startswith('c_abdomen')}
         for c in self.d.contact[:self.d.ncon]:
             if c.exclude: continue
             b1=int(self.m.geom_bodyid[c.geom1]); b2=int(self.m.geom_bodyid[c.geom2])
-            if ((int(c.geom1) in self.world_geom_ids and int(c.geom1)!=self.floor_id and b2 in self.body_ids) or
-                (int(c.geom2) in self.world_geom_ids and int(c.geom2)!=self.floor_id and b1 in self.body_ids)): return True
+            if ((int(c.geom1) in self.world_geom_ids and int(c.geom1) not in self.support_geom_ids and b2 in self.body_ids) or
+                (int(c.geom2) in self.world_geom_ids and int(c.geom2) not in self.support_geom_ids and b1 in self.body_ids)): return True
             if (b1 in target and int(c.geom2) in self.world_geom_ids) or (b2 in target and int(c.geom1) in self.world_geom_ids): return True
         return False
 
@@ -443,6 +490,7 @@ class FlyGymBody:
         if 'c_abdomen12' in segments: segments['c_abdomen']=segments['c_abdomen12']
         body=dict(position=to_ui(p),yaw=yaw,yawRate=-float(vel[2]),speed=float(vel[3:]@heading),verticalSpeed=float(vel[5]),roll=0.,pitch=math.asin(clamp(heading[2],-1,1)),basis=ui_R.tolist(),phase=0.,contact=int(self.prev_contact),collisions=self.collisions,travel=self.travel,legs=legs,segments=segments,contactsBW=contacts.tolist())
         physics=dict(backend=self.backend,testDouble=False,physicalDt=PHYSICS_DT,controlDt=CONTROL_DT,
+                     bodyModel=self.body_options.model,terrain=self.body_options.terrain,
                      physicsTime=float(self.d.time-self.t0),settlingTime=self.t0,substeps=round(CONTROL_DT/PHYSICS_DT),
                      jointNames=self.joint_names,jointAngles=self.d.qpos[self.qpos_ids].tolist(),jointVelocities=self.d.qvel[self.qvel_ids].tolist(),
                      jointTargets=np.asarray(self.last_action.joint_angles).tolist(),actuatorForces=self.sim.get_actuator_forces(self.fly.name,self.ActuatorType.POSITION).tolist(),

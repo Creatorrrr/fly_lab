@@ -200,6 +200,8 @@ python tools/run_physics_campaign.py
 
 ## 10. 문서
 
+- [FlyGym 잔여 확장과 실측 결과](docs/C_FLYGYM_REMAINING_20260910.md): 자동 복안·4지점 후각, GPU 제어·전뇌 배치, 실제 메시 연속 관측, 기록 운동학·15 MTU 모방학습·FlyBody·지형 비교.
+
 - `docs/ARCHITECTURE.md`: 모듈, 좌표·시간·출력 규격, C 변경 지점.
 - `docs/TESTING.md`: 통과한 검증과 막힌 경로의 정확한 구분.
 - `docs/DATA_PROVENANCE.md`, `data/`: A에서 이어받은 발췌 데이터와 출처.

@@ -387,6 +387,38 @@ F.decodeCSignals=function(buffer){
 };
 })(globalThis.Fly=globalThis.Fly||{});
 
+(function(F){
+'use strict';
+
+// One bounded calculation at a time. Rendering never gates the next request.
+F.createPlaybackPump=function({shouldRun,advance,onBusy=()=>{},onError,
+ now=()=>performance.now(),schedule=fn=>setTimeout(fn,0),cancel=id=>clearTimeout(id),
+ targetMs=40,maxSteps=10}){
+ let timer=null,busy=false,msPerStep=null;
+ function sync(){
+  if(!shouldRun()){
+   if(timer!==null){cancel(timer);timer=null;}
+   return;
+  }
+  if(!busy&&timer===null)timer=schedule(run);
+ }
+ async function run(){
+  timer=null;
+  if(busy||!shouldRun())return;
+  const steps=Math.max(1,Math.min(maxSteps,msPerStep===null?2:Math.floor(targetMs/msPerStep)));
+  busy=true;onBusy(true);
+  const start=now();
+  try{
+   await advance(steps);
+   const measured=Math.max(.01,(now()-start)/steps);
+   msPerStep=msPerStep===null?measured:.7*msPerStep+.3*measured;
+  }catch(error){onError(error);}
+  finally{busy=false;onBusy(false);sync();}
+ }
+ return {sync};
+};
+})(globalThis.Fly);
+
 /* Environment editor and independent observation / intervention / record cohorts. */
 (function(F){
 'use strict';
@@ -626,8 +658,9 @@ class Transport{
  }
 }
 const rpc=new Transport();
+let playback;
 const workbench=F.createWorkbench({state,rpc,view,applyFrame,tell,button,command,updatePlay,regions,renderSelection});
-function updatePlay(){$('play').textContent=state.playing?'Ⅱ 일시정지':'▶ 재생';$('play').disabled=state.closed||!state.frame;$('step').disabled=state.closed||!state.frame||state.playing;}
+function updatePlay(){$('play').textContent=state.playing?'Ⅱ 일시정지':'▶ 재생';$('play').disabled=state.closed||!state.frame;$('step').disabled=state.closed||!state.frame||state.playing;playback?.sync();}
 function commandText(c){return c?`${c.forwardSpeed.toFixed(2)} mm/s · ${c.yawRate.toFixed(2)} rad/s`:'사용 안 함';}
 function applyFrame(f){
  if(!f||f.schema!=='flylab.frame.v3')return;
@@ -766,8 +799,14 @@ button('paired',async()=>{workbench.pause();const kind=$('pair-kind').value,inte
 document.addEventListener('visibilitychange',()=>{if(document.hidden){state.playing=false;updatePlay();}});
 document.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='Space'){e.preventDefault();state.playing=!state.playing;updatePlay();}if(e.key==='f')view.track();});
 window.addEventListener('resize',drawTrace);
-let lastAdvance=0,lastDraw=0;
-function animate(now){requestAnimationFrame(animate);workbench.animate(now,false);if(!document.hidden&&now-lastDraw>=33&&view.needsDraw()){view.draw();workbench.drawPreview();lastDraw=now;}if(state.playing&&!state.busy&&!document.hidden&&now-lastAdvance>=16){state.busy=true;lastAdvance=now;rpc.request('advance',{steps:state.backend==='exp_lif_mps'?2:10}).then(applyFrame).catch(e=>{state.playing=false;tell(e.message,true);}).finally(()=>{state.busy=false;updatePlay();});}}
+playback=F.createPlaybackPump({
+ shouldRun:()=>state.playing&&!state.closed&&!!state.frame&&!document.hidden,
+ advance:async steps=>applyFrame(await rpc.request('advance',{steps})),
+ onBusy:busy=>{state.busy=busy;},
+ onError:e=>{state.playing=false;updatePlay();tell(e.message,true);}
+});
+let lastDraw=0;
+function animate(now){requestAnimationFrame(animate);workbench.animate(now,false);if(!document.hidden&&now-lastDraw>=33&&view.needsDraw()){view.draw();workbench.drawPreview();lastDraw=now;}}
 requestAnimationFrame(animate);
 rpc.connect().then(async(config)=>{$('status-dot').className='ready';if(config.hasExperiment){await refreshExperiment(await rpc.request('attach'),'저장된 현재 실험에 연결했습니다. 재생으로 계속 진행하세요.');}else await init();}).catch(e=>{$('waiting').textContent='초기화 실패';tell(e.message,true);});
 })(globalThis.Fly);

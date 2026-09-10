@@ -156,6 +156,17 @@ class RepairTests(unittest.TestCase):
         with self.assertRaises(ValueError):c.restore(bad)
         same_state(before,c.snapshot())
 
+    def test_transient_snapshot_survives_sensor_and_motor_updates(self):
+        g,b,c=self.setup_loop();neural=ExpLIF(g)
+        c.encode();c.decode(neural)
+        before=c.snapshot();rollback=c.snapshot(copy_diagnostics=False)
+        b.velocities[5]=12.;b.loads[0]=.35;neural.rate[:]=15.
+        c.encode();c.decode(neural)
+        same_state(before,rollback)
+        c.restore(rollback);same_state(before,c.snapshot())
+        exported=c.snapshot();exported['last_sensory'][0]['value']=999.
+        same_state(before,c.snapshot())
+
     def test_actual_adhesion_compensation_and_contact_restoration(self):
         from flylab.body import FlyGymBody,dependency_report
         if not dependency_report()['ready']:self.skipTest('Pinned physical runtime required')

@@ -249,6 +249,17 @@ class SensorimotorTests(unittest.TestCase):
                 self.assertTrue(all(x['value']==0 for x in e.neuromuscular.last_sensory))
                 self.assertFalse(e.frame()['command']['high_level_command_applied'])
             finally:e2.close()
+            before=e.checkpoint();original=e.neuromuscular.encode
+            def excessive_feedback(*args,**kwargs):
+                drive,ports=original(*args,**kwargs)
+                drive[0]=1001.
+                return drive,ports
+            e.neuromuscular.encode=excessive_feedback
+            from flylab.c.inputs import InputRejected
+            try:
+                with self.assertRaises(InputRejected):e.step()
+                same_state(before,e.checkpoint())
+            finally:e.neuromuscular.encode=original
             with self.assertRaises(ValueError):CEngine(g,b,mode='C_SHADOW',body_factory=LegBody)
         finally:e.close()
 

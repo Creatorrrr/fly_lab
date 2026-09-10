@@ -329,13 +329,15 @@ class FlyGymBody:
         if abs(n*PHYSICS_DT-dt)>1e-10: raise ValueError('Control dt must be integer physical steps')
         self.descending=self.motor.map(command)
         parked=np.max(np.abs(self.descending))<1e-7
+        if self.optimized and not parked:
+            self._stepper.set_drive(self.descending)
         for _ in range(n):
             if parked:
                 # Park at neutral with position actuators; no hidden root braking.
                 self.last_action=self.Action(joint_angles=self.neutral.copy(),adhesion_onoff=np.ones(6,dtype=bool))
             else:
                 obs=self._observation() if self.optimized else self.Observation.from_sim(self.sim,self.fly.name)
-                self.last_action=self._stepper.step(self.descending,obs) if self.optimized else self.controller.step(self.descending,obs)
+                self.last_action=self._stepper.step(self.descending,obs,drive_prepared=True) if self.optimized else self.controller.step(self.descending,obs)
             self.apply(self.sim,self.fly.name,self.last_action)
             self.d.xfrc_applied[:]=0
             if self.push_left>0:

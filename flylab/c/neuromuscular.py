@@ -189,6 +189,10 @@ class NeuromuscularLoop:
         self.port_names=[f'leg_{leg}_{kind}'+('_'+self.port_types[i] if self.version==2 else '')
                          for i,(leg,kind,_) in enumerate(self.ports)]
         self.channels.update(self.port_names)
+        self._port_legs = [LEGS.index(leg) for leg, _, _ in self.ports]
+        self._port_channels = [frozenset(('*', 'leg_feedback', f'leg_{leg}',
+                                         f'leg_{leg}_{kind}', self.port_names[j]))
+                               for j, (leg, kind, _) in enumerate(self.ports)]
         self.filtered = np.zeros(len(self.ports))
         self.delayed = np.zeros(len(self.ports))
         self.offset = np.zeros(42)
@@ -218,7 +222,7 @@ class NeuromuscularLoop:
                                  load=min(1., float(load[i])/.5), touch=float(load[i] > .01))
         port_features=[]
         for j,(leg,kind,_) in enumerate(self.ports):
-            i=LEGS.index(leg);knee=self.joints[i,5]
+            i=self._port_legs[j];knee=self.joints[i,5]
             value=features[leg][kind] if self.version==1 else typed_receptor_feature(
                 kind,self.port_types[j],q[knee],v[knee],self.velocity_lowpass[knee],support[i],touch[i],self.spec)
             port_features.append(value)
@@ -226,9 +230,10 @@ class NeuromuscularLoop:
         filtered = self.filtered + (1-math.exp(-dt/self.spec['sensory_tau_s']))*(values-self.filtered)
         drive = np.zeros(self.graph.n, np.float32)
         diagnostics = []
+        disabled = set(disabled)
         for j, (leg, kind, ids) in enumerate(self.ports):
             name = self.port_names[j]
-            enabled = not (set(disabled) & {'*', 'leg_feedback', f'leg_{leg}', f'leg_{leg}_{kind}', name})
+            enabled = self._port_channels[j].isdisjoint(disabled)
             value = float(self.delayed[j]) if enabled else 0.
             np.add.at(drive, ids, value)
             diagnostics.append(dict(name=name, feature=port_features[j], value=value, unit='mV', enabled=enabled, targets=len(ids)))
@@ -295,11 +300,15 @@ class NeuromuscularLoop:
                 adhesion_policy=self.spec['adhesion_policy'],motor_response=self.spec['motor_response'])
         return result
 
-    def snapshot(self):
+    def snapshot(self, *, copy_diagnostics=True):
+        # encode/decode replace diagnostic lists and contact dictionaries; they
+        # never edit an earlier diagnostic record. A control-boundary rollback
+        # can retain those records, while exported checkpoints own deep copies.
+        clone = copy.deepcopy if copy_diagnostics else lambda value: value
         result = dict(hash=self.hash, sensor_tick=self.sensor_tick, motor_tick=self.motor_tick,
                     filtered=self.filtered.copy(), delayed=self.delayed.copy(), offset=self.offset.copy(),
-                    last_sensory=copy.deepcopy(self.last_sensory), last_motor=copy.deepcopy(self.last_motor))
-        if self.version==2:result.update(velocity_lowpass=self.velocity_lowpass.copy(),last_contact=copy.deepcopy(self.last_contact))
+                    last_sensory=clone(self.last_sensory), last_motor=clone(self.last_motor))
+        if self.version==2:result.update(velocity_lowpass=self.velocity_lowpass.copy(),last_contact=clone(self.last_contact))
         return result
 
     def restore(self, state):

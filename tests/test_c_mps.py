@@ -69,6 +69,40 @@ class MetalTests(unittest.TestCase):
         same_state(self.gpu.snapshot(),other.snapshot())
         self.assertEqual(self.gpu.last_events,other.last_events)
 
+    def test_reused_pulses_preserve_duplicate_order_and_changing_cohorts(self):
+        rng = np.random.default_rng(162)
+        for ids, steps, capture in [([2,0,2],50,[0,2,0]), ([2,0,2],50,[2]),
+                                    ([0,2,2],30,[1,3]), ([4],25,[]), ([],0,[0,5]),
+                                    ([2,0,2],50,[5,0,2])]:
+            self.capture = np.asarray(capture, np.int32)
+            pulses = (np.array(ids, np.int32), rng.uniform(0,15,(steps,len(ids))))
+            self.run_both(steps, pulses=pulses)
+
+    def test_async_upload_owns_inputs_and_old_readouts(self):
+        ids = np.array([2,0,2], np.int32)
+        values = np.full((50,3), 5., np.float32)
+        drive = self.drive.copy()
+        self.cpu.advance(drive,50,self.capture,(ids,values))
+        self.gpu.begin_advance(drive,50,self.capture,(ids,values))
+        drive.fill(900.); values.fill(900.); ids[:]=4
+        self.gpu.finish_advance(); self.check_equal()
+        readout = self.gpu.readout(self.capture)
+        saved = copy.deepcopy(readout)
+        self.run_both(50)
+        same_state(readout,saved)
+
+    def test_cached_interventions_keep_validation_and_restore_masks(self):
+        self.cpu.set_interventions([0]); self.gpu.set_interventions([0])
+        self.run_both(50)
+        for invalid in ([False], [np.int64(0)]):
+            before = self.gpu.snapshot()
+            with self.assertRaises(ValueError): self.gpu.set_interventions(invalid)
+            same_state(before,self.gpu.snapshot())
+        saved = self.gpu.snapshot()
+        self.gpu.set_interventions(); self.gpu.set_interventions()
+        self.gpu.restore(saved)
+        self.gpu.set_interventions([0]); self.run_both(50)
+
     def test_runtime_mismatch_and_float64_fail_explicitly(self):
         state=self.gpu.snapshot();state['backend_runtime']['shader_sha256']='bad'
         with self.assertRaises(ValueError):create_backend(self.graph,backend='exp_lif_mps').restore(state)

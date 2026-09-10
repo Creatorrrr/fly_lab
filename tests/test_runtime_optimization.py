@@ -34,6 +34,9 @@ class PhysicalOptimizationTests(unittest.TestCase):
         b=copy.deepcopy(a);a.reset(seed=83);b.reset(seed=83)
         fast=CachedHybridStepper(b);rng=np.random.default_rng(61)
         for i in range(600):
+            if i in (200,400):
+                a.enable_adhesion=b.enable_adhesion=(i==400)
+                a.swing_extension=b.swing_extension=np.pi/(8 if i==200 else 4)
             heights=np.full(6,.1);heights[(i//45)%6]=-.8
             forces=rng.normal(0,2,(6,3,3))
             obs=HybridControllerObservation(.9,heights,forces,np.array([1.,0.,0.]))
@@ -45,6 +48,8 @@ class PhysicalOptimizationTests(unittest.TestCase):
                 np.testing.assert_array_equal(getattr(a,key),getattr(b,key))
             for key in ('curr_phases','curr_magnitudes'):
                 np.testing.assert_array_equal(getattr(a.cpg_network,key),getattr(b.cpg_network,key))
+            for key in ('net_corrections','retraction_correction','stumbling_correction','stumbling_mask'):
+                np.testing.assert_array_equal(a.last_info[key],b.last_info[key])
 
     def test_native_body_contact_sensor_and_checkpoint_equivalence(self):
         world=default_world();config=config_values()
@@ -113,7 +118,7 @@ class PackedMPSObservationTests(unittest.TestCase):
     def test_async_boundary_requires_completion(self):
         g=graph_fixture();b=create_backend(g,backend='exp_lif_mps');drive=np.full(g.n,30.,np.float32)
         b.begin_advance(drive,50,[0,1])
-        for call in (b.snapshot,b.summary,lambda:b.readout([0]),lambda:b.begin_advance(drive,50)):
+        for call in (b.snapshot,b.summary,lambda:b.readout([0]),lambda:b.begin_advance(drive,50),lambda:b.set_interventions([0])):
             with self.assertRaises(RuntimeError):call()
         b.finish_advance();self.assertTrue(b.submitted_event.query())
         self.assertEqual(b.tick,50)

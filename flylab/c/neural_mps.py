@@ -86,12 +86,46 @@ class MetalLIF(ExpLIF):
         self.runtime_identity = dict(torch=torch.__version__, shader_sha256=hashlib.sha256(source.encode()).hexdigest(),
                                      numerical_policy='float32-serial-csr-no-fma-v1')
         self.observation_library = torch.mps.compile_shader(Path(__file__).with_name('observation.metal').read_text())
+        self._integrate = self.library.integrate
+        self._propagate = self.library.propagate
         self._readout_indices = None
         self._readout_device = None
         self._pending_advance = None
         self.submitted_event = torch.mps.Event()
         self._observed_tick = None
         self.additional_readout = np.empty(0, dtype=np.int32)
+        self._intervention_key = None
+        self._pulse_indices = None
+        self._upload_buffers = {}
+        self._upload_sources = []
+        self._collected = None
+
+    def set_interventions(self, suppress=(), mute=(), edges=()):
+        if self._pending_advance is not None:
+            raise RuntimeError('Finish neural period before changing interventions')
+        suppress, mute, edges = list(suppress), list(mute), sorted(set(edges))
+        # Validate even cache hits: bool and NumPy integer indices remain invalid.
+        for ids in (suppress, mute):
+            if any(type(i) is not int or not 0 <= i < self.n for i in ids):
+                raise ValueError('Invalid intervention neuron index')
+        if any(type(i) is not int or not 0 <= i < len(self.graph.weights) for i in edges):
+            raise ValueError('Invalid intervention edge index')
+        key = (tuple(suppress), tuple(mute), tuple(edges))
+        if key != self._intervention_key:
+            super().set_interventions(suppress, mute, edges)
+            self._intervention_key = key
+
+    def _upload(self, name, value):
+        # Own the CPU storage until finish_advance drains the stream. Callers
+        # may modify their NumPy arrays after begin_advance returns.
+        source = self.torch.from_numpy(np.array(value, dtype=np.float32, copy=True, order='C'))
+        target = self._upload_buffers.get(name)
+        if target is None or target.shape != source.shape:
+            target = self.torch.empty_like(source, device='mps')
+            self._upload_buffers[name] = target
+        target.copy_(source, non_blocking=True)
+        self._upload_sources.append(source)
+        return target
 
     def set_readout_cohort(self, indices):
         """Cache required motor readouts with the next observation transfer.
@@ -123,6 +157,7 @@ class MetalLIF(ExpLIF):
             self.capture_cache = tuple(unique)
             self.capture_device = self.xp.asarray(unique,np.int32)
             self._capture_lookup = {int(j):i for i,j in enumerate(unique)}
+        self._upload_sources = []
         pulse_ptr, pv, pulse_width = self.empty_pulse_ptr, self.empty_pulses, 0
         if pulses is not None:
             pi, values = map(np.asarray, pulses)
@@ -131,25 +166,33 @@ class MetalLIF(ExpLIF):
             if len(pi) and (pi.min() < 0 or pi.max() >= self.n): raise ValueError('Invalid external pulse targets')
             if len(pi):
                 # Stable order preserves repeated additions to the same neuron.
-                order = np.argsort(pi, kind='stable')
-                ptr = np.zeros(self.n+1, dtype=np.int32)
-                ptr[1:] = np.cumsum(np.bincount(pi.astype(np.int64), minlength=self.n))
-                pulse_ptr = self.xp.asarray(ptr)
-                pv = self.xp.asarray(values[:, order], np.float32)
+                if self._pulse_indices is None or not np.array_equal(pi, self._pulse_indices):
+                    order = np.argsort(pi, kind='stable')
+                    ptr = np.zeros(self.n+1, dtype=np.int32)
+                    ptr[1:] = np.cumsum(np.bincount(pi.astype(np.int64), minlength=self.n))
+                    self._pulse_ptr = self.xp.asarray(ptr)
+                    self._pulse_order = order
+                    self._pulse_indices = pi.copy()
+                pulse_ptr = self._pulse_ptr
+                pv = self._upload('pulses', values[:, self._pulse_order])
                 pulse_width = len(pi)
-        x = self.xp.asarray(drive, np.float32)
+        x = self._upload('drive', drive)
         self._observed_tick = None
         event_bytes=max(1,steps*len(unique))
         read_start=(8+event_bytes+7)//8*8
         stats_start=read_start+16*len(unique)
         blocks=(self.n+255)//256
-        collected=self.torch.empty(stats_start+24*blocks,dtype=self.torch.uint8,device='mps')
+        size = stats_start+24*blocks
+        if self._collected is None or self._collected.numel() != size:
+            self._collected = self.torch.empty(size,dtype=self.torch.uint8,device='mps')
+        collected = self._collected
         health=collected[:4].view(self.torch.int32);health.zero_()
         events=collected[8:8+event_bytes]
         start = self.tick
+        integrate, propagate = self._integrate, self._propagate
         for k in range(steps):
             slot = self.tick % self.slots
-            self.library.integrate(self.v, self.h, self.rate, self.refractory_until,
+            integrate(self.v, self.h, self.rate, self.refractory_until,
                 self.spike_count, self.queue, self.suppress, self.mute, self.emitted,
                 x, self.constants, self.capture_map, events, pulse_ptr, pv, health,
                 self.out_ptr, self.out_indices, self.active_rows,
@@ -157,7 +200,7 @@ class MetalLIF(ExpLIF):
                 threads=self.n)
             # With slots=delay_ticks+1, the just-consumed slot is also the
             # destination for emissions at the end of this interval.
-            self.library.propagate(self.indptr, self.indices, self.W.data, self.emitted, self.active_rows,
+            propagate(self.indptr, self.indices, self.W.data, self.emitted, self.active_rows,
                                    self.queue, self.n, slot, threads=self.n)
             self.tick += 1
         if len(unique):
@@ -175,6 +218,7 @@ class MetalLIF(ExpLIF):
         self._pending_advance = None
         # Health, events, selected state and aggregate statistics share one copy.
         raw=collected.cpu().numpy()
+        self._upload_sources = []
         if int(raw[:4].view(np.int32)[0]): raise RuntimeError('FAULT_NEURAL_NONFINITE')
         self.last_events = []
         if steps and len(capture):
@@ -241,6 +285,7 @@ class MetalLIF(ExpLIF):
         if self._pending_advance is not None: raise RuntimeError('Finish neural period before restoring')
         if state.get('backend_runtime') != self.runtime_identity:
             raise ValueError('MPS runtime or shader differs; explicit backend transfer required')
+        self._intervention_key = None
         result=super().restore(state)
         self._observed_tick=None
         return result

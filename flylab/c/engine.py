@@ -233,7 +233,7 @@ class CEngine:
         prepared = self._prepare_interventions()
         sensor_state = self.sensors.snapshot()
         encoder_state = self.encoder.snapshot() if self.neural else None
-        leg_state = self.neuromuscular.snapshot() if self.neuromuscular else None
+        leg_state = self.neuromuscular.snapshot(copy_diagnostics=False) if self.neuromuscular else None
         try:
             packet = self.sensors.observe(self.body, self.world, CONTROL_DT, self.config)
             drive = pulses = None

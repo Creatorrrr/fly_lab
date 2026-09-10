@@ -110,7 +110,15 @@ async function search(reset=true){
 async function toggle(id){const ids=state.selected.includes(id)?state.selected.filter(x=>x!==id):[...state.selected,id];applyFrame(await rpc.request('subscribe',{ids}));}
 async function regions(){const rows=await rpc.request('regions');$('regions').replaceChildren(...rows.map(r=>{const box=document.createElement('div');box.className='region';const name=document.createElement('span');name.textContent=r.region;const value=document.createElement('strong');value.textContent=r.mean_rate_Hz.toFixed(2)+' Hz';const count=document.createElement('small');count.textContent=r.neurons.toLocaleString()+' 뉴런';box.append(name,value,count);return box;}));}
 async function checkpoints(){const rows=await rpc.request('checkpoints');$('checkpoints').replaceChildren();const blank=document.createElement('option');blank.value='';blank.textContent='저장한 체크포인트';$('checkpoints').append(blank);rows.forEach(r=>{const o=document.createElement('option');o.value=o.textContent=r.name;$('checkpoints').append(o);});}
-function applyReady(result){state.dataset=result.manifest.dataset_id+' v'+result.manifest.snapshot_id;$('dataset-label').textContent=state.dataset+' · NeuroMechFly';
+function applyProfileModes(){
+ const profile=state.profiles?.find(p=>p.name===$('binding-profile').value);
+ const modes=profile?.execution?.modes||state.supportedModes;
+ if(!modes)return;
+ for(const option of $('mode').options)option.disabled=!modes.includes(option.value);
+ if(!modes.includes($('mode').value))$('mode').value=modes[0];
+}
+$('binding-profile').addEventListener('change',applyProfileModes);
+function applyReady(result){state.profiles=result.profiles;state.supportedModes=result.capabilities.modes;state.dataset=result.manifest.dataset_id+' v'+result.manifest.snapshot_id;$('dataset-label').textContent=state.dataset+' · NeuroMechFly';
  const labels={'bindings.json':'기존 평균 냄새','bindings-bilateral-geosmin-v1.json':'좌우 먹이·geosmin v1 (실험)','bindings-bilateral-geosmin-v2.json':'좌우 먹이·geosmin v2 · 농도 압축 (실험)','bindings-visual-head-contact-research-v1.json':'좌우 냄새·물체 시야·머리 접촉 (연구)','bindings-odor-poisson-current-hypothesis-v1.json':'후각 Poisson 전류 입력 (검증 가설)'};
  labels['bindings-walking-population-v1.json']='DNg100·DNg97 보행 출력 (실험)';
  labels['bindings-walking-reset-current-v2.json']='보행 출력·발화 후 전류 초기화 (가설)';
@@ -121,6 +129,7 @@ function applyReady(result){state.dataset=result.manifest.dataset_id+' v'+result
  labels['bindings-walking-visual-contact-v5.json']='보행·시각·머리 접촉 v5 (연구)';
  labels['bindings-walking-visual-contact-walk-off-v6.json']='보행·시각·접촉·Bluebell 정지 v6 (연구)';
  applyFrame(result.frame);$('binding-profile').replaceChildren(...(result.profiles||[]).map(p=>{const label=labels[p.name]||p.profile||p.name;const option=new Option(label+(p.available===false?' · 사용 불가':''),p.name,p.current,p.current);option.disabled=p.available===false;option.title=p.reason||'';return option;}));$('mode').value=result.frame.mode;$('seed').value=result.frame.seed;
+ applyProfileModes();
  state.backend=result.capabilities.backend;$('backend').value=state.backend==='legacy_b_rate'?'exp_lif_cpu_reference':state.backend;$('backend').disabled=state.backend==='legacy_b_rate';
  const friction=String(result.frame.config.friction);
  if(![...$('friction').options].some(o=>o.value===friction))$('friction').add(new Option(friction+'×',friction));

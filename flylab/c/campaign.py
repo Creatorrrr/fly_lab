@@ -11,16 +11,19 @@ from .tasks import evaluate, control_parameters
 from .storage import StateStore, runtime_versions
 from .integrity import canonical, read_json, write_json, digest, finite, bounded_int, checked_name, file_hash
 from .diagnostics import fault_report
+from .model_config import execution_capabilities, validate_execution
 from ..body import FlyGymBody
 from ..sensors import default_world
 
 SCENES=('baseline','food_left','food_right','hazard_left','hazard_right','front_obstacle')
 
-def pilot_spec(seconds=10., seeds=(7,19,42), modes=('C_STRICT','C_SHADOW','C_ASSISTED')):
+def pilot_spec(seconds=10., seeds=(7,19,42), modes=None, *, bindings=None):
+    if modes is None:
+        modes = execution_capabilities(bindings)['pilot_modes'] if bindings is not None else ('C_STRICT','C_SHADOW','C_ASSISTED')
     return dict(schema='flylab.campaign.v1',cases=[dict(name=f'{mode}-{seed}-{scene}',seed=seed,mode=mode,
                 scene=scene,seconds=seconds) for seed in seeds for scene in SCENES for mode in modes])
 
-def validate_spec(spec):
+def validate_spec(spec, bindings=None, backend='exp_lif_cpu_reference'):
     if spec.get('schema')!='flylab.campaign.v1' or set(spec)!={'schema','cases'}: raise ValueError('Campaign v1 required')
     if not isinstance(spec['cases'],list) or not 1<=len(spec['cases'])<=1000: raise ValueError('1..1000 cases required')
     names=set()
@@ -33,6 +36,9 @@ def validate_spec(spec):
         if name in names:raise ValueError('Duplicate case name')
         names.add(name);bounded_int(c['seed'],'seed',0,2**32-1)
         if c['mode'] not in MODES or c['scene'] not in SCENES:raise ValueError('Unknown campaign scene/mode')
+        if bindings is not None:
+            try: validate_execution(bindings, c['mode'], backend)
+            except ValueError as exc: raise ValueError(f'Campaign case {name}: {exc}') from exc
         if c.get('task','diagnostic') not in ('walking','backward','food','hazard','obstacle','diagnostic','yaw_left','yaw_right','stop_resume'):
             raise ValueError('Unknown campaign task')
         control_parameters(c.get('task','diagnostic'),c.get('task_parameters'))
@@ -67,7 +73,7 @@ def verify_result_files(manifest, root):
 
 def run_campaign(graph, bindings, spec, out, *, backend='exp_lif_mps', resume=False,
                  body_factory=FlyGymBody, cancelled=lambda:False, checkpoint_controls=1000):
-    spec=validate_spec(spec);out=Path(out)
+    spec=validate_spec(spec,bindings,backend);out=Path(out)
     bounded_int(checkpoint_controls,'checkpoint controls',1,24000)
     identity=dict(graph_hash=graph.hash,binding_hash=bindings.hash,backend=backend,versions=runtime_versions(),
                   source=source_identity(),spec_hash=digest(spec))

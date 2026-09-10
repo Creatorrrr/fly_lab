@@ -1,4 +1,5 @@
 import copy
+import importlib.util
 import unittest
 import numpy as np
 from flylab.c.research_neural import ResearchLIF
@@ -15,6 +16,7 @@ class ResearchTests(unittest.TestCase):
     def setUp(self):
         self.g=graph_fixture();self.spec=dict(schema='flylab.physiology.v1',graph_hash=self.g.hash,
                                            evidence=['SYNTHETIC TEST'],uncertainty='Test-only model')
+    @unittest.skipUnless(importlib.util.find_spec('torch') is not None, 'Optional Torch required; install requirements-research.txt')
     def test_empty_profile_matches_reference_spikes_and_voltage(self):
         n=ResearchLIF(self.g,self.spec);r=ExpLIF(self.g);x=np.full(self.g.n,20.,np.float32)
         n.advance(x,200,range(self.g.n));r.advance(x,200,range(self.g.n))
@@ -48,6 +50,7 @@ class ResearchTests(unittest.TestCase):
         w['sources'][0]['strength']=1.;w['foodOn']=False
         self.assertEqual(m.step(.005,[0,0,0],0.,w),0.)
 
+    @unittest.skipUnless(importlib.util.find_spec('torch') is not None, 'Optional Torch required; install requirements-research.txt')
     def test_reward_gated_learning_changes_only_selected_existing_edge(self):
         ids=[n['id'] for n in self.g.nodes]
         spec=dict(self.spec,cells=[dict(ids=ids[:2],parameters={'tau_m_s':.001},evidence=['test'])],

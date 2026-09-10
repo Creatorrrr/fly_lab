@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--out',type=Path,default=Path('verification/c_native'))
     parser.add_argument('--physics',action='store_true')
     parser.add_argument('--seconds',type=float,default=.3)
+    parser.add_argument('--compute-seconds',type=float,default=.05)
     parser.add_argument('--navigation-seconds',type=float,default=3.2)
     parser.add_argument('--cuda',action='store_true')
     parser.add_argument('--backend', choices=('exp_lif_cpu_reference','exp_lif_mps','exp_lif_cuda'), default='exp_lif_cpu_reference')
@@ -42,6 +43,7 @@ def main():
         from flylab.c.graph import GraphStore
         from flylab.c.ports import PortBindings
         from flylab.c.neural import ExpLIF,LIFParameters,create_backend
+        from flylab.c.model_config import resolve_parameters, model_identity, model_ticks
         from flylab.c.data_identity import verify_snapshot, validation_status
         from flylab.c.engine import CEngine
         from flylab.c.integrity import read_json,write_json
@@ -61,18 +63,22 @@ def main():
         result['required_gates']=required
         result['gates']['full_snapshot_membership']=verify_snapshot(g,args.reference)
         persist()
-        n=create_backend(g,backend=args.backend); drive=np.zeros(g.n,dtype=np.float32);drive[bindings.motor_indices]=12.
-        t=time.perf_counter();n.advance(drive,500,capture=bindings.motor_indices)
+        parameters=resolve_parameters(bindings)
+        computed_ticks=model_ticks(args.compute_seconds,parameters.dt)
+        n=create_backend(g,parameters,args.backend); drive=np.zeros(g.n,dtype=np.float32);drive[bindings.motor_indices]=12.
+        t=time.perf_counter();n.advance(drive,computed_ticks,capture=bindings.motor_indices)
         duration=time.perf_counter()-t
-        result['gates']['loaded_graph_compute']=dict(status='PASS',model_seconds=.05,wall_seconds=duration,backend=n.backend,
-            sim_wall_ratio=.05/duration,summary=n.summary(),sparse_bytes=int(g.indptr.nbytes+g.indices.nbytes+g.counts.nbytes+g.weights.nbytes),
+        model_seconds=computed_ticks*parameters.dt
+        result['gates']['loaded_graph_compute']=dict(status='PASS',model_seconds=model_seconds,requested_model_seconds=args.compute_seconds,
+            computed_ticks=computed_ticks,model=model_identity(parameters),wall_seconds=duration,backend=n.backend,
+            sim_wall_ratio=model_seconds/duration,summary=n.summary(),sparse_bytes=int(g.indptr.nbytes+g.indices.nbytes+g.counts.nbytes+g.weights.nbytes),
             neural_state_bytes=sum(g.n*(n.slots if k=='queue' else 1)*(8 if k in ('refractory_until','spike_count') else 1 if k in ('suppress','mute') else np.dtype(n.p.dtype).itemsize) for k in ['v','h','rate','queue','refractory_until','spike_count','suppress','mute']),
             cpu_peak_rss_native=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
             rss_native_unit='bytes' if sys.platform=='darwin' else 'KiB')
         membership=result['gates']['full_snapshot_membership']
         result['gates']['full_snapshot_compute']=dict(status=membership['status'],simulated_nodes=n.n,computed_ticks=n.tick,
-            reason='Full source membership and actual state/ticks required',backend=n.backend)
-        if membership['status']=='PASS' and (n.n!=g.n or n.tick!=500): result['gates']['full_snapshot_compute']['status']='FAIL'
+            reason='Full source membership and actual state/ticks required',backend=n.backend,model=model_identity(parameters))
+        if membership['status']=='PASS' and (n.n!=g.n or n.tick!=computed_ticks): result['gates']['full_snapshot_compute']['status']='FAIL'
         del n
         result['gates']['cuda']=dict(status='NOT_RUN',reason='No CUDA verification requested; CPU success is not GPU validation')
         if args.cuda:

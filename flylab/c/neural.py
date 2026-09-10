@@ -12,6 +12,7 @@ import math
 import numpy as np
 from .integrity import digest, bounded_int, finite
 from .inputs import validate_input
+from .neural_state import validate_neural_ranges
 
 NEURAL_BACKENDS = ('exp_lif_cpu_reference', 'exp_lif_mps', 'exp_lif_cuda')
 
@@ -219,15 +220,8 @@ class ExpLIF:
             if a.shape != dest.shape or a.dtype != np.dtype(dtype) or not np.isfinite(a).all():
                 raise ValueError('Invalid neural checkpoint array: ' + key)
             validated[key] = a
-        if np.any(validated['rate'] < 0) or np.any(validated['spike_count'] < 0):
-            raise ValueError('Negative neural rates or spike counters')
-        if np.any(validated['rate'] > 1 / self.p.dt + 1) or np.any(validated['spike_count'] > tick):
-            raise ValueError('Neural rate or spike count out of range')
-        refractory = validated['refractory_until']
-        if np.any(refractory < 0) or np.any(refractory > tick + self.refractory_ticks):
-            raise ValueError('Refractory timer outside reachable range')
-        if np.max(np.abs(validated['v'])) > 1e6 or np.max(np.abs(validated['h'])) > 1e7 or np.max(np.abs(validated['queue'])) > 1e7:
-            raise ValueError('Neural checkpoint drive out of range')
+        validate_neural_ranges(tick, self.p, **{k:validated[k] for k in
+            ('v','h','queue','rate','spike_count','refractory_until')})
         edges = state.get('edge_mutes')
         if not isinstance(edges, list) or any(type(i) is not int or not 0 <= i < len(self.graph.weights) for i in edges):
             raise ValueError('Invalid edge mask')

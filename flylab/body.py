@@ -198,6 +198,22 @@ class FlyGymBody:
                     non_support_load_bw=np.linalg.norm(forces-floor,axis=2).sum(axis=1)/max(self.weight0,1e-30),
                     segment_contact_bw=np.linalg.norm(forces,axis=2)/max(self.weight0,1e-30))
 
+    def joint_observation(self):
+        """Optional force instrumentation; does not alter the walking controller."""
+        return dict(schema='flylab.joint-observation.v1', time_s=self.physics_time(),
+                    names=list(self.joint_names), angles_rad=self.d.qpos[self.qpos_ids].copy(),
+                    velocities_rad_s=self.d.qvel[self.qvel_ids].copy(),
+                    positive_axes_world=self.d.xaxis[self.joint_ids].copy(),
+                    range_rad=self.m.jnt_range[self.joint_ids].copy(),
+                    actuator_control=self.d.ctrl[self.act_ids].copy(),
+                    actuator_force=self.d.actuator_force[self.act_ids].copy(),
+                    actuator_torque=self.d.qfrc_actuator[self.qvel_ids].copy(),
+                    passive_torque=self.d.qfrc_passive[self.qvel_ids].copy(),
+                    constraint_torque=self.d.qfrc_constraint[self.qvel_ids].copy(),
+                    applied_generalized_torque=self.d.qfrc_applied[self.qvel_ids].copy(),
+                    torque_unit='MuJoCo model units; SI conversion not calibrated',
+                    actuator_mode='position; force is servo force, not reconstructed muscle force')
+
     def step_joint_targets(self, targets, adhesion, dt=CONTROL_DT):
         """Direct neural muscle adapter. Does not advance the predefined CPG."""
         targets, adhesion = np.asarray(targets), np.asarray(adhesion)

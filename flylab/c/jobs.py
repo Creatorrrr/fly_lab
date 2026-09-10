@@ -17,8 +17,8 @@ class CampaignJobs:
         return locked(self.root/'.worker.lock')
 
     def start(self, bindings, backend, spec=None):
+        spec=validate_spec(pilot_spec(bindings=bindings) if spec is None else spec,bindings,backend)
         if self.active():raise ValueError('A campaign worker is already active; cancel or finish it first')
-        spec=validate_spec(spec or pilot_spec())
         name='campaign-'+secrets.token_hex(6);directory=self.root/name;directory.mkdir(parents=True)
         write_json(directory/'spec.json',spec);write_json(directory/'bindings.json',bindings.spec)
         write_json(directory/'job.json',dict(id=name,created=time.time(),backend=backend,graph=str(self.graph_path)))

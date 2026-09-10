@@ -7,6 +7,7 @@ import numpy as np
 from . import VERSION, MODES, CONTROL_DT
 from .integrity import digest, bounded_int, finite, boolean
 from .neural import create_backend, LIFParameters, NEURAL_BACKENDS
+from .model_config import validate_execution
 from .ports import SensoryEncoder, MotorDecoder, RecoverySupervisor, MotorArbiter, zero_command
 from .storage import Recorder, StateStore, runtime_versions
 from .inputs import InputRejected, validate_input, validate_stimulus_schedule, validate_schedule
@@ -29,19 +30,17 @@ class CEngine:
     def __init__(self, graph, bindings, *, mode='C_SHADOW', seed=42, config=None,
                  world=None, backend='exp_lif_cpu_reference', parameters=None,
                  body_factory=FlyGymBody, motion_expected=True, metabolism=None, initial_pose=None):
-        if mode not in MODES: raise ValueError('Unknown C control mode')
+        resolved_parameters = validate_execution(bindings, mode, backend, parameters)
         self.graph, self.bindings = graph, bindings
         if graph.hash != bindings.graph.hash: raise ValueError('Graph/port mismatch')
         self.seed = bounded_int(seed, 'seed', 0, 2**32-1)
         self.mode = mode
-        if bindings.spec.get('neuromuscular') and mode != 'C_STRICT':
-            raise ValueError('The BANC neuromuscular profile requires C_STRICT')
         self.motion_expected = boolean(motion_expected, 'motion_expected')
         self.metabolism = Metabolism(metabolism) if metabolism is not None else None
         self.config = config_values(config)
         self.world = copy.deepcopy(validate_world(world if world is not None else default_world()))
         self.initial_pose = copy.deepcopy(initial_pose)
-        self.parameters = parameters or LIFParameters(**bindings.spec.get('neural_parameters', {}))
+        self.parameters = resolved_parameters
         self.substeps = round(CONTROL_DT / self.parameters.dt)
         self.neural = None if mode == 'B_COMPAT' else create_backend(graph, self.parameters, backend)
         if hasattr(self.neural, 'set_readout_cohort') and len(bindings.motor_indices)<=512:
@@ -474,9 +473,9 @@ class CEngine:
         if backend_override is not None and (backend_override not in NEURAL_BACKENDS or not s.get('neural')):
             raise ValueError('A C neural checkpoint and known backend are required for transfer')
         # 0.3 checkpoints have the same baseline equations/coupling/state.
-        # New saves use 0.6 so older code cannot discard typed receptor history.
+        # New saves use the current version; baseline 0.6 state is unchanged.
         # Legacy profiles retain their equations and body identity.
-        if s.get('schema') != 'flylab.checkpoint.v3' or s.get('app_version') not in ('0.3.0', '0.4.0', '0.5.0', VERSION) or s.get('versions') != runtime_versions():
+        if s.get('schema') != 'flylab.checkpoint.v3' or s.get('app_version') not in ('0.3.0', '0.4.0', '0.5.0', '0.6.0', VERSION) or s.get('versions') != runtime_versions():
             raise ValueError('C version/runtime checkpoint required; B neural state cannot be converted')
         if s.get('graph_hash') != graph.hash or s.get('binding_hash') != bindings.hash:
             raise ValueError('Checkpoint data or binding mismatch')

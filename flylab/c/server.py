@@ -8,6 +8,7 @@ from .engine import CEngine
 from .graph import GraphStore
 from .ports import PortBindings
 from .neural import LIFParameters, NEURAL_BACKENDS, create_backend
+from .model_config import execution_capabilities, validate_execution, model_identity
 from .protocol import signal_frame
 from .storage import StateStore
 from .integrity import read_json, write_json, digest, checked_name, bounded_int, file_hash
@@ -53,7 +54,7 @@ class CDispatcher:
                     self.profile_fingerprints[path.name] = fingerprint
                 binding = self.profile_cache[path.name]
                 self.profile_entries[path.name] = dict(name=path.name, profile=binding.spec.get('profile', path.name),
-                    hash=binding.hash, available=True, status='AVAILABLE')
+                    hash=binding.hash, available=True, status='AVAILABLE', execution=execution_capabilities(binding))
             except Exception as exc:
                 self.profile_cache.pop(path.name, None)
                 self.profile_fingerprints.pop(path.name, None)
@@ -91,8 +92,9 @@ class CDispatcher:
     def ready(self, engine=None):
         e = engine if engine is not None else self.need()
         self.profiles()
-        return dict(capabilities=dict(version=VERSION, protocol=PROTOCOL, modes=list(MODES),
-                    backend=e.neural.backend if e.neural else 'legacy_b_rate', neuralBackends=list(NEURAL_BACKENDS),
+        support=execution_capabilities(e.bindings)
+        return dict(capabilities=dict(version=VERSION, protocol=PROTOCOL, modes=support['modes'], execution=support,
+                    backend=e.neural.backend if e.neural else 'legacy_b_rate', neuralBackends=support['neural_backends'],
                     physical=not e.body.test_double, fullBrain=e.neural is not None and e.graph.full_brain,
                     maxSubscription=512, maxAdvance=10, flight=False, biologicalValidation=False,
                     checkpoint=True, replay=True, selectedBinarySignals=True),
@@ -115,6 +117,7 @@ class CDispatcher:
             if bindings is None:
                 reason = self.profile_entries.get(profile, {}).get('reason', 'Unknown binding profile')
                 raise ValueError('Profile unavailable: ' + reason)
+            validate_execution(bindings, payload.get('mode', self.default_mode), self.backend)
             current = self.engine
             faulted = current is not None and bool(current.fault or current.body.fault)
             if current and current.recorder and not faulted: raise ValueError('Finish recording before starting a new experiment')
@@ -325,9 +328,11 @@ def main():
                       cudaValidated=False, biologicalValidation=False)
         try:
             graph = GraphStore.load(args.graph); bindings = PortBindings(graph, read_json(args.bindings))
-            report.update(graph=graph.manifest, bindings=bindings.summary(), status='READY', requested_backend=args.backend)
+            parameters = validate_execution(bindings, args.mode, args.backend)
+            report.update(graph=graph.manifest, bindings=bindings.summary(), status='READY', requested_backend=args.backend,
+                          requested_mode=args.mode, model=model_identity(parameters))
             if args.backend!='exp_lif_cpu_reference':
-                backend=create_backend(graph, backend=args.backend)
+                backend=create_backend(graph, parameters, args.backend)
                 report['requested_backend_available']=True
                 del backend
         except Exception as e: report.update(status='BLOCKED', error=str(e))

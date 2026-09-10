@@ -54,9 +54,11 @@ def run(graph_path, binding_path, out, seconds=.5):
             ids=engine.neuromuscular.motor_indices
             engine.subscribe([graph.nodes[int(i)]['id'] for i in ids])
             initial=engine.checkpoint()
-            trace=[trace_sample(engine.frame())];signals=[]
+            trace=[trace_sample(engine.frame())];signals=[];joint_samples=[]
             for k in range(round(seconds/.005)):
                 frame=engine.step();trace.append(trace_sample(frame))
+                joint_samples.append({key:value.tolist() if isinstance(value,np.ndarray) else value
+                                      for key,value in engine.body.joint_observation().items()})
                 r=engine.neural.readout(ids)
                 signals.append(dict(tick=engine.tick,events=engine.neural.last_events,
                                     **{key:v.tolist() for key,v in r.items()}))
@@ -81,6 +83,7 @@ def run(graph_path, binding_path, out, seconds=.5):
                         motor_offset_max_rad=max(abs(v) for r in trace for v in r['neuromuscular']['offset_rad']),
                         behavior=evaluate(trace,world,required_seconds=seconds),biological_validation=False)
             write_json(directory/'trace.json',trace);write_json(directory/'signals.json',dict(ids=[graph.nodes[int(i)]['id'] for i in ids],rows=signals))
+            write_json(directory/'joint_forces.json',joint_samples)
             write_json(directory/'result.json',result);reports.append(result)
             write_json(out/'report.json',dict(status='RUNNING',cases=reports))
             print(case,result['elapsed_s'],result['fault'],'restore',restored_equal,'knee',knee,'offset',result['motor_offset_max_rad'],flush=True)

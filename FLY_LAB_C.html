@@ -11,6 +11,14 @@
 <p id="mode-explanation" class="mode-explanation"></p>
 <p id="experiment-status" class="mode-explanation" role="status" hidden></p>
 <p id="motor-activity" class="muted" hidden></p>
+<details id="banc-walking-panel" class="card"><summary>BANC 신경망 보행 연구 · 실험 기능</summary>
+<p class="muted">준비된 BANC 등록 뉴런 전체에 실제 다리 감각을 되먹임하고 신경세포 활동 적응을 계산합니다. 기본 설정은 별도 하행 자극이나 외부 CPG를 사용하지 않습니다. 10초 평지 개발 시험에서 보행 기준을 통과했으며 다양한 조건의 안정성은 검증 중입니다.</p>
+<div class="input-row"><button id="banc-walking-init" class="primary">BANC 보행 실험 만들기</button><button id="banc-walking-play" disabled>▶ BANC 재생</button><button id="banc-walking-step" disabled>50ms 진행</button><button id="banc-walking-save" disabled>상태 저장</button><button id="banc-walking-restore" disabled>저장 상태 복원</button><button id="banc-walking-close" disabled>종료</button></div>
+<div class="input-row"><select id="banc-walking-checkpoints" aria-label="BANC 저장 상태"><option value="">BANC 저장 상태 선택</option></select><button id="banc-walking-refresh">저장 목록 갱신</button><span class="muted">이 패널의 BANC 재생은 상단 기본 실험과 별도로 진행합니다.</span></div>
+<div class="input-row"><label><input id="banc-cut-sensory" type="checkbox" disabled>다리 감각 차단</label><label><input id="banc-cut-descending" type="checkbox" disabled>DNg100 출력 차단</label><label><input id="banc-cut-circuit" type="checkbox" disabled>신경 연결 전달 전체 차단</label><label><input id="banc-cut-motor" type="checkbox" disabled>최종 신경 운동 출력 차단</label></div>
+<p class="muted">출력 차단은 신경에 의한 관절 목표 변화와 발 부착을 끕니다. 중립 자세 서보와 고정 힘줄 긴장도는 유지됩니다.</p>
+<img id="banc-walking-image" alt="BANC 운동 출력으로 구동하는 실제 MuJoCo 초파리" hidden style="width:600px;max-width:100%;image-rendering:auto"><pre id="banc-walking-status" role="status">BANC 보행 실험이 없습니다.</pre>
+</details>
 <div class="input-row"><button id="autonomy-start" class="primary">감각 자율 보행 시작</button><label>새 자율 실험 행동 <select id="autonomy-task"><option value="odor_seek">냄새 따라 먹이 찾기</option><option value="walk">계속 걷기·장애물 회피</option></select></label><button id="autonomy-toggle" disabled>행동 중지</button><span id="autonomy-status" class="muted">FlyGym 보행기와 감각 정책으로 자유 이동합니다.</span></div>
 <div class="input-row"><label>새 실험 몸 <select id="body-model"><option value="neuromechfly">NeuroMechFly</option><option value="flybody">FlyBody · 비교 실험</option><option value="flybody_whole">FlyBody · 전신 (CPU 물리)</option></select></label><label>새 실험 지형 <select id="body-terrain"><option value="flat">평면</option><option value="gaps">틈</option><option value="blocks">블록</option><option value="mixed">혼합 지형</option><option value="slope">경사 10°</option></select></label><span class="muted">복잡 지형·FlyBody는 별도 비교 실험입니다. 신경 보행의 검증 상태를 바꾸지 않습니다.</span></div>
 <div class="input-row"><label>몸통 <select id="body-attachment"><option value="free">자유 이동</option><option value="tethered">고정 · 평면 실험</option></select></label><label>힘줄 구동 <select id="body-tendons"><option value="none">사용 안 함</option><option value="tarsi">발마디 · 6입력</option><option value="abdomen">복부 · 2입력</option><option value="all">발마디와 복부 · 8입력</option></select></label><span class="muted">힘줄은 FlyBody에서 선택합니다. 복부 힘줄은 전신 몸을 사용하며, 해당 관절의 위치 서보를 대체합니다.</span></div>
@@ -898,6 +906,31 @@ function renderBodyControls(f){
 button('body-command-apply',async()=>{workbench.pause();const [kind,name]=$('body-command-name').value.split(':');const payload=kind==='joint'?{targets:{[name]:Number($('body-command-value').value)}}:{tendon_inputs:{[name]:Number($('body-command-value').value)}};applyFrame(await rpc.request('command',{type:'body_actuation',payload}));tell('직접 구동 명령을 적용했습니다. 한 단계 또는 재생으로 진행합니다.');});
 button('body-command-neural',async()=>{workbench.pause();const [kind,name]=$('body-command-name').value.split(':');if(kind!=='tendon')return;applyFrame(await rpc.request('command',{type:'body_actuation',payload:{tendon_modes:{[name]:'neural'}}}));tell('선택한 힘줄을 신경 구동으로 되돌렸습니다.');});
 let sharedCheckpoint=null;
+for(const id of ['play','step','init','autonomy-start','restore','shared-init'])$(id).addEventListener('click',()=>pauseBanc());
+let bancPlaying=false,bancBusy=false;
+function pauseBanc(){bancPlaying=false;$('banc-walking-play').textContent='▶ BANC 재생';}
+function showBanc(result){
+ const o=result.observation;
+ $('banc-walking-status').dataset.time=String(o?.time_s||0);
+ $('banc-walking-status').textContent=o?`${o.time_s.toFixed(3)} 모델초 · ${o.neurons.toLocaleString()}개 신경세포 · ${o.edges.toLocaleString()}개 연결\n수평 이동 ${o.horizontal_net_mm.toFixed(3)} mm · 몸 방향 전진 ${o.signed_forward_mm.toFixed(3)} mm\n운동신경 평균 ${o.motor_rate_mean.toFixed(2)} 모델 단위 · ${o.device.toUpperCase()} 신경 계산 · 외부 CPG 사용 안 함\n속도 ${(o.time_s/Math.max(o.wall_s,0.001)).toFixed(3)} 모델초/실제초 · 현재 실행의 보행 판정은 별도 검증기에서 확인${o.fault?'\n중단: '+o.fault:''}`:'BANC 보행 실험이 없습니다.';
+ if(result.image){$('banc-walking-image').src='data:image/png;base64,'+result.image;$('banc-walking-image').hidden=false;}
+ if(result.render_error){$('banc-walking-image').hidden=true;$('banc-walking-status').textContent+='\n영상 오류: '+result.render_error;}
+ for(const id of ['banc-walking-play','banc-walking-step','banc-walking-save','banc-walking-close','banc-cut-sensory','banc-cut-descending','banc-cut-circuit','banc-cut-motor'])$(id).disabled=!o||!!o.fault;
+ for(const key of ['sensory','descending','circuit','motor'])$('banc-cut-'+key).checked=!!o?.cuts[key];
+ $('banc-walking-close').disabled=!o;
+ if(o?.fault)pauseBanc();
+}
+async function bancPump(){if(!bancPlaying||bancBusy)return;bancBusy=true;try{showBanc(await rpc.request('banc_walking_advance',{steps:10}));}catch(error){pauseBanc();tell(error.message);}finally{bancBusy=false;if(bancPlaying)setTimeout(bancPump,0);}}
+async function bancCheckpoints(selected=$('banc-walking-checkpoints').value){const rows=await rpc.request('banc_walking_checkpoints');$('banc-walking-checkpoints').replaceChildren(new Option('BANC 저장 상태 선택',''),...rows.map(r=>new Option(r.name,r.name)));if(rows.some(r=>r.name===selected))$('banc-walking-checkpoints').value=selected;$('banc-walking-restore').disabled=!$('banc-walking-checkpoints').value;}
+button('banc-walking-refresh',()=>bancCheckpoints());
+$('banc-walking-checkpoints').addEventListener('change',()=>{$('banc-walking-restore').disabled=!$('banc-walking-checkpoints').value;});
+button('banc-walking-init',async()=>{workbench.pause();pauseBanc();const r=await rpc.request('banc_walking_init',{seed:Number($('seed').value)});showBanc(r);await bancCheckpoints(r.source_checkpoint||'');});
+button('banc-walking-play',async()=>{if(bancPlaying){pauseBanc();return;}workbench.pause();bancPlaying=true;$('banc-walking-play').textContent='⏸ BANC 일시정지';await bancPump();});
+button('banc-walking-step',async()=>{workbench.pause();pauseBanc();showBanc(await rpc.request('banc_walking_advance',{steps:10}));});
+button('banc-walking-save',async()=>{pauseBanc();const r=await rpc.request('banc_walking_save',{});await bancCheckpoints(r.name);tell('BANC 신경·감각·몸 상태 저장: '+r.name);});
+button('banc-walking-restore',async()=>{const name=$('banc-walking-checkpoints').value;if(!name)throw Error('복원할 BANC 저장 상태를 선택하세요.');workbench.pause();pauseBanc();showBanc(await rpc.request('banc_walking_restore',{name}));});
+button('banc-walking-close',async()=>{pauseBanc();await rpc.request('banc_walking_close',{});showBanc({closed:true});$('banc-walking-image').hidden=true;});
+for(const key of ['sensory','descending','circuit','motor'])$('banc-cut-'+key).addEventListener('change',async()=>{pauseBanc();try{showBanc(await rpc.request('banc_walking_cuts',{[key]:$('banc-cut-'+key).checked}));}catch(error){tell(error.message);}});
 function showShared(result){const obs=result.observation||result;const rows=Object.entries(obs.flies||{});$('shared-status').textContent=rows.length?`${obs.time_s.toFixed(3)} s · ${rows.length}개체 · 개체 간 접촉 ${obs.interfly_contacts.length}개\n`+rows.map(([name,f])=>`${name}: 위치 ${f.position_mm.map(v=>v.toFixed(2)).join(', ')} mm · 구동 ${f.drive.join(', ')}`).join('\n'):'공유 공간이 없습니다.';$('shared-status').dataset.time=String(obs.time_s||0);if(result.render_error){$('shared-status').textContent+='\n영상 오류: '+result.render_error;$('shared-image').hidden=true;}if(result.image){$('shared-image').src='data:image/png;base64,'+result.image;$('shared-image').hidden=false;}const names=Object.keys(obs.flies||{});if(names.length){const select=$('shared-fly');if([...select.options].map(o=>o.value).join()!==names.join())select.replaceChildren(...names.map(n=>new Option(n,n)));}for(const id of ['shared-step','shared-save','shared-close','shared-drive'])$(id).disabled=!names.length;}
 button('shared-init',async()=>{workbench.pause();showShared(await rpc.request('shared_init',{count:Number($('shared-count').value),seed:Number($('seed').value)}));sharedCheckpoint=null;$('shared-restore').disabled=true;});
 button('shared-step',async()=>{workbench.pause();showShared(await rpc.request('shared_advance',{steps:20}));});
@@ -1019,8 +1052,8 @@ button('paired',async()=>{workbench.pause();const kind=$('pair-kind').value,inte
  $('paired').disabled=true;$('experiment-result').textContent='같은 상태의 대조군·개입군을 계산합니다. 현재 실험은 보존됩니다…';
  try{const r=await rpc.request('paired',payload);workbench.showComparison(r);$('experiment-result').textContent=JSON.stringify(r,(key,value)=>key==='preview'?undefined:value,2);tell('대조 비교 원자료를 저장했습니다. 기술 실행과 과제 행동 판정은 결과에서 별도로 표시합니다.');}finally{$('paired').disabled=false;}
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden){state.playing=false;updatePlay();}});
-document.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='Space'){e.preventDefault();state.playing=!state.playing;updatePlay();}if(e.key==='f')view.track();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){state.playing=false;updatePlay();pauseBanc();}});
+document.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='Space'){e.preventDefault();if(document.activeElement?.closest('#banc-walking-panel')){$('banc-walking-play').click();}else{pauseBanc();state.playing=!state.playing;updatePlay();}}if(e.key==='f')view.track();});
 window.addEventListener('resize',drawTrace);
 playback=F.createPlaybackPump({
  shouldRun:()=>state.playing&&!state.closed&&!!state.frame&&!document.hidden,
@@ -1036,6 +1069,8 @@ rpc.connect().then(async(config)=>{
  for(const option of $('backend').options){const info=config.backendAvailability?.[option.value];option.disabled=info?.available===false;option.title=info?.reason||info?.device||'';}
  await batchCheckpoints();if(config.hasBatch)showBatch(await rpc.request('batch_summary'));
  if(config.hasExperiment){await refreshExperiment(await rpc.request('attach'),'저장된 현재 실험에 연결했습니다. 재생으로 계속 진행하세요.');}else await init();
+ if(config.hasBancWalking){showBanc(await rpc.request('banc_walking_summary'));$('banc-walking-panel').open=true;}
+ await bancCheckpoints();
 }).catch(e=>{$('waiting').textContent='초기화 실패';tell(e.message,true);});
 })(globalThis.Fly);
 </script></body></html>

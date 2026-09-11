@@ -36,6 +36,7 @@ class CDispatcher:
         self.jobs = CampaignJobs(self.artifacts/'campaigns', self.graph_path)
         self.batch=None
         self.shared=None
+        self.banc_walking=None
 
     def load(self):
         if self.graph is None:
@@ -151,6 +152,50 @@ class CDispatcher:
             result['recovery'] = recovery
         elif op == 'attach': result = self.ready()
         elif op == 'frame': result = self.need().frame()
+        elif op == 'banc_walking_init':
+            from .banc_walking import BancWalkingSession
+            if set(payload)-{'seed','parameters'}:raise ValueError('Unknown BANC walking field')
+            self.load()
+            saved=None
+            if self.banc_walking and not (self.banc_walking.fault or self.banc_walking.body.fault):
+                saved='before-init-'+secrets.token_hex(6)
+                StateStore.save(self.artifacts/'banc-walking-checkpoints'/saved,self.banc_walking.snapshot())
+            candidate=BancWalkingSession(self.graph,seed=payload.get('seed',42),parameters=payload.get('parameters'))
+            old=self.banc_walking;self.banc_walking=candidate
+            if old:old.close()
+            result=self.banc_walking_result();result['source_checkpoint']=saved
+        elif isinstance(op,str) and op.startswith('banc_walking_'):
+            if self.banc_walking is None and op not in ('banc_walking_restore','banc_walking_checkpoints'):raise ValueError('Create a BANC walking experiment first')
+            if op=='banc_walking_advance':
+                if set(payload)-{'steps'}:raise ValueError('Unknown BANC advance field')
+                self.banc_walking.advance(bounded_int(payload.get('steps',10),'steps',1,20))
+                result=self.banc_walking_result()
+            elif op=='banc_walking_cuts':
+                self.banc_walking.set_cuts(payload);result=self.banc_walking_result()
+            elif op=='banc_walking_save':
+                if payload:raise ValueError('BANC save takes no options')
+                name='banc-'+secrets.token_hex(6)
+                StateStore.save(self.artifacts/'banc-walking-checkpoints'/name,self.banc_walking.snapshot())
+                result=dict(name=name)
+            elif op=='banc_walking_checkpoints':
+                if payload:raise ValueError('BANC checkpoint listing takes no options')
+                directory=self.artifacts/'banc-walking-checkpoints'
+                result=[dict(name=p.parent.name) for p in sorted(directory.glob('*/manifest.json'))
+                        if not p.parent.name.startswith('.') and not p.parent.is_symlink()]
+            elif op=='banc_walking_restore':
+                from .banc_walking import BancWalkingSession
+                if set(payload)!={'name'}:raise ValueError('Select a BANC walking checkpoint')
+                self.load();name=checked_name(payload['name'])
+                candidate=BancWalkingSession.from_checkpoint(self.graph,StateStore.load(self.artifacts/'banc-walking-checkpoints'/name))
+                if self.banc_walking:self.banc_walking.close()
+                self.banc_walking=candidate;result=self.banc_walking_result()
+            elif op=='banc_walking_close':
+                if payload:raise ValueError('BANC close takes no options')
+                self.banc_walking.close();self.banc_walking=None;result=dict(closed=True)
+            elif op=='banc_walking_summary':
+                if payload:raise ValueError('BANC summary takes no options')
+                result=self.banc_walking_result()
+            else:raise ValueError('Unknown BANC walking operation')
         elif op == 'shared_init':
             from ..shared_arena import SharedFlyArena
             if set(payload)-{'count','seed','spacing_mm','collisions'}:raise ValueError('Unknown shared arena field')
@@ -421,8 +466,20 @@ class CDispatcher:
         except Exception as exc:result['render_error']=str(exc)
         return result
 
+    def banc_walking_result(self):
+        import base64
+        import io
+        from PIL import Image
+        result=dict(observation=self.banc_walking.frame())
+        try:
+            stream=io.BytesIO();Image.fromarray(self.banc_walking.body.preview()).save(stream,format='PNG')
+            result['image']=base64.b64encode(stream.getvalue()).decode('ascii')
+        except Exception as exc:result['render_error']=str(exc)
+        return result
+
     def close(self):
         self.jobs.close()
+        if self.banc_walking:self.banc_walking.close();self.banc_walking=None
         if self.batch:self.batch.close();self.batch=None
         if self.shared:self.shared.close();self.shared=None
         if self.engine: self.engine.close(); self.engine = None
@@ -448,7 +505,7 @@ class CServer(BServer):
         d = self.dispatcher
         return web.json_response(dict(protocol=PROTOCOL, token=self.token, dependencies=dependency_report(),
                                       testDouble=self.test_double, backend=d.backend, defaultMode=d.default_mode,
-                                      hasExperiment=d.engine is not None,hasBatch=d.batch is not None,graphAvailable=(d.graph_path/'manifest.json').is_file(),
+                                      hasExperiment=d.engine is not None,hasBatch=d.batch is not None,hasBancWalking=d.banc_walking is not None,graphAvailable=(d.graph_path/'manifest.json').is_file(),
                                       bindingsAvailable=d.binding_path.is_file(),
                                       backendAvailability=backend_availability()), headers={'Cache-Control':'no-store'})
 

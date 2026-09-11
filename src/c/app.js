@@ -194,6 +194,31 @@ function renderBodyControls(f){
 button('body-command-apply',async()=>{workbench.pause();const [kind,name]=$('body-command-name').value.split(':');const payload=kind==='joint'?{targets:{[name]:Number($('body-command-value').value)}}:{tendon_inputs:{[name]:Number($('body-command-value').value)}};applyFrame(await rpc.request('command',{type:'body_actuation',payload}));tell('직접 구동 명령을 적용했습니다. 한 단계 또는 재생으로 진행합니다.');});
 button('body-command-neural',async()=>{workbench.pause();const [kind,name]=$('body-command-name').value.split(':');if(kind!=='tendon')return;applyFrame(await rpc.request('command',{type:'body_actuation',payload:{tendon_modes:{[name]:'neural'}}}));tell('선택한 힘줄을 신경 구동으로 되돌렸습니다.');});
 let sharedCheckpoint=null;
+for(const id of ['play','step','init','autonomy-start','restore','shared-init'])$(id).addEventListener('click',()=>pauseBanc());
+let bancPlaying=false,bancBusy=false;
+function pauseBanc(){bancPlaying=false;$('banc-walking-play').textContent='▶ BANC 재생';}
+function showBanc(result){
+ const o=result.observation;
+ $('banc-walking-status').dataset.time=String(o?.time_s||0);
+ $('banc-walking-status').textContent=o?`${o.time_s.toFixed(3)} 모델초 · ${o.neurons.toLocaleString()}개 신경세포 · ${o.edges.toLocaleString()}개 연결\n수평 이동 ${o.horizontal_net_mm.toFixed(3)} mm · 몸 방향 전진 ${o.signed_forward_mm.toFixed(3)} mm\n운동신경 평균 ${o.motor_rate_mean.toFixed(2)} 모델 단위 · ${o.device.toUpperCase()} 신경 계산 · 외부 CPG 사용 안 함\n속도 ${(o.time_s/Math.max(o.wall_s,0.001)).toFixed(3)} 모델초/실제초 · 현재 실행의 보행 판정은 별도 검증기에서 확인${o.fault?'\n중단: '+o.fault:''}`:'BANC 보행 실험이 없습니다.';
+ if(result.image){$('banc-walking-image').src='data:image/png;base64,'+result.image;$('banc-walking-image').hidden=false;}
+ if(result.render_error){$('banc-walking-image').hidden=true;$('banc-walking-status').textContent+='\n영상 오류: '+result.render_error;}
+ for(const id of ['banc-walking-play','banc-walking-step','banc-walking-save','banc-walking-close','banc-cut-sensory','banc-cut-descending','banc-cut-circuit','banc-cut-motor'])$(id).disabled=!o||!!o.fault;
+ for(const key of ['sensory','descending','circuit','motor'])$('banc-cut-'+key).checked=!!o?.cuts[key];
+ $('banc-walking-close').disabled=!o;
+ if(o?.fault)pauseBanc();
+}
+async function bancPump(){if(!bancPlaying||bancBusy)return;bancBusy=true;try{showBanc(await rpc.request('banc_walking_advance',{steps:10}));}catch(error){pauseBanc();tell(error.message);}finally{bancBusy=false;if(bancPlaying)setTimeout(bancPump,0);}}
+async function bancCheckpoints(selected=$('banc-walking-checkpoints').value){const rows=await rpc.request('banc_walking_checkpoints');$('banc-walking-checkpoints').replaceChildren(new Option('BANC 저장 상태 선택',''),...rows.map(r=>new Option(r.name,r.name)));if(rows.some(r=>r.name===selected))$('banc-walking-checkpoints').value=selected;$('banc-walking-restore').disabled=!$('banc-walking-checkpoints').value;}
+button('banc-walking-refresh',()=>bancCheckpoints());
+$('banc-walking-checkpoints').addEventListener('change',()=>{$('banc-walking-restore').disabled=!$('banc-walking-checkpoints').value;});
+button('banc-walking-init',async()=>{workbench.pause();pauseBanc();const r=await rpc.request('banc_walking_init',{seed:Number($('seed').value)});showBanc(r);await bancCheckpoints(r.source_checkpoint||'');});
+button('banc-walking-play',async()=>{if(bancPlaying){pauseBanc();return;}workbench.pause();bancPlaying=true;$('banc-walking-play').textContent='⏸ BANC 일시정지';await bancPump();});
+button('banc-walking-step',async()=>{workbench.pause();pauseBanc();showBanc(await rpc.request('banc_walking_advance',{steps:10}));});
+button('banc-walking-save',async()=>{pauseBanc();const r=await rpc.request('banc_walking_save',{});await bancCheckpoints(r.name);tell('BANC 신경·감각·몸 상태 저장: '+r.name);});
+button('banc-walking-restore',async()=>{const name=$('banc-walking-checkpoints').value;if(!name)throw Error('복원할 BANC 저장 상태를 선택하세요.');workbench.pause();pauseBanc();showBanc(await rpc.request('banc_walking_restore',{name}));});
+button('banc-walking-close',async()=>{pauseBanc();await rpc.request('banc_walking_close',{});showBanc({closed:true});$('banc-walking-image').hidden=true;});
+for(const key of ['sensory','descending','circuit','motor'])$('banc-cut-'+key).addEventListener('change',async()=>{pauseBanc();try{showBanc(await rpc.request('banc_walking_cuts',{[key]:$('banc-cut-'+key).checked}));}catch(error){tell(error.message);}});
 function showShared(result){const obs=result.observation||result;const rows=Object.entries(obs.flies||{});$('shared-status').textContent=rows.length?`${obs.time_s.toFixed(3)} s · ${rows.length}개체 · 개체 간 접촉 ${obs.interfly_contacts.length}개\n`+rows.map(([name,f])=>`${name}: 위치 ${f.position_mm.map(v=>v.toFixed(2)).join(', ')} mm · 구동 ${f.drive.join(', ')}`).join('\n'):'공유 공간이 없습니다.';$('shared-status').dataset.time=String(obs.time_s||0);if(result.render_error){$('shared-status').textContent+='\n영상 오류: '+result.render_error;$('shared-image').hidden=true;}if(result.image){$('shared-image').src='data:image/png;base64,'+result.image;$('shared-image').hidden=false;}const names=Object.keys(obs.flies||{});if(names.length){const select=$('shared-fly');if([...select.options].map(o=>o.value).join()!==names.join())select.replaceChildren(...names.map(n=>new Option(n,n)));}for(const id of ['shared-step','shared-save','shared-close','shared-drive'])$(id).disabled=!names.length;}
 button('shared-init',async()=>{workbench.pause();showShared(await rpc.request('shared_init',{count:Number($('shared-count').value),seed:Number($('seed').value)}));sharedCheckpoint=null;$('shared-restore').disabled=true;});
 button('shared-step',async()=>{workbench.pause();showShared(await rpc.request('shared_advance',{steps:20}));});
@@ -315,8 +340,8 @@ button('paired',async()=>{workbench.pause();const kind=$('pair-kind').value,inte
  $('paired').disabled=true;$('experiment-result').textContent='같은 상태의 대조군·개입군을 계산합니다. 현재 실험은 보존됩니다…';
  try{const r=await rpc.request('paired',payload);workbench.showComparison(r);$('experiment-result').textContent=JSON.stringify(r,(key,value)=>key==='preview'?undefined:value,2);tell('대조 비교 원자료를 저장했습니다. 기술 실행과 과제 행동 판정은 결과에서 별도로 표시합니다.');}finally{$('paired').disabled=false;}
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden){state.playing=false;updatePlay();}});
-document.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='Space'){e.preventDefault();state.playing=!state.playing;updatePlay();}if(e.key==='f')view.track();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){state.playing=false;updatePlay();pauseBanc();}});
+document.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='Space'){e.preventDefault();if(document.activeElement?.closest('#banc-walking-panel')){$('banc-walking-play').click();}else{pauseBanc();state.playing=!state.playing;updatePlay();}}if(e.key==='f')view.track();});
 window.addEventListener('resize',drawTrace);
 playback=F.createPlaybackPump({
  shouldRun:()=>state.playing&&!state.closed&&!!state.frame&&!document.hidden,
@@ -332,5 +357,7 @@ rpc.connect().then(async(config)=>{
  for(const option of $('backend').options){const info=config.backendAvailability?.[option.value];option.disabled=info?.available===false;option.title=info?.reason||info?.device||'';}
  await batchCheckpoints();if(config.hasBatch)showBatch(await rpc.request('batch_summary'));
  if(config.hasExperiment){await refreshExperiment(await rpc.request('attach'),'저장된 현재 실험에 연결했습니다. 재생으로 계속 진행하세요.');}else await init();
+ if(config.hasBancWalking){showBanc(await rpc.request('banc_walking_summary'));$('banc-walking-panel').open=true;}
+ await bancCheckpoints();
 }).catch(e=>{$('waiting').textContent='초기화 실패';tell(e.message,true);});
 })(globalThis.Fly);

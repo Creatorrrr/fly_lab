@@ -320,6 +320,29 @@ class FlyGymBody:
         return dict(target_lift_mm=np.asarray(lifts), velocity_mm_s=np.asarray(velocities),
                     model='first-order tip displacement from actuated joints; support normal, +z fallback')
 
+    def knee_kinematics(self):
+        """Measured flexion and its physical hinge sign, invariant to root pose."""
+        from .kinematic_senses import segment_flexion
+        angles,velocities,derivatives=[],[],[]
+        for leg in LEGS:
+            ids=[int(self.body_ids[self.body_indices[f'{leg}_{part}']])
+                 for part in ('trochanterfemur','tibia','tarsus1')]
+            matches=[i for i,name in enumerate(self.joint_names)
+                     if name.endswith(f'/{leg}_trochanterfemur-{leg}_tibia-pitch')]
+            if len(matches)!=1:raise ValueError('Unique physical knee required: '+leg)
+            column=self.qvel_ids[matches[0]]
+            jacobians=[]
+            for index in ids:
+                jac=np.zeros((3,self.m.nv))
+                self.mj.mj_jacBody(self.m,self.d,jac,None,index)
+                jacobians.append(jac)
+            points=self.d.xpos[ids]
+            angle,speed=segment_flexion(points,np.array([jac@self.d.qvel for jac in jacobians]))
+            _,derivative=segment_flexion(points,np.array([jac[:,column] for jac in jacobians]))
+            angles.append(angle);velocities.append(speed);derivatives.append(derivative)
+        return dict(flexion_rad=np.asarray(angles),velocity_rad_s=np.asarray(velocities),
+                    d_flexion_dq=np.asarray(derivatives),model='physical-segment-origins-and-jacobians-v1')
+
     def contact_probe(self):
         """Measured tip position/velocity and floor contact at this control boundary."""
         motion=self.foot_kinematics(self.d.qpos[self.qpos_ids])

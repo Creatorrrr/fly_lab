@@ -23,7 +23,7 @@ def checked_world(world):
     for group in ('sources', 'obstacles'):
         fields = {'id', 'p', 'r'} if group == 'obstacles' else {'id', 'p', 'kind', 'strength'}
         for obj in world[group]:
-            if set(obj) != fields: raise ValueError('Unknown object field')
+            if set(obj) != fields and not (group=='sources' and set(obj)==fields|{'odorant'}): raise ValueError('Unknown object field')
             if group == 'obstacles':
                 if obj['p'][1] != obj['r']: raise ValueError('Obstacles must rest on the floor')
                 if abs(obj['p'][0])+obj['r'] > 24 or abs(obj['p'][2])+obj['r'] > 18:
@@ -33,8 +33,8 @@ def checked_world(world):
 
 def edit_environment(engine, kind, payload):
     allowed = {
-        'place': {'kind', 'position', 'strength', 'radius'},
-        'update_object': {'id', 'position', 'strength', 'radius'},
+        'place': {'kind', 'position', 'strength', 'radius','odorant'},
+        'update_object': {'id', 'position', 'strength', 'radius','odorant'},
         'delete_object': {'id'}, 'clear_added': set(),
         'load_environment': {'world'}, 'undo_environment': set(),
     }
@@ -69,7 +69,7 @@ def edit_environment(engine, kind, payload):
             if kind == 'delete_object': world[group].remove(obj)
         if kind != 'delete_object':
             obstacle = 'r' in obj
-            if (obstacle and 'strength' in payload) or (not obstacle and 'radius' in payload):
+            if (obstacle and ('strength' in payload or 'odorant' in payload)) or (not obstacle and 'radius' in payload):
                 raise ValueError('Strength is for odor sources; radius is for obstacles')
             p = payload.get('position', None if kind == 'place' else obj['p'])
             if not isinstance(p, list) or len(p) != 3: raise ValueError('Position [x, height, z] required')
@@ -77,8 +77,15 @@ def edit_environment(engine, kind, payload):
             if obstacle:
                 obj['r'] = finite(payload.get('radius', obj['r']), 'radius', .2, 3)
                 obj['p'][1] = obj['r']
-            else: obj['strength'] = finite(payload.get('strength', obj['strength']), 'strength', 0, 5)
+            else:
+                obj['strength'] = finite(payload.get('strength', obj['strength']), 'strength', 0, 5)
+                if 'odorant' in payload:
+                    if payload['odorant'] is None:obj.pop('odorant',None)
+                    else:obj['odorant']=payload['odorant']
     checked_world(world)
+    chemistry=getattr(engine.sensors,'chemical_odor',None)
+    if chemistry is not None and any(s.get('odorant') is not None and s['odorant'] not in chemistry.odorants for s in world['sources']):
+        raise ValueError('Odorant is absent from this sensory profile')
     old_objects = {o['id']: o for o in before['obstacles']}
     position = engine.body.frame()[0]['position']
     for obj in world['obstacles']:

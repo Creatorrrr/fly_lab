@@ -68,5 +68,7 @@ def main():
                 try:resource.close()
                 except Exception as cleanup_error:
                     result.setdefault('cleanupErrors',[]).append(str(cleanup_error))
-        out.write_text(json.dumps(result,ensure_ascii=False,indent=2));print(json.dumps(result,ensure_ascii=False,indent=2))
+        out.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+        # The JSON stream also works in legacy Windows console encodings.
+        print(json.dumps(result,ensure_ascii=True,indent=2))
 if __name__=='__main__':raise SystemExit(main())

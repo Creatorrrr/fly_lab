@@ -1,7 +1,8 @@
 """Inspectable joint receptor hypotheses for calibration, without neural IDs.
 
-Claw and hook proxies distinguish raw joint-coordinate directions. Their
-anatomical flexion/extension polarity is deliberately left unassigned. The
+Default claw and hook proxies distinguish raw joint-coordinate directions;
+their anatomical polarity is unassigned. Optional claw position tuning uses
+a measured interior angle and an explicit flexion-positive convention. The
 club proxy is a velocity high-pass, not a measured vibration tuning curve.
 """
 from dataclasses import asdict, dataclass
@@ -36,8 +37,36 @@ class ReceptorParameters:
         bounded_int(self.delay_steps, 'receptor delay steps', 0, 1000)
 
 
+@dataclass(frozen=True)
+class ClawPositionTuning:
+    """Optional position proxy based on measured femur-tibia interior angle.
+
+    Mamiya et al. (2018), Figure 5: little claw activity near 90 degrees,
+    flexion/extension populations active on opposite sides. Piecewise-linear
+    amplitudes are an engineering hypothesis; calcium is not a firing rate.
+    """
+    neutral_rad: float = math.pi / 2
+    flexion_limit_rad: float = math.pi / 10
+    extension_limit_rad: float = math.pi
+
+    def __post_init__(self):
+        finite(self.flexion_limit_rad, 'claw flexion limit', 0., math.pi)
+        finite(self.neutral_rad, 'claw neutral angle', self.flexion_limit_rad+1e-6, math.pi)
+        finite(self.extension_limit_rad, 'claw extension limit', self.neutral_rad+1e-6, math.pi)
+
+    def encode(self, interior_angle_rad):
+        angle = finite(interior_angle_rad, 'measured joint interior angle', 0., math.pi)
+        return np.clip([
+            (self.neutral_rad-angle)/(self.neutral_rad-self.flexion_limit_rad),
+            (angle-self.neutral_rad)/(self.extension_limit_rad-self.neutral_rad),
+        ], 0., 1.)
+
+
 class JointReceptors:
-    def __init__(self, parameters):
+    def __init__(self, parameters, *, claw_tuning=None):
+        if claw_tuning is not None and not isinstance(claw_tuning, ClawPositionTuning):
+            raise ValueError('A declared claw position tuning profile is required')
+        self.claw_tuning = claw_tuning
         self.p = parameters; self.tick = 0; self.velocity_lowpass = 0.
         self.filtered = np.zeros(len(CHANNELS))
         self.queue = np.zeros((parameters.delay_steps+1, len(CHANNELS)))
@@ -47,9 +76,17 @@ class JointReceptors:
             polarity='positive/negative model q; anatomical polarity unassigned',
             club_model='abs(velocity - lowpass_velocity); no measured frequency tuning',
             source_url='https://pmc.ncbi.nlm.nih.gov/articles/PMC8665017/', biological_validation=False)
+        if claw_tuning is not None:
+            # Default metadata/hash remains byte-for-byte compatible.
+            self.metadata.update(schema='flylab.joint-receptors.v2',
+                claw_position_tuning=asdict(claw_tuning),
+                position_encoding='opponent half-wave interior-angle proxy; no hysteresis model',
+                polarity='positive model q is anatomical flexion; caller supplies measured interior angle',
+                position_source_url='https://pmc.ncbi.nlm.nih.gov/articles/PMC6481666/')
         self.identity = digest(self.metadata)
 
-    def step(self, q, velocity, *, support_bw=0., contact_bw=0., enabled=True):
+    def step(self, q, velocity, *, support_bw=0., contact_bw=0., enabled=True,
+             interior_angle_rad=None):
         q = finite(q, 'receptor angle', -1000., 1000.)
         velocity = finite(velocity, 'receptor velocity', -1e6, 1e6)
         support_bw = finite(support_bw, 'support load', 0., 1e6)
@@ -58,7 +95,14 @@ class JointReceptors:
         bounded_int(self.tick+1, 'receptor tick')
         p = self.p
         angle = float(np.clip((q-p.angle_low_rad)/(p.angle_high_rad-p.angle_low_rad), 0., 1.))
-        raw = np.array([angle, 1-angle, max(0., velocity)/p.velocity_scale_rad_s,
+        if self.claw_tuning is None:
+            if interior_angle_rad is not None:
+                raise ValueError('Interior angle requires an explicit claw tuning profile')
+            position = (angle, 1-angle)
+        else:
+            # Validate before updating filters, delay queue or clocks.
+            position = self.claw_tuning.encode(interior_angle_rad)
+        raw = np.array([*position, max(0., velocity)/p.velocity_scale_rad_s,
             max(0., -velocity)/p.velocity_scale_rad_s,
             abs(velocity-self.velocity_lowpass)/p.vibration_scale_rad_s,
             support_bw/(p.load_half_bw+support_bw), contact_bw/(p.contact_half_bw+contact_bw)])
@@ -69,10 +113,13 @@ class JointReceptors:
         self.velocity_lowpass += -math.expm1(-p.dt/p.velocity_tau_s)*(velocity-self.velocity_lowpass)
         self.tick += 1
         if not enabled: output.fill(0.)
+        stimulus = dict(q_rad=q, velocity_rad_s=velocity, support_bw=support_bw, contact_bw=contact_bw)
+        if self.claw_tuning is not None:
+            stimulus['interior_angle_rad'] = float(interior_angle_rad)
         return dict(tick=self.tick, seconds=self.tick*p.dt, profile_hash=self.identity,
             raw=dict(zip(CHANNELS, raw.tolist())), filtered=dict(zip(CHANNELS, self.filtered.tolist())),
             output=dict(zip(CHANNELS, output.tolist())), enabled=enabled,
-            stimulus=dict(q_rad=q, velocity_rad_s=velocity, support_bw=support_bw, contact_bw=contact_bw))
+            stimulus=stimulus)
 
     def snapshot(self):
         return dict(schema='flylab.joint-receptor-state.v1', profile_hash=self.identity,

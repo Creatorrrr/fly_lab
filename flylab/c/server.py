@@ -321,6 +321,7 @@ class CDispatcher:
                 buffer=io.BytesIO();Image.fromarray(pixels).save(buffer,format='PNG')
                 result['image']='data:image/png;base64,'+base64.b64encode(buffer.getvalue()).decode('ascii')
             else:raise ValueError('Observation must be eyes, native or odor')
+            result['control_tick']=e.control_tick
         elif op == 'command': result = self.need().command(payload.get('type'), payload.get('payload', {}))
         elif op == 'checkpoint':
             name = checked_name(payload.get('name', 'checkpoint-'+secrets.token_hex(6)))
@@ -452,7 +453,7 @@ def main():
     if not (ROOT/'FLY_LAB_C.html').is_file(): raise SystemExit('Run python build_c.py first')
     server = CServer(args.port, args.graph, args.bindings, args.artifacts, backend=args.backend, default_mode=args.mode,
                      body_factory=select_body(physics_profile))
-    print(f'FLY LAB C {VERSION} — http://127.0.0.1:{args.port} · {args.mode}', flush=True)
+    print(f'FLY LAB C {VERSION} - http://127.0.0.1:{args.port} [{args.mode}]', flush=True)
     app=server.app()
     if args.restore_checkpoint:
         name=checked_name(args.restore_checkpoint)

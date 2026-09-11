@@ -1,0 +1,5 @@
+# Optional official FlyBody task adapter. Source is acquired separately at a
+# pinned commit by tools/acquire_c_flight_source.py. Keep the core physics ABI.
+dm-control==1.0.39
+mujoco==3.9.0
+h5py==3.16.0

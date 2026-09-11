@@ -1,5 +1,27 @@
 # FLY LAB C · FAFB / BANC 감각–운동 실험 플랫폼
 
+[전신 제어 목표와 실행 기록](GOAL_PLAN.md)을 작성하고 진행 중입니다. FlyBody의 **78개 능동 자유도와 24개 수동 관절**을 지원하는 선택적 전신 모델을 추가했습니다. 화면의 **새 실험 몸 → FlyBody · 전신 78관절 (CPU 물리)**에서 사용할 수 있고, 관절 표에 전신의 측정각·목표각·구동 힘을 표시합니다. 전신 `tracking_all` 서보는 78관절 모두 국소 추종 대조와 별도 명령 각도 확인에서 오차 ≤0.02rad와 응답비 ≥90%를 통과했습니다. 모든 가동범위·접촉 상태에 대한 보장은 아닙니다. BANC CUDA와의 실행·복원도 확인했지만, **자연 신경회로의 전신 제어·보행·비행은 아직 완성되지 않았습니다**.
+
+BANC 다리 프로파일의 관절 표에는 축별 신경 출력 매핑과 양·음 방향 운동뉴런 수를 표시합니다. `frame.neuromuscular.actuation`은 실제 신체 순서로 매핑을 반환하며, 42축 모델은 41연결/1미연결, 전신78축은 41연결/37미연결입니다. 전체805 운동뉴런 중391개가 이 공학적 위치 변환에 사용됩니다. 해부학적 부위 주석만 있는 나머지414개를 자동으로 구동기에 배정하지 않습니다. 매핑 존재와 실제 신경 활성·행동 성공은 구분합니다.
+
+독립 `FlyGymBody`의 직접 관절 제어 API는 `BodyOptions(model='flybody', actuation='whole_body', servo_profile='tracking_all')`, `body.whole_body_observation()`, `body.step_body_targets({'c_thorax-c_head-yaw': 0.1}, dt=0.005)`입니다. 명령은 rad이며 전체 구동기 이름과 제한은 관측 패킷에 있습니다. `CEngine`이 관리하는 몸은 엔진의 제어 시계로 진행해야 하므로 이 API로 별도 진행하지 않습니다. 기존 다리 모델과 체크포인트는 유지됩니다. 전신 위치 서보는 공학적 제어기이며 근육 생리 모델이 아닙니다. 이전 `asset`과 비다리 전용 보정인 `tracking` 옵션도 별도 모델로 보존합니다.
+
+재현: `.venv/Scripts/python.exe tools/verify_whole_body.py --tracking --include-legs --servo-profile tracking_all --holdout --out verification/whole-body-new-run`. BANC 감각 모집 대조는 `tools/probe_c_motor_recruitment.py --out verification/recruitment-new-run`입니다. 각 출력 디렉터리는 새 경로여야 합니다.
+
+별도 `ResearchRateNetwork`는 전체 CSR 회로를 CUDA에서 계산하는 연구용 발화율 모델입니다. 고정 MANC 저자 코드와 수치 대조를 통과했지만, BANC의 단일 관절 외력 회복 실험에서는 채택 기준을 만족하지 못했습니다. 기존 LIF의 mV 입력과 서로 바꾸어 사용할 수 없습니다. `tools/verify_c_rate_reference.py`, `tools/probe_c_rate_recruitment.py`, `tools/compare_c_rate_joint.py`의 조건과 결과는 [목표 실행 기록](GOAL_PLAN.md)에 보존했습니다.
+
+후속 교정에는 실제 관절 내각을 받는 `ClawPositionTuning`과 기준 자세의 근력 차이를 고정 비율로 반영하는 `TorqueBalancedRecruitment`를 추가했습니다. 연구 CLI의 `--claw-profile angle_tuned --recruitment torque_balanced`로 선택하며, 기본 수용체·체크포인트 해석은 유지합니다. 두 후보를 함께 적용한 24조건은 0.3초 동안 방향 보호 중단 없이 실행됐지만 **외력 회복 기준은 모두 미달**했습니다. 감각 경로 절단과 빠른 시간척도 후보도 실패해 현재 제품의 기본 신경 제어기로 채택하지 않았습니다. 감각 입력 재생·정적 자세·경로 절단 원자료와 E8–E15 판정은 같은 목표 기록에 있습니다.
+
+추가 연구 경로는 `compare_c_rate_joint.py`의 `--annotation-reference`/`--annotation-sha256`입니다. 출처가 일치하고 현재 검증 주석이 비어 있는 NT 보완만 별도 행렬로 비교하며, 기존 graph 파일은 바꾸지 않습니다. 19개 후보를 적용한 12조건도 외력 회복은 미달했습니다. `probe_c_rate_decay.py --start-mode saved_state`는 저장된 전뇌 상태에서 감각 중단/출력 절단을 비교합니다. 400ms 뒤에도 남는 반복회로 활성을 확인했지만 이는 제어 성공이 아닙니다. 재계산 오차로 무효였던 첫 실행과 동일 저장 상태를 사용한 유효 대조를 구분해 기록했습니다.
+
+영역별 기여는 같은 도구의 `--cut-profile regional`로 비교합니다. 시각엽 출력 차단은 원래 활성 운동세포를 억제하면서 길항근을 활성화하기도 하므로 영역 제거를 해결책으로 채택하지 않았습니다. `tools/probe_c_morphology_size.py`는 고정 원자료의 길이·부피로 면적을 예측하고, 분리된 검증 세포·영역 범위·누락을 기록합니다. `tools/probe_c_morphology_rate.py`는 검증 자료와 manifest SHA를 명시해 기존 실측 면적을 보존한 크기 후보를 비교합니다. 중앙뇌/VNC의 누락 54,961개를 보완한 10조건도 양방향 운동 전달·입력 제거 후 감쇠 기준에는 미달했습니다. 시각엽 면적은 외삽하지 않았으며, 이 연구 후보들은 제품의 LIF·기본 제어기를 바꾸지 않습니다. E16–E18의 원자료와 한계는 목표 기록에 있습니다.
+
+`tools/probe_c_banc_reference.py`의 `prepare`/`run`은 고정 저자 BANC 행렬4963개와 저장한 감각 입력을 비교합니다. 원자료 SHA·ID순서·결측 입력을 검사하며 비영 감각 입력이 누락되면 거부합니다. E20의 평균/단일 표본 모두 입력 중단 후 감쇠했지만 양방향 운동 모집에는 실패했습니다. 논문의 정확한 BANC 실행 설정이 확보된 것은 아니며 전체 BANC를 이 소규모 회로로 교체하지 않습니다.
+
+DNg100의 명령 측은 세포체 측과 구분해야 합니다. 저자 자료에서 BANC root `720575941500851362`는 오른쪽 soma/왼쪽 VNC 대상, `720575941626500746`는 왼쪽 soma/오른쪽 대상입니다. `tools/probe_c_banc_descending.py`는 개별 ID와 MANC 대응을 검사해 좌·우·양측 자극을 비교합니다. 과거 E6/E20의 실제 자극은 오른쪽 VNC 대상이었으며 원자료와 판정을 보존합니다. E21에서 양측 운동 모집과 입력 제거 후 감쇠는 확인했지만 모든 조건의 측 선택성은 통과하지 못했습니다. `tools/probe_c_banc_conditioned.py`로 올바른 왼쪽 대상 상태에 감각을 결합한 E22도 Fast/FETi 양방향 전달에는 실패했습니다. 이 도구들은 생물학적으로 검증된 제어기가 아닙니다.
+
+`tools/probe_c_feco_identity.py`는 검토된 매칭 파일의 FANC root와 기능 주석의 root를 연결해 세포별 감각 입력 후보를 만듭니다. BANC의 짧은 `cell_ids_v2.id`, Python 변환의 기본 `user_id`, 기능 주석의 행 번호를 혼용하지 않으며 누락·상충·좌우 반사 매칭을 보류합니다. `probe_c_banc_conditioned.py --claw-candidate ...`로만 후보를 적용할 수 있고, 옵션을 생략하면 기존 입력을 유지합니다. E24에서 근거가 있는 4개 입력 방향을 바꾸자 신전 자세의 잘못된 FETi 활성은 감소했지만 Fast 활성은 회복되지 않아 양방향 제어 기준에 미달했습니다. 현재 기본 제어기에는 채택하지 않았습니다.
+
 C **0.7.0**에서 검증기 파라미터 누락, ResearchLIF 적분·복원, BANC 캠페인 모드 검증을 수정했습니다.
 선택 의존성별 검사와 별도 단일 관절 Hill 근육·수용체 교정 장치를 추가했습니다.
 [후속 단일 관절 개발 결과](docs/C07_SINGLE_JOINT_RESULTS_20260910.md)에는 전체 BANC 계산을 두 Hill 근육에 연결한 별도 엔진,
@@ -7,7 +29,8 @@ C **0.7.0**에서 검증기 파라미터 누락, ResearchLIF 적분·복원, BAN
 [개발 결과와 실행 방법](docs/C07_IMPLEMENTATION_RESULTS_20260910.md),
 [후속 상세 계획](docs/C07_DEVELOPMENT_PLAN_20260910.md),
 [기존 C0.6 물리 결과](docs/C06_REPAIR_RESULTS_20260910.md)를 확인하세요.
-BANC 감각 3,604개·운동 391개를 연결하고 42관절 중 41관절을 구동합니다.
+BANC 감각 3,604개·다리 운동뉴런 391개를 연결하고 42관절 중 41관절을 구동합니다.
+현재 전체 그래프의 운동뉴런 주석은 805개이며, 다리 외 414개의 머리·구기·날개·복부 등 말초 대응은 별도 검증이 필요합니다.
 다리 폐루프와 저장·개입·모니터링은 검증했지만, BANC 자율 보행은 아직 실패이며
 FAFB의 좌우 먹이 접근도 한쪽만 성공했습니다. 완전한 가상 초파리의 완성판은 아닙니다.
 
@@ -33,7 +56,11 @@ RTX 4080에서 CUDA 커널·CUDA Graph·비동기 관측 전송을 적용하고 
 
 해당 계획의 물리 어댑터·계측, 같은 관절의 기계 교사, 실제 복안·4지점 후각 관측, 보행 대조와 물리 배치 평가 도구를 반영했습니다. 화면의 **실제 몸과 감각 관측**에서 실제 메시·복안·후각 값을 확인할 수 있습니다. **4지점 후각 · 더듬이 입력 (실험)**은 새 실험용 별도 프로파일이며, 복안과 palp에는 임의의 신경 ID를 연결하지 않습니다. [구현과 Windows 실측 결과](docs/C_FLYGYM_IMPLEMENTATION_WINDOWS_20260910.md)에 적용 범위와 재현 명령을 기록했습니다.
 
-기본 실행은 **CUDA 신경 + CPU 물리**입니다. 선택 의존성 `requirements-warp.txt`와 `--physics-backend warp`를 통해 Warp 후보를 실행할 수 있지만, 이번 수치·복원 비교가 실패하고 단일 세계도 느려 자동 선택하지 않습니다. 실제 BANC 24조건 관절 대조와 8조건 보행 대조에서도 감각 회로·보행 개선 기준을 통과하지 못해, 전신 근육 전환과 전뇌 배치 캠페인은 채택하지 않았습니다.
+기본 실행은 **CUDA 신경 + CPU 물리**입니다. 선택 의존성 `requirements-warp.txt`와 `--physics-backend warp`를 통해 Warp 후보를 실행할 수 있지만, 수치·복원과 단일 세계 성능 기준을 통과하지 못해 자동 선택하지 않습니다. 실제 BANC 관절·보행 대조도 성공으로 판정하지 않았습니다.
+
+2026-09-11 후속 반영에서는 배치 오류·복원·메모리 부족 대응, 모델별 CUDA 캠페인, 낱눈 열 연결과 DoOR 41수용기 후각, 복안 CUDA 계산, LF 근육 접촉·학습 대조, 공식 FlyBody 비행·이착륙 실험을 추가했습니다. 새 실험의 **낱눈 열 연결·DoOR 41수용기 후각 v4 (연구)**를 선택한 뒤 환경 편집에서 냄새 물질을 지정할 수 있습니다. 정밀도·행동·교정의 미충족 기준과 실제 검증 수치는 [최신 반영 보고서](docs/C_FLYGYM_COMPLETION_20260911.md)를 참고하세요.
+
+추가 점검의 캠페인 복원 OOM·거짓 완료 판정·종료 후 재실행 문제와 Windows 진단 JSON 인코딩 오류를 수정했습니다. CUDA 캠페인은 복원할 세계 수를 줄여 재시도하며, 1세계도 할당할 수 없으면 `PAUSED`와 `waiting_for_memory`를 남겨 같은 명령의 `--resume`으로 재개할 수 있습니다. 작업 분할 시 접촉·제약을 새로 구성하는 물리 epoch임을 기록합니다. [수정과 검증 결과](docs/C_FLYGYM_FIXES_20260911.md).
 
 Apple silicon에서는 **MPS 가속**을 사용할 수 있습니다. `.venv/bin/python -m pip install -r requirements-mps.txt` 후 `./launch_mps.sh`로 실행하거나 화면의 **신경 계산 → MPS · Apple GPU**를 선택하세요. 전환 전 체크포인트를 저장하고 현재 모델 시간·신경·물리 상태를 그대로 옮깁니다. 초기 M1 Max 측정에서 전뇌 계산 11.56배, 짧은 실제 몸 연결 3.58–4.35배 향상이 보고됐습니다. 이는 이전 버전·특정 조건의 이력이며 현재 개발본의 종합 배수나 실시간 속도를 뜻하지 않습니다. [MPS 검증 보고서](docs/C_MPS_VALIDATION.md)에 원자료와 수치 오차를 기록했습니다.
 

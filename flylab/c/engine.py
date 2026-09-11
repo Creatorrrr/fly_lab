@@ -1,10 +1,9 @@
 """One worker owns clocks, brain, body, ports, interventions and recording."""
 from dataclasses import asdict
 import copy
-import math
 import time
 import numpy as np
-from . import VERSION, MODES, CONTROL_DT
+from . import VERSION, CONTROL_DT
 from .integrity import digest, bounded_int, finite, boolean
 from .neural import create_backend, LIFParameters, NEURAL_BACKENDS
 from .model_config import validate_execution
@@ -15,7 +14,7 @@ from ..body import FlyGymBody
 from ..brain import Circuit
 from ..legacy import LegacyBRate
 from ..engine import config_values, default_graph, validate_sensor_packet
-from ..sensors import SensorAdapter, default_world, validate_world
+from ..sensors import default_world, validate_world
 from .sensors import CSensorAdapter
 from .metabolism import Metabolism
 from ..common import to_ui
@@ -139,6 +138,7 @@ class CEngine:
                 raise
 
     def start_recording(self, path, ids=None, max_bytes=2*1024**3):
+        if self.closed: raise RuntimeError('Closed engine cannot start recording')
         if self.recorder: raise ValueError('Recording already active')
         selected = self.bindings.motor_indices.copy() if ids is None else self.graph.resolve(ids)
         if self.neural and not len(selected): raise ValueError('Choose a nonempty fixed recording cohort')
@@ -269,6 +269,7 @@ class CEngine:
         return prepared, packet, drive, pulses, ports
 
     def step(self, controls=1):
+        if self.closed: raise RuntimeError('Closed engine cannot advance')
         bounded_int(controls, 'control steps', 0, 200000)
         start_wall = time.perf_counter()
         self.selected_events = []
@@ -589,5 +590,6 @@ class CEngine:
 
     def close(self):
         if not self.closed:
+            self.closed = True
             try: self.stop_recording()
-            finally: self.body.close(); self.closed = True
+            finally: self.body.close()

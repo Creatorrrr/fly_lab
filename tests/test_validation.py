@@ -2,6 +2,7 @@
 from pathlib import Path
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -14,6 +15,12 @@ spec.loader.exec_module(campaign)
 
 
 class ValidationTests(unittest.TestCase):
+    def legacy_cli(self,script,*args):
+        """Force the Windows encoding that previously lost diagnostic JSON."""
+        env=dict(os.environ,PYTHONUTF8='0',PYTHONIOENCODING='cp949')
+        return subprocess.run([sys.executable,'-X','utf8=0','-S',str(ROOT/'tools'/script),*map(str,args)],
+                              cwd=ROOT,capture_output=True,text=True,encoding='cp949',env=env,timeout=20)
+
     def test_01_standard_library_preflight(self):
         """-S: site-packages 없이 진단 모듈만 실행 가능해야 한다."""
         p=subprocess.run([sys.executable,'-S','-c',
@@ -25,33 +32,32 @@ class ValidationTests(unittest.TestCase):
     def test_02_missing_numpy_produces_blocked_json(self):
         with tempfile.TemporaryDirectory() as t:
             out=Path(t)/'newdir'/'gate.json'
-            p=subprocess.run([sys.executable,'-S',str(ROOT/'tools/verify_physics.py'),'--output',str(out)],
-                cwd=ROOT,capture_output=True,text=True,timeout=20)
+            p=self.legacy_cli('verify_physics.py','--output',out)
             self.assertEqual(p.returncode,2,p.stderr)
-            data=json.loads(out.read_text())
+            data=json.loads(out.read_text(encoding='utf-8'))
             self.assertEqual(data['status'],'BLOCKED')
             self.assertFalse(data['physicalExecuted'])
             self.assertEqual(data['checks'],[])
+            self.assertIn('3.12–3.14',data['dependencies']['hint'])
 
     def test_03_gate_blocks_all_campaign_cases(self):
         with tempfile.TemporaryDirectory() as t:
-            p=subprocess.run([sys.executable,'-S',str(ROOT/'tools/run_physics_campaign.py'),'--out',t],
-                cwd=ROOT,capture_output=True,text=True,timeout=20)
+            p=self.legacy_cli('run_physics_campaign.py','--out',t)
             self.assertEqual(p.returncode,2,p.stderr)
-            data=json.loads((Path(t)/'report.json').read_text())
+            data=json.loads((Path(t)/'report.json').read_text(encoding='utf-8'))
             self.assertEqual(data['status'],'BLOCKED')
             self.assertEqual(data['completedCases'],0)
             self.assertEqual(len(data['cases']),33)
             self.assertTrue(all(x['status']=='BLOCKED' and not x['physicalExecuted'] for x in data['cases']))
 
     def test_04_plan_has_no_execution_claim(self):
-        p=subprocess.run([sys.executable,'-S',str(ROOT/'tools/run_physics_campaign.py'),'--plan'],
-            cwd=ROOT,capture_output=True,text=True,timeout=20)
+        p=self.legacy_cli('run_physics_campaign.py','--plan')
         self.assertEqual(p.returncode,0,p.stderr)
         data=json.loads(p.stdout)
         self.assertEqual(data['status'],'PLAN_ONLY')
         self.assertFalse(data['physicalExecuted'])
         self.assertEqual(len(data['cases']),33)
+        self.assertEqual(next(item['description'] for item in data['cases'] if item['case']=='motor-off'),campaign.CASES['motor-off'])
 
     def test_05_campaign_plan_unique(self):
         plan=campaign.build_plan([7,19,43],10)
@@ -96,11 +102,10 @@ class ValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             path=Path(t);(path/'gate.json').write_text('{"status":"PASS","physicalValidation":true}')
             (path/'report.json').write_text('{"status":"PASS"}')
-            p=subprocess.run([sys.executable,'-S',str(ROOT/'tools/run_physics_campaign.py'),'--out',t],
-                cwd=ROOT,capture_output=True,text=True,timeout=20)
+            p=self.legacy_cli('run_physics_campaign.py','--out',t)
             self.assertEqual(p.returncode,2,p.stderr)
-            self.assertEqual(json.loads((path/'report.json').read_text())['status'],'BLOCKED')
-            self.assertEqual(json.loads((path/'gate.json').read_text())['status'],'BLOCKED')
+            self.assertEqual(json.loads((path/'report.json').read_text(encoding='utf-8'))['status'],'BLOCKED')
+            self.assertEqual(json.loads((path/'gate.json').read_text(encoding='utf-8'))['status'],'BLOCKED')
 
     def test_13_obstacle_near_boundary_has_valid_explicit_placement(self):
         from types import SimpleNamespace

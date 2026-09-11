@@ -14,8 +14,8 @@ from .receptors import JointReceptors, ReceptorParameters
 @dataclass(frozen=True)
 class TeacherParameters:
     dt: float = .001
-    kp_s2: float = 900.
-    kd_s: float = 60.
+    kp_s2: float = 3600.
+    kd_s: float = 120.
     max_excitation: float = 1.
 
     def __post_init__(self):

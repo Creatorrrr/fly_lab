@@ -3,7 +3,7 @@ from dataclasses import fields,is_dataclass,dataclass
 from importlib.metadata import version
 import numpy as np
 from .body import FlyGymBody
-from .physics import PhysicsBodyFactory,PhysicsProfile
+from .physics import PhysicsBodyFactory,warp_option_metadata
 from .warp_control import ResidentHybrid
 from . import CONTROL_DT,PHYSICS_DT
 
@@ -13,6 +13,7 @@ class BatchBodyView(FlyGymBody):
 
     def __init__(self,*args,**kwargs):
         self._settling=True
+        self.gpu_options=None
         super().__init__(*args,**kwargs)
         self._settling=False
 
@@ -21,7 +22,11 @@ class BatchBodyView(FlyGymBody):
         raise RuntimeError('Batched bodies advance only through their GPU batch owner')
 
     def physics_identity(self):
-        return dict(super().physics_identity(),precision='float32',experimental=True,
+        identity=super().physics_identity()
+        if self.gpu_options is not None:
+            identity['cpu_mirror_options']={k:identity[k] for k in self.gpu_options}
+            identity.update(self.gpu_options)
+        return dict(identity,precision='float32',experimental=True,
             observation_source='shared MuJoCo-Warp worlds, synchronized at control boundary',
             controller_backend='CUDA resident hybrid',checkpoint_scope='whole batch; CPU view alone cannot resume physics')
 
@@ -47,6 +52,8 @@ class WarpWorldBatch:
         self.runtime=dict(warp=version('warp-lang'),mujoco_warp=version('mujoco-warp'),device=wp.get_device('cuda:0').name)
         with wp.ScopedStream(self.stream):
             self.model=mjw.put_model(self.m)
+            options=warp_option_metadata(self.model)
+            for body in self.bodies:body.gpu_options=dict(options)
             self.data=self._put_data()
             mjw.step(self.model,self.data);mjw.forward(self.model,self.data);wp.synchronize_stream(self.stream)
             self.data=self._put_data()
@@ -93,7 +100,7 @@ class WarpWorldBatch:
             hit=b.nonfoot_contact()
             if hit and not b.prev_contact:b.collisions+=1
             b.prev_contact=hit;b.walk_ticks=round(b.physics_time()/CONTROL_DT)
-            if R[2,2]<.15 or p[2]<0 or np.linalg.norm(p[:2])>80:b.fault='Batched body fell or left domain'
+            if b.outside_physical_domain(p,R):b.fault='Batched body fell or left domain'
 
     def arrays(self):
         result={}
@@ -124,6 +131,40 @@ class WarpWorldBatch:
         self.control.restore(saved['controller'])
         with self.wp.ScopedStream(self.stream):
             for key,value in arrays.items():value.assign(saved['arrays'][key])
+        self.wp.synchronize_stream(self.stream)
+
+    def restore_regrouped(self,saved,rows):
+        """Select integration/controller rows and rebuild contact workspaces.
+
+        Contact and constraint arrays contain shared indexing and cannot be
+        sliced as independent worlds. A regroup is a new physics epoch.
+        """
+        if saved.get('schema')!='flylab.warp-batch.v1' or saved.get('runtime')!=self.runtime or saved.get('model_hash')!=self.bodies[0].model_hash:
+            raise ValueError('Regrouped physics checkpoint identity mismatch')
+        worlds=saved.get('worlds')
+        if type(worlds) is not int or not 1<=worlds<=32 or len(rows)!=self.n or len(set(rows))!=len(rows) or any(type(i) is not int or not 0<=i<worlds for i in rows):
+            raise ValueError('Invalid physics regroup rows')
+        arrays=self.arrays();selected={}
+        # Only MuJoCo integration state has independent world rows. Derived
+        # contacts, solver workspaces and collision indexes are rebuilt below.
+        for key in ('qpos','qvel','act','ctrl','qacc_warmstart','qfrc_applied','xfrc_applied','mocap_pos','mocap_quat','eq_active','history','time'):
+            target=arrays[key].numpy();value=saved.get('arrays',{}).get(key)
+            if not isinstance(value,np.ndarray) or value.shape!=(worlds,*target.shape[1:]) or value.dtype!=target.dtype or not np.isfinite(value).all():
+                raise ValueError('Invalid regrouped integration state: '+key)
+            selected[key]=value[rows].copy()
+        source=saved.get('controller',{});controller=dict(shader=source.get('shader'))
+        for key in ('state','drive','mode','ticks','push_left','push'):
+            value=source.get(key)
+            if not isinstance(value,np.ndarray) or value.ndim<1 or value.shape[0]!=worlds:
+                raise ValueError('Invalid regrouped controller state: '+key)
+            controller[key]=value[rows].copy()
+        self.control.validate_state(controller)
+        expected=np.asarray([b.t0 for b in self.bodies])+controller['ticks']*PHYSICS_DT
+        if not np.allclose(selected['time'],expected,rtol=1e-6,atol=1e-6):raise ValueError('Regrouped physics/controller clock mismatch')
+        with self.wp.ScopedStream(self.stream):
+            for key,value in selected.items():arrays[key].assign(value)
+            self.mjw.forward(self.model,self.data)
+        self.control.restore(controller)
         self.wp.synchronize_stream(self.stream)
 
     def render(self,world=0):

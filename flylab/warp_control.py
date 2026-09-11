@@ -64,15 +64,16 @@ class ResidentHybrid:
     def set_inputs(self,commands,*,joint_targets=None,adhesion=None):
         if len(commands)!=self.n:raise ValueError('One command per world required')
         drive=np.asarray([b.motor.map(command) for b,command in zip(self.bodies,commands)])
+        if joint_targets is not None:
+            targets=np.asarray(joint_targets);pads=np.asarray(adhesion)
+            if targets.shape!=(self.n,42) or not np.isfinite(targets).all() or np.max(np.abs(targets))>10 or pads.shape!=(self.n,6) or pads.dtype!=np.bool_:
+                raise ValueError('Invalid batched joint targets')
         with self.stream:
             self.drive.set(drive,stream=self.stream)
             self.push_left.set(np.array([b.push_left for b in self.bodies]),stream=self.stream)
             self.push.set(np.asarray([b.push_force for b in self.bodies]),stream=self.stream)
             self.mode.fill(0 if joint_targets is None else 1)
             if joint_targets is not None:
-                targets=np.asarray(joint_targets);pads=np.asarray(adhesion)
-                if targets.shape!=(self.n,42) or not np.isfinite(targets).all() or np.max(np.abs(targets))>10 or pads.shape!=(self.n,6) or pads.dtype!=np.bool_:
-                    raise ValueError('Invalid batched joint targets')
                 self.views['ctrl'][:,self.maps[1]]=self.cp.asarray(targets,dtype=self.cp.float32)
                 self.views['ctrl'][:,self.maps[2]]=self.cp.asarray(pads,dtype=self.cp.float32)
         for b,d in zip(self.bodies,drive):b.descending=d.copy()
@@ -105,3 +106,4 @@ class ResidentHybrid:
         self.validate_state(saved)
         with self.stream:
             for key in ('state','drive','mode','ticks','push_left','push'):getattr(self,key).set(saved[key],stream=self.stream)
+            self.health.fill(0)

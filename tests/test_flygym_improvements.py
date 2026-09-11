@@ -47,9 +47,9 @@ class ProfilesAndOdor(unittest.TestCase):
             # The observation RPC must use the selected field and its parameters.
             from flylab.c.server import CDispatcher,PROTOCOL
             dispatcher=CDispatcher.__new__(CDispatcher)
-            dispatcher.engine=SimpleNamespace(body=body,world=world,sensors=SimpleNamespace(four_site_odor=sensor))
+            dispatcher.engine=SimpleNamespace(body=body,world=world,control_tick=2,sensors=SimpleNamespace(four_site_odor=sensor))
             reply=dispatcher.handle(dict(protocol=PROTOCOL,requestId=1,op='physical_observation',payload={'kind':'odor'}))
-            self.assertEqual(reply['result'],baseline)
+            self.assertEqual(reply['result'],dict(baseline,control_tick=2))
             rotation=np.array([[0.,-1.,0.],[1.,0.,0.],[0.,0.,1.]])
             moved=copy.deepcopy(body);moved.d.xpos=positions@rotation.T
             moved.d.xmat=np.tile(rotation.ravel(),(3,1))

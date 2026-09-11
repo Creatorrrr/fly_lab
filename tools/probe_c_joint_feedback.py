@@ -15,12 +15,16 @@ from flylab.c.receptors import ReceptorParameters, JointReceptors
 from flylab.c.single_joint import JointParameters, build_profile, encode_feedback
 
 
-def run(graph_path,out,seconds=.3,backend='auto'):
+def run(graph_path,out,seconds=.3,backend='auto',integration='exact-exponential-held-drive-v1',angles=(1.2,1.862,2.2),gains=(18.,36.,72.)):
     seconds=finite(seconds,'probe seconds',.05,2.)
     count=model_ticks(seconds,.001,maximum=2000)
+    parameters=LIFParameters(integration=integration)
+    if not 1<=len(angles)<=3 or not 1<=len(gains)<=3:raise ValueError('Use 1..3 fixed angles/gains')
+    angles=[finite(q,'probe angle',.01,3.) for q in angles]
+    gains=[finite(g,'probe gain',0.,100.) for g in gains]
     out=Path(out);out.mkdir(parents=True,exist_ok=False)
     spec=dict(schema='flylab.joint-feedback-probe.v1',seconds=seconds,backend=backend,
-        held_angles_rad=[1.2,1.862,2.2],sensory_gains_mV=[18.,36.,72.],mute_outgoing=[False,True],
+        held_angles_rad=angles,sensory_gains_mV=gains,mute_outgoing=[False,True],integration=integration,
         held_velocity_rad_s=0.,direct_motor_stimulation=False,physicalExecuted=False,
         question='Are fast motor neurons recruited by these fixed FeCO hypotheses? Does recruitment disappear when sensory outgoing signals are muted?',
         adoption_policy='No default parameter changes; no force or behavior validation')
@@ -35,7 +39,7 @@ def run(graph_path,out,seconds=.3,backend='auto'):
                 for muted in spec['mute_outgoing']:
                     name=f'q_{q:g}_gain_{gain:g}'+('_muted' if muted else '')
                     directory=out/name;directory.mkdir()
-                    profile=build_profile(graph,body,JointParameters(initial_q_rad=q,sensory_gain_mV=gain))
+                    profile=build_profile(graph,body,JointParameters(initial_q_rad=q,sensory_gain_mV=gain),parameters)
                     write_json(directory/'profile.json',profile)
                     neural=create_backend(graph,LIFParameters(**profile['neural_parameters']),backend)
                     receptor=JointReceptors(ReceptorParameters(**profile['receptor_parameters']))
@@ -98,5 +102,7 @@ if __name__=='__main__':
     p.add_argument('--graph',default='data/acquisitions/banc888-v2-20260909/bundle')
     p.add_argument('--out',required=True);p.add_argument('--seconds',type=float,default=.3)
     p.add_argument('--backend',choices=('auto','exp_lif_mps','exp_lif_cpu_reference','exp_lif_cuda'),default='auto')
-    a=p.parse_args();report=run(a.graph,a.out,a.seconds,a.backend)
+    p.add_argument('--integration',default='exact-exponential-held-drive-v1',choices=('exact-exponential-held-drive-v1','exact-exponential-reset-current-v1','exact-exponential-voltage-events-v1'))
+    p.add_argument('--angles',type=float,nargs='+',default=[1.2,1.862,2.2]);p.add_argument('--gains',type=float,nargs='+',default=[18.,36.,72.])
+    a=p.parse_args();report=run(a.graph,a.out,a.seconds,a.backend,a.integration,a.angles,a.gains)
     print(report['status']);raise SystemExit(0 if report['status']=='COMPLETE' else 2 if report['status']=='BLOCKED' else 1)

@@ -54,6 +54,11 @@ def profile_values(value=None):
     return PhysicsProfile(**(value or {}))
 
 
+def warp_option_metadata(model):
+    """Cache actual options after upstream float32/solver adaptations."""
+    return dict(tolerance=float(model.opt.tolerance.numpy()[0]),disableflags=int(model.opt.disableflags))
+
+
 @dataclass(frozen=True)
 class PhysicsBodyFactory:
     profile: PhysicsProfile

@@ -30,7 +30,7 @@ def run_controller(body,kind,seconds,seed=42):
                 if not np.isfinite(body.d.qpos).all() or not np.isfinite(body.d.qvel).all():raise RuntimeError('Nonfinite comparison physics')
             body._forward_physics()
             p,R,_=body.pose()
-            if R[2,2]<.15 or p[2]<0 or np.linalg.norm(p[:2])>80:body.fault='Comparison body fell or left domain'
+            if body.outside_physical_domain(p,R):body.fault='Comparison body fell or left domain'
         probe=body.contact_probe()
         samples.append(dict(time_s=body.physics_time(),q=body.d.qpos[body.qpos_ids].copy(),
             phase=(controller.leg_phases if kind=='rule' else body.controller.cpg_network.curr_phases).copy(),

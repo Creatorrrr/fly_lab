@@ -1,0 +1,70 @@
+{
+  "sources": [
+    {
+      "path": "door/ORs.csv",
+      "url": "https://raw.githubusercontent.com/ropensci/DoOR.data/db323a496577c4b4a72b5c2fcd1859e07521ffb5/data/ORs.csv",
+      "sha256": "5c9e0f2abeab684eedf8137dd22e161b7ca58d1fd96f6a1e7a25e8e39ad742a0",
+      "bytes": 1011
+    },
+    {
+      "path": "door/odor.csv",
+      "url": "https://raw.githubusercontent.com/ropensci/DoOR.data/db323a496577c4b4a72b5c2fcd1859e07521ffb5/data/odor.csv",
+      "sha256": "a31d1841cf90ce23ec149760a5efa38eae02de7820bb2300c3a7dba221745940",
+      "bytes": 155880
+    },
+    {
+      "path": "door/door_mappings.csv",
+      "url": "https://raw.githubusercontent.com/ropensci/DoOR.data/db323a496577c4b4a72b5c2fcd1859e07521ffb5/data/door_mappings.csv",
+      "sha256": "1197c492e769b1b587c907c5b750ffa2507d7e6c9fe9dfcb2ee8603871e00912",
+      "bytes": 12824
+    },
+    {
+      "path": "door/door_response_matrix.csv",
+      "url": "https://raw.githubusercontent.com/ropensci/DoOR.data/db323a496577c4b4a72b5c2fcd1859e07521ffb5/data/door_response_matrix.csv",
+      "sha256": "bc2aa5414ff54d3a1399f5fe171e154bcadc754bcf323a3c27711a54f70848e2",
+      "bytes": 295852
+    },
+    {
+      "path": "door/door_dataset_info.csv",
+      "url": "https://raw.githubusercontent.com/ropensci/DoOR.data/db323a496577c4b4a72b5c2fcd1859e07521ffb5/data/door_dataset_info.csv",
+      "sha256": "6ab8bc1c843ffe4763e563eb763029c421898dce7889c31dc2c21b544c9be269",
+      "bytes": 11105
+    },
+    {
+      "path": "optic/RightEyeGrid.csv",
+      "url": "https://raw.githubusercontent.com/hsseung/OpticLobe.jl/3352e97c37b0f96ab08f27b70b4420f3d4ac2726/data/RightEyeGrid.csv",
+      "sha256": "66dbe188b972aab3bf2471b314134d9e6b26ab893ed84961695c606d666f6a4c",
+      "bytes": 3773
+    },
+    {
+      "path": "optic/columns_Mi1.csv",
+      "url": "https://raw.githubusercontent.com/hsseung/OpticLobe.jl/3352e97c37b0f96ab08f27b70b4420f3d4ac2726/data/columns_Mi1.csv",
+      "sha256": "02b8c96516fd7e3661434f8d3ee33dd24bf45bcd7ade7ddf163ddc72d3365ecd",
+      "bytes": 15128
+    },
+    {
+      "path": "optic/codexdependencies.jl",
+      "url": "https://raw.githubusercontent.com/hsseung/OpticLobe.jl/3352e97c37b0f96ab08f27b70b4420f3d4ac2726/src/codexdependencies.jl",
+      "sha256": "2dee07ac131d7f8e0cb89b5c3e2db2d3118adaaab788a092ea0bbce55f0b011b",
+      "bytes": 3138
+    },
+    {
+      "path": "optic/columnassignment.jl",
+      "url": "https://raw.githubusercontent.com/hsseung/OpticLobe.jl/3352e97c37b0f96ab08f27b70b4420f3d4ac2726/src/columnassignment.jl",
+      "sha256": "f1a1ce11352fe87fd02f0da4afedb0c73b3c19fea46c2af40d6f483b8396a524",
+      "bytes": 4739
+    },
+    {
+      "path": "optic/columncoordinates.jl",
+      "url": "https://raw.githubusercontent.com/hsseung/OpticLobe.jl/3352e97c37b0f96ab08f27b70b4420f3d4ac2726/src/columncoordinates.jl",
+      "sha256": "6f363c6b98c6b5e4de0630846aef031c83602d2c12d2dfa7970e03bf17698d39",
+      "bytes": 3279
+    },
+    {
+      "path": "optic/column_assignment.csv.gz",
+      "url": "https://storage.googleapis.com/flywire-data/codex/data/fafb/783/column_assignment.csv.gz",
+      "sha256": "bdf4ce7f62cc63493d53eefad3816ff2dfd08b190e97b35a492e0e453df2f0f6",
+      "bytes": 462838
+    }
+  ]
+}

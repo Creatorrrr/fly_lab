@@ -8,17 +8,18 @@ import time
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 import numpy as np
-from flylab.c.joint_teacher import JointTeacher
+from flylab.c.joint_teacher import JointTeacher,TeacherParameters
 from flylab.c.muscles import MuscleRig
 from flylab.c.single_joint import JointParameters,SingleJointLoop,build_profile
 from flylab.c.integrity import write_json
 
 
-def run(out,graph=None,backend='auto',seconds=.3):
+def run(out,graph=None,backend='auto',seconds=.3,teacher_parameters=None):
+    teacher_parameters=teacher_parameters or TeacherParameters()
     out=Path(out);out.mkdir(parents=True,exist_ok=False)
     spec=dict(schema='flylab.same-body-teacher-comparison.v1',seconds=seconds,dt=.001,
         initial_angles=[1.4,2.0],torques=[0.,.01,-.01],torque_interval_s=[.05,.08],
-        recovery_interval_s=[.08,seconds],teacher=dict(kp_s2=900.,kd_s=60.),
+        recovery_interval_s=[.08,seconds],teacher=dict(kp_s2=teacher_parameters.kp_s2,kd_s=teacher_parameters.kd_s),
         neural_gain_mV=18.,neural_rate_half_Hz=100.,neural_dt_s=.0001,physics_dt_s=.00001,
         feedback_iae_reduction=.20,max_deviation_ratio=1.05,
         interpretation='Teacher feasibility is separate from connectome feedback; default model unchanged')
@@ -32,7 +33,7 @@ def run(out,graph=None,backend='auto',seconds=.3):
                 body=MuscleRig()
                 body.data.qpos[0]=angle;body.mj.mj_forward(body.model,body.data)
                 loop=(SingleJointLoop(graph,build_profile(graph,body,JointParameters(initial_q_rad=angle)),backend,body=body)
-                      if mode.startswith('neural') else JointTeacher(body))
+                      if mode.startswith('neural') else JointTeacher(body,teacher_parameters))
                 rows=[];fault=None;start=time.perf_counter()
                 try:
                     for tick in range(round(seconds/.001)):
@@ -83,8 +84,9 @@ if __name__=='__main__':
     p.add_argument('--out',required=True,type=Path)
     p.add_argument('--graph',type=Path)
     p.add_argument('--backend',default='auto',choices=('auto','exp_lif_cuda','exp_lif_mps','exp_lif_cpu_reference'))
+    p.add_argument('--kp',type=float,default=TeacherParameters().kp_s2);p.add_argument('--kd',type=float,default=TeacherParameters().kd_s)
     a=p.parse_args()
     from flylab.c.graph import GraphStore
-    report=run(a.out,GraphStore.load(a.graph) if a.graph else None,a.backend)
+    report=run(a.out,GraphStore.load(a.graph) if a.graph else None,a.backend,teacher_parameters=TeacherParameters(kp_s2=a.kp,kd_s=a.kd))
     print(report['status'],report['feedback_status'])
     raise SystemExit(0 if report['status']=='COMPLETE' else 1)

@@ -30,6 +30,10 @@ class CompoundEyeObserver:
                                          fovy=config['fovy_per_eye'])
             camera_names.append(name)
         self.model=spec.compile()
+        # Multisample resolve on the Windows OpenGL driver changes a handful
+        # of edge pixels by one uint8 level even for an unchanged scene. A
+        # single sample makes optical input replayable on this render backend.
+        self.model.vis.quality.offsamples=0
         if (self.model.nq,self.model.nv,self.model.ngeom)!=(body.m.nq,body.m.nv,body.m.ngeom):
             raise ValueError('Eye observation model does not match the live body')
         if not np.array_equal(self.model.body_mass,body.m.body_mass):
@@ -43,15 +47,19 @@ class CompoundEyeObserver:
         self.options=mj.MjvOption()
         self.options.geomgroup[1]=self.options.geomgroup[2]=0
         self.retina=Retina()
+        from .retina_compute import RetinaCompute
+        self.compute=RetinaCompute(self.retina)
         self.renderer=mj.Renderer(self.model,height=self.retina.nrows,width=self.retina.ncols)
         self.camera_ids=[self.model.camera(name).id for name in camera_names]
-        self.metadata=dict(schema='flylab.compound-eyes.v1',body_model_hash=body.model_hash,
+        self.metadata=dict(schema='flylab.compound-eyes.v2',body_model_hash=body.model_hash,
             vision_config_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
             source='https://neuromechfly.org/',eyes=['left','right'],
             channels=['yellow','pale'],ommatidia_per_eye=len(self.retina.pale_type_mask),
-            neural_mapping=None,observation_only=True,biological_validation=False)
+            neural_mapping=None,observation_only=True,biological_validation=False,
+            retinal_compute_backend=self.compute.backend,render_samples=0,
+            optics_contract='official-fisheye-single-sample-v2')
 
-    def observe(self):
+    def observe(self,*,include_rgb=True):
         b,mj=self.body,self.mj
         mask=mj.mjtState.mjSTATE_INTEGRATION
         state=np.empty(mj.mj_stateSize(b.m,mask))
@@ -67,9 +75,8 @@ class CompoundEyeObserver:
         images=[]
         for camera in self.camera_ids:
             self.renderer.update_scene(self.data,camera,scene_option=self.options)
-            images.append(self.retina.correct_fisheye(self.renderer.render()))
-        raw=np.asarray(images)
-        ommatidia=np.asarray([self.retina.raw_image_to_hex_pxls(im) for im in raw],dtype=np.float32)
+            images.append(self.renderer.render())
+        raw,ommatidia=self.compute.process(images,include_rgb=include_rgb)
         if not np.isfinite(ommatidia).all():
             raise RuntimeError('Non-finite retinal observation')
         return dict(metadata=copy.deepcopy(self.metadata),time_s=b.physics_time(),

@@ -124,7 +124,7 @@ def load_case(root, name):
     for chunk in progress['chunks']:
         path=(directory/chunk['file']).resolve();path.relative_to(directory)
         if file_hash(path)!=chunk['sha256']:raise ValueError('Trace chunk hash mismatch')
-        trace.extend(json.loads(line) for line in path.read_text().splitlines())
+        trace.extend(json.loads(line) for line in path.read_text(encoding='utf-8').splitlines())
     if not trace or trace[0]['tick']!=0 or trace[-1]['tick']!=progress['control_tick']*50:
         raise ValueError('Committed trace range mismatch')
     if abs(trace[-1]['simTime']-case['seconds'])>1e-8:raise ValueError('Case trace duration mismatch')

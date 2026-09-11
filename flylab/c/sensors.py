@@ -24,6 +24,11 @@ class CSensorAdapter(SensorAdapter):
                 wind_mm_s=self.model.get('wind_mm_s',(2.,0.,0.)),pulse_hz=self.model.get('pulse_hz',2.),
                 site_calibration=self.model.get('site_calibration'))
         self.retina=None
+        self.chemical_odor=None
+        if self.model.get('chemical_odor') is not None:
+            if self.four_site_odor is None:raise ValueError('Chemical responses require olfactory sites')
+            from ..chemical_odor import ChemicalOdor
+            self.chemical_odor=ChemicalOdor(self.model['chemical_odor'],self.four_site_odor)
         if self.model.get('retina') is not None:
             from ..retinal_input import RetinalInput
             self.retina=RetinalInput(self.model['retina'])
@@ -91,6 +96,10 @@ class CSensorAdapter(SensorAdapter):
             observation=self.retina.observe(body)
             self.diagnostics.setdefault('features',{}).update(observation.pop('features'))
             self.diagnostics['retina']=observation
+        if self.chemical_odor is not None:
+            observation=self.chemical_odor.observe(body,world)
+            self.diagnostics.setdefault('features',{})['chemical_odor']=observation.pop('features')
+            self.diagnostics['chemical_odor']=observation
         self.last = copy.deepcopy(packet)
         return packet
 

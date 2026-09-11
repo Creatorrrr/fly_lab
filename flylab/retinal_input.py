@@ -30,7 +30,8 @@ class RetinalInput:
         if now>=self.next_tick:
             # A caller may not silently skip scheduled samples.
             if now!=self.next_tick:raise ValueError('Retinal sampling deadline missed')
-            observation=body.compound_eye_observation()
+            observe=getattr(body,'retinal_observation',body.compound_eye_observation)
+            observation=observe()
             if abs(observation['time_s']-now/10000)>1e-8:raise ValueError('Stale retinal frame')
             raw=np.asarray(observation['ommatidia'],dtype=np.float32)
             if raw.shape!=(2,721,2) or not np.isfinite(raw).all() or np.any(raw<0) or np.any(raw>1):
@@ -57,13 +58,14 @@ class RetinalInput:
             age_s=(now-self.sample_tick)/10000,samples=self.samples,config=copy.deepcopy(self.config))
 
     def snapshot(self):
-        return dict(schema='flylab.retinal-input.v1',config=copy.deepcopy(self.config),
+        return dict(schema='flylab.retinal-input.v2',config=copy.deepcopy(self.config),
+            optics_contract='official-fisheye-single-sample-v2',
             next_tick=self.next_tick,sample_tick=self.sample_tick,samples=self.samples,
             previous=None if self.previous is None else self.previous.tolist(),
             filtered=None if self.filtered is None else self.filtered.tolist(),features=copy.deepcopy(self.features))
 
     def restore(self,state):
-        if state.get('schema')!='flylab.retinal-input.v1' or state.get('config')!=self.config:
+        if state.get('schema')!='flylab.retinal-input.v2' or state.get('config')!=self.config or state.get('optics_contract')!='official-fisheye-single-sample-v2':
             raise ValueError('Retinal checkpoint profile mismatch')
         sample,next_tick,count=state.get('sample_tick'),state.get('next_tick'),state.get('samples')
         if type(next_tick) is not int or type(count) is not int or count<0 or next_tick<0:

@@ -222,6 +222,8 @@ class NeuromuscularLoop:
         self.joints = np.array(self.joints, np.int32)
         if len(np.unique(self.joints)) != 42: raise ValueError('42 unique physical DOFs required')
         self.motor_indices = np.array(sorted({int(i) for groups in self.muscles for _, ids, _ in groups for i in ids}), np.int32)
+        from .actuation_map import describe_actuation
+        self._actuation_map = describe_actuation(self)
         self.channels = {'leg_feedback'} | {f'leg_{leg}' for leg in LEGS} | {f'leg_{leg}_{kind}' for leg, kind, _ in self.ports}
         self.port_names=[f'leg_{leg}_{kind}'+('_'+self.port_types[i] if self.version>=2 else '')
                          for i,(leg,kind,_) in enumerate(self.ports)]
@@ -361,6 +363,7 @@ class NeuromuscularLoop:
                     unbound_dofs=[f"{r['leg']}_{d}" for r in self.spec['rows'] for d in DOFS
                                   if not any(d in g['vector'] for g in r['muscles'])],
                     tuning=self.spec['tuning'], muscle_model=self.spec['muscle_model'])
+        result['actuation'] = copy.deepcopy(self._actuation_map)
         if self.version>=2:
             result.update(schema=self.spec['schema'],contact=copy.deepcopy(self.last_contact),
                 unresolved_polarity_targets=sum(len(ids) for j,(_,kind,ids) in enumerate(self.ports)

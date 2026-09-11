@@ -12,7 +12,7 @@ from .body import FlyGymBody,LEGS
 from .sensors import SensorAdapter,default_world,validate_world
 
 DATA=Path(__file__).resolve().parents[1]/'data'/'circuit.json'
-def default_graph(): return json.loads(DATA.read_text())
+def default_graph(): return json.loads(DATA.read_text(encoding='utf-8'))
 def config_values(p=None):
     c=dict(mode='walk',task='explore',goalAngle=1.,altitude=.8,sensorNoise=.018,graphGain=1.,motorCoupled=True,friction=1.,gravity=1.)
     if p is not None:

@@ -7,10 +7,10 @@
 """
 from __future__ import annotations
 import argparse
-import csv
 import hashlib
 import json
 import math
+import os
 import platform
 from pathlib import Path
 import subprocess
@@ -253,7 +253,7 @@ def main() -> int:
         return run_native_case(args.worker_case,args.worker_seed,args.seconds,args.out)
     plan=build_plan(args.seeds,args.seconds)
     if args.plan:
-        print(json.dumps(dict(status='PLAN_ONLY',physicalExecuted=False,cases=plan),ensure_ascii=False,indent=2))
+        print(json.dumps(dict(status='PLAN_ONLY',physicalExecuted=False,cases=plan),ensure_ascii=True,indent=2))
         return 0
     args.out.mkdir(parents=True,exist_ok=True)
     # An interrupted rerun must not leave an old PASS report visible.
@@ -267,10 +267,11 @@ def main() -> int:
     gate_path=args.out/'gate.json'
     gate_path.unlink(missing_ok=True)
     try:
-        gate=subprocess.run([sys.executable,*(['-S'] if sys.flags.no_site else []),str(ROOT/'tools/verify_physics.py'),'--seconds','3','--output',str(gate_path.resolve())],
-                            cwd=ROOT,text=True,capture_output=True,timeout=args.case_timeout)
+        child_env=dict(os.environ,PYTHONIOENCODING='utf-8')
+        gate=subprocess.run([sys.executable,'-X','utf8',*(['-S'] if sys.flags.no_site else []),str(ROOT/'tools/verify_physics.py'),'--seconds','3','--output',str(gate_path.resolve())],
+                            cwd=ROOT,text=True,encoding='utf-8',env=child_env,capture_output=True,timeout=args.case_timeout)
         (args.out/'gate.log').write_text(gate.stdout+'\n'+gate.stderr,encoding='utf-8')
-        gate_result=json.loads(gate_path.read_text()) if gate_path.exists() else {}
+        gate_result=json.loads(gate_path.read_text(encoding='utf-8')) if gate_path.exists() else {}
         report['gate']=dict(exitCode=gate.returncode,**gate_result)
         report['physicalExecuted']=bool(gate_result.get('physicalExecuted',False))
         if gate.returncode!=0 or gate_result.get('status')!='PASS' or not gate_result.get('physicalValidation'):
@@ -278,18 +279,18 @@ def main() -> int:
             report['reason']='Native gate did not pass; no campaign case was run.'
             report['cases']=[dict(**spec,status='BLOCKED',physicalExecuted=False) for spec in plan]
             write_json(report_path,report)
-            print(json.dumps(dict(status=report['status'],completedCases=0,plannedCases=len(plan),report=str(report_path)),ensure_ascii=False))
+            print(json.dumps(dict(status=report['status'],completedCases=0,plannedCases=len(plan),report=str(report_path)),ensure_ascii=True))
             return 2 if report['status']=='BLOCKED' else 1
         results=[]
         for spec in plan:
             name=f"seed-{spec['seed']}_{spec['case']}";folder=args.out/name;folder.mkdir(exist_ok=True)
             result_path=folder/'result.json';result_path.unlink(missing_ok=True)
-            cmd=[sys.executable,str(Path(__file__).resolve()),'--worker-case',spec['case'],'--worker-seed',str(spec['seed']),
+            cmd=[sys.executable,'-X','utf8',str(Path(__file__).resolve()),'--worker-case',spec['case'],'--worker-seed',str(spec['seed']),
                  '--seconds',str(args.seconds),'--out',str(folder.resolve())]
             try:
-                run=subprocess.run(cmd,cwd=ROOT,capture_output=True,text=True,timeout=args.case_timeout)
+                run=subprocess.run(cmd,cwd=ROOT,capture_output=True,text=True,encoding='utf-8',env=child_env,timeout=args.case_timeout)
                 (folder/'console.log').write_text(run.stdout+'\n'+run.stderr,encoding='utf-8')
-                item=json.loads(result_path.read_text()) if result_path.exists() else dict(**spec,status='FAIL',reason='Worker did not produce result')
+                item=json.loads(result_path.read_text(encoding='utf-8')) if result_path.exists() else dict(**spec,status='FAIL',reason='Worker did not produce result')
                 if run.returncode!=0:item['status']='FAIL'
             except subprocess.TimeoutExpired:
                 item=dict(**spec,status='FAIL',reason='Per-case wall-clock timeout')
@@ -306,7 +307,7 @@ def main() -> int:
     except Exception as error:
         report.update(status='FAIL',reason=str(error),traceback=traceback.format_exc())
     write_json(report_path,report)
-    print(json.dumps(dict(status=report['status'],completedCases=report['completedCases'],report=str(report_path)),ensure_ascii=False))
+    print(json.dumps(dict(status=report['status'],completedCases=report['completedCases'],report=str(report_path)),ensure_ascii=True))
     return 0 if report['status']=='PASS' else 1
 
 if __name__=='__main__':

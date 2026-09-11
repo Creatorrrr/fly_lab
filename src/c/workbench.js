@@ -82,14 +82,19 @@ F.createWorkbench=function({state,rpc,view,applyFrame,tell,button,command,update
   const items=objects(),key=JSON.stringify(items),select=$('environment-object');
   if(select.dataset.key!==key){const previous=select.value;select.replaceChildren(new Option('새 물체',''));items.forEach(o=>select.add(new Option(`${o.id} · ${kindLabel(o.kind)} · (${o.p[0]}, ${o.p[2]})`,o.id)));select.value=items.some(o=>o.id===previous)?previous:'';select.dataset.key=key;}
   const f=state.frame;$('environment-count').textContent=`냄새원 ${f.world.sources.length}/24 · 장애물 ${f.world.obstacles.length}/12`;
+  const odorants=f.binding.chemical_odorants||[],odorSelect=$('environment-odorant'),odorKey=JSON.stringify(odorants);
+  if(odorSelect.dataset.key!==odorKey){const selected=odorSelect.value;odorSelect.replaceChildren(new Option('미지정',''),...odorants.map(o=>new Option(o.name,o.inchikey)));odorSelect.value=selected;odorSelect.dataset.key=odorKey;}
+  $('odorant-field').hidden=!odorants.length||$('environment-kind').value==='obstacle';
+  const unnamed=f.world.sources.filter(o=>!o.odorant).length;
+  if(odorants.length&&unnamed)$('environment-count').textContent+=` · 물질 미지정 ${unnamed}개 (수용기 입력 없음)`;
   $('environment-undo').disabled=!f.environment?.undo_depth;$('environment-delete').disabled=!select.value;
   $('environment-kind').disabled=!!select.value;$('environment-apply').textContent=select.value?'변경 적용':'배치 적용';
   $('environment-sensors').textContent=`감각 tick ${f.sensorTick} · 먹이 좌/우 ${f.sensors.odor.map(v=>v.toFixed(4)).join(' / ')} · 위험 ${f.sensors.danger.toFixed(4)} · 전방 ${f.sensors.nearRanges[4].toFixed(2)} mm`+(f.environment?.sensor_refresh_pending?' · 다음 계산 경계에서 감각 갱신':'')+(f.sensors.odor.every(v=>v>=.999)?' · 양쪽 먹이 센서가 상한에 도달했습니다. 강도를 낮추면 좌우 차이를 확인할 수 있습니다.':'');
  }
- function environmentFields(){const obstacle=$('environment-kind').value==='obstacle';$('strength-field').hidden=obstacle;$('radius-field').hidden=!obstacle;$('environment-y').disabled=obstacle;if(obstacle)$('environment-y').value=$('environment-radius').value;wb.preview=true;drawPreview();}
+ function environmentFields(){const obstacle=$('environment-kind').value==='obstacle';$('strength-field').hidden=obstacle;$('odorant-field').hidden=obstacle||!state.frame?.binding.chemical_odorants?.length;$('radius-field').hidden=!obstacle;$('environment-y').disabled=obstacle;if(obstacle)$('environment-y').value=$('environment-radius').value;wb.preview=true;drawPreview();}
  function environmentPayload(){
   const kind=$('environment-kind').value,position=['x','y','z'].map(c=>Number($('environment-'+c).value));
-  return {position,...(kind==='obstacle'?{radius:Number($('environment-radius').value)}:{strength:Number($('environment-strength').value)})};
+  return {position,...(kind==='obstacle'?{radius:Number($('environment-radius').value)}:{strength:Number($('environment-strength').value),...(state.frame?.binding.chemical_odorants?.length?{odorant:$('environment-odorant').value||null}:{})})};
  }
  function drawPreview(){
   const c=$('world-preview'),ctx=c.getContext('2d');c.width=view.overlay.width;c.height=view.overlay.height;ctx.setTransform(view.dpr,0,0,view.dpr,0,0);ctx.clearRect(0,0,view.width,view.height);
@@ -101,13 +106,13 @@ F.createWorkbench=function({state,rpc,view,applyFrame,tell,button,command,update
   const q=view.project(p);if(q.visible){ctx.font='11px sans-serif';ctx.fillStyle=ctx.strokeStyle;ctx.fillText('미리보기 · 적용 전',q.x+10,q.y-10);}
   c.dataset.position=JSON.stringify(p);$('environment-preview-note').textContent=`미리보기 (${p.map(n=>n.toFixed(2)).join(', ')}) mm · 서버 검증 후 적용`;
  }
- function chooseObject(){const o=objects().find(o=>o.id===$('environment-object').value);if(o){$('environment-kind').value=o.kind;['x','y','z'].forEach((c,i)=>$('environment-'+c).value=o.p[i]);if(o.kind==='obstacle')$('environment-radius').value=o.r;else $('environment-strength').value=o.strength;}renderWorld();environmentFields();}
+ function chooseObject(){const o=objects().find(o=>o.id===$('environment-object').value);if(o){$('environment-kind').value=o.kind;['x','y','z'].forEach((c,i)=>$('environment-'+c).value=o.p[i]);if(o.kind==='obstacle')$('environment-radius').value=o.r;else {$('environment-strength').value=o.strength;$('environment-odorant').value=o.odorant||'';}}renderWorld();environmentFields();}
  function endPreview(){wb.pick=false;wb.preview=false;$('environment-pick').setAttribute('aria-pressed','false');view.canvas.classList.remove('placing');drawPreview();}
  async function environmentCommand(type,payload,op='command'){
   pause();if(wb.editing)throw Error('환경 편집을 적용하는 중입니다.');wb.editing=true;
   const controls=[...document.querySelectorAll('.environment-editor button,.environment-editor input,.environment-editor select')];
   controls.forEach(c=>c.disabled=true);put('environment-preview-note','서버에서 환경을 적용하고 물리 상태를 확인합니다…');
-  try{const result=op==='command'?await command(type,payload):await rpc.request(op,payload);if(op!=='command')applyFrame(result);endPreview();put('environment-preview-note',`서버 적용 완료 · tick ${result.tick}. 되돌리기는 현재 시각에서 환경만 바꿉니다.`);return result;}
+  try{const result=op==='command'?await command(type,payload):await rpc.request(op,payload);if(op!=='command')applyFrame(result);if(type==='undo_environment'||op==='environment_load')chooseObject();endPreview();put('environment-preview-note',`서버 적용 완료 · tick ${result.tick}. 되돌리기는 현재 시각에서 환경만 바꿉니다.`);return result;}
   catch(e){put('environment-preview-note','환경이 적용되지 않았습니다: '+e.message);throw e;}
   finally{wb.editing=false;controls.forEach(c=>c.disabled=false);renderWorld();$('environment-y').disabled=$('environment-kind').value==='obstacle';}
  }

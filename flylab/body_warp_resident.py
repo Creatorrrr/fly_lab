@@ -26,20 +26,20 @@ class ResidentWarpBody(WarpBody):
         if not 1<=n<=500 or abs(n*PHYSICS_DT-dt)>1e-10:raise ValueError('Integral physics interval required')
         self.resident.set_inputs([command],joint_targets=None if targets is None else np.asarray(targets)[None],
             adhesion=None if adhesion is None else np.asarray(adhesion)[None])
-        with self.wp.ScopedStream(self.stream):
-            if self.physics_profile.cuda_graph:
-                if n not in self.period_graphs:
-                    with self.wp.ScopedCapture() as capture:
-                        for _ in range(n):
-                            self.resident.enqueue();self.mjw.step(self.gpu_model,self.gpu_data);self.resident.audit()
-                        self.mjw.forward(self.gpu_model,self.gpu_data)
-                    self.period_graphs[n]=capture.graph
-                self.wp.capture_launch(self.period_graphs[n])
-            else:
-                for _ in range(n):
-                    self.resident.enqueue();self.mjw.step(self.gpu_model,self.gpu_data);self.resident.audit()
-                self.mjw.forward(self.gpu_model,self.gpu_data)
         try:
+            with self.wp.ScopedStream(self.stream):
+                if self.physics_profile.cuda_graph:
+                    if n not in self.period_graphs:
+                        with self.wp.ScopedCapture() as capture:
+                            for _ in range(n):
+                                self.resident.enqueue();self.mjw.step(self.gpu_model,self.gpu_data);self.resident.audit()
+                            self.mjw.forward(self.gpu_model,self.gpu_data)
+                        self.period_graphs[n]=capture.graph
+                    self.wp.capture_launch(self.period_graphs[n])
+                else:
+                    for _ in range(n):
+                        self.resident.enqueue();self.mjw.step(self.gpu_model,self.gpu_data);self.resident.audit()
+                    self.mjw.forward(self.gpu_model,self.gpu_data)
             peaks=self.resident.check_health()
             for key,value in peaks.items():self.capacity_peak[key]=max(self.capacity_peak[key],value)
             self.gpu_ticks+=n;self._sync_observations();self.resident.sync_controllers()
@@ -47,7 +47,7 @@ class ResidentWarpBody(WarpBody):
             hit=self.nonfoot_contact()
             if hit and not self.prev_contact:self.collisions+=1
             self.prev_contact=hit;self.walk_ticks+=1
-            if R[2,2]<.15 or p[2]<0 or np.linalg.norm(p[:2])>80:self.fault='Resident Warp body fell or left domain'
+            if self.outside_physical_domain(p,R):self.fault='Resident Warp body fell or left domain'
         except Exception as exc:self.fault=str(exc);raise
 
     def step(self,command,dt=CONTROL_DT):self._advance_period(command,dt)

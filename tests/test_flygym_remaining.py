@@ -62,6 +62,39 @@ class ClockedSenses(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get('FLYLAB_NATIVE_TESTS')=='1','Explicit native physics verification')
 class NativeRemaining(unittest.TestCase):
+    def test_lf_platform_has_actual_contact_and_preserves_restore(self):
+        from flylab.c.muscle_imitation import MuscleImitation
+        rig=MuscleImitation(contact_platform=True)
+        airborne=MuscleImitation()
+        try:
+            frame=rig.step(teacher=True)
+            self.assertTrue(any(c['normal_force']>0 for c in frame['contacts']))
+            saved=rig.snapshot();expected=rig.step(teacher=True);rig.restore(saved)
+            self.assertEqual(expected,rig.step(teacher=True))
+            with self.assertRaises(ValueError):airborne.restore(saved)
+            self.assertFalse(frame['biological_validation'])
+        finally:rig.close();airborne.close()
+
+    def test_retinal_pixels_repeat_and_restore_exactly(self):
+        from flylab.body import FlyGymBody
+        from flylab.sensors import default_world
+        from flylab.engine import config_values
+        b=FlyGymBody(42,default_world(),config_values(None));clone=None
+        try:
+            for _ in range(3):b.step(dict(forwardSpeed=0.,yawRate=0.))
+            saved=b.snapshot();first=b.compound_eye_observation()
+            for _ in range(4):
+                actual=b.compound_eye_observation()
+                np.testing.assert_array_equal(first['raw_rgb'],actual['raw_rgb'])
+                np.testing.assert_array_equal(first['ommatidia'],actual['ommatidia'])
+            clone=FlyGymBody(42,default_world(),config_values(None));clone.restore(saved)
+            actual=clone.compound_eye_observation()
+            np.testing.assert_array_equal(first['raw_rgb'],actual['raw_rgb'])
+            np.testing.assert_array_equal(first['ommatidia'],actual['ommatidia'])
+        finally:
+            b.close()
+            if clone:clone.close()
+
     def test_multimodal_sensor_restore_and_off(self):
         from flylab.body import FlyGymBody
         from flylab.sensors import default_world
@@ -101,8 +134,120 @@ class NativeRemaining(unittest.TestCase):
         finally:rig.close()
 
 
+class BatchLifecycle(unittest.TestCase):
+    def test_close_cleans_every_resource_even_when_one_close_fails(self):
+        from flylab.c.batch import BatchSession
+        closed=[]
+        def close_physics():
+            closed.append('physics');raise RuntimeError('test close failure')
+        session=BatchSession.__new__(BatchSession)
+        session.closed=False;session.active=['0','1'];session.neural=object()
+        session.physics=SimpleNamespace(close=close_physics)
+        session.engines={key:SimpleNamespace(close=lambda key=key:closed.append(key)) for key in ('0','1')}
+        with self.assertRaisesRegex(RuntimeError,'test close failure'):session.close()
+        self.assertEqual(closed,['physics','0','1']);self.assertTrue(session.closed)
+        self.assertEqual(session.active,[]);self.assertIsNone(session.physics);self.assertIsNone(session.neural)
+        session.close();self.assertEqual(closed,['physics','0','1'])
+
+
 @unittest.skipUnless(os.environ.get('FLYLAB_CUDA_BATCH_TESTS')=='1','Explicit CUDA batch verification')
 class CudaRemaining(unittest.TestCase):
+    def test_closed_batch_rejects_mutation_before_any_clock_advances(self):
+        from tests.c_fixtures import graph_fixture,bindings_fixture
+        from flylab.c.batch import BatchSession
+        graph=graph_fixture();session=BatchSession(graph,bindings_fixture(graph),[42])
+        try:
+            session.step(1);engine=session.engines['0']
+            before=(engine.tick,engine.neural.tick,engine.encoder.control_tick,engine.body.physics_time())
+            voltage=engine.neural.snapshot()['v'].copy();position=engine.body.d.qpos.copy()
+            session.close()
+            with tempfile.TemporaryDirectory() as tmp:
+                for call in (lambda:session.step(1),lambda:session.pause('0'),lambda:session.resume('0'),
+                             lambda:session.cancel('0'),lambda:session.checkpoint(Path(tmp)/'checkpoint'),
+                             lambda:engine.step(1),
+                             lambda:engine.start_recording(Path(tmp)/'recording',[graph.nodes[0]['id']])):
+                    with self.assertRaisesRegex(RuntimeError,'Closed'):call()
+                self.assertEqual(list(Path(tmp).iterdir()),[])
+            self.assertEqual(before,(engine.tick,engine.neural.tick,engine.encoder.control_tick,engine.body.physics_time()))
+            np.testing.assert_array_equal(voltage,engine.neural.snapshot()['v'])
+            np.testing.assert_array_equal(position,engine.body.d.qpos)
+            self.assertTrue(session.summary()['closed']);self.assertEqual(session.active,[])
+            self.assertIsNone(session.physics);self.assertIsNone(session.neural)
+            self.assertEqual(session.status['0'],'RUNNING')  # Last state remains diagnostic metadata.
+        finally:session.close()
+
+    def test_subset_restore_preserves_world_mapping_clocks_and_controller_state(self):
+        from tests.c_fixtures import graph_fixture,bindings_fixture
+        from flylab.c.batch import BatchSession
+        from flylab.c.storage import StateStore
+        graph=graph_fixture();binding=bindings_fixture(graph)
+        session=BatchSession(graph,binding,[42,43,44]);restored=None
+        try:
+            session.step(2);session.pause('1');session.step(1)
+            with tempfile.TemporaryDirectory() as tmp:
+                path=Path(tmp)/'source';session.checkpoint(path);saved=StateStore.load(path,max_files=4096)
+                restored=BatchSession.restore(graph,binding,path,worlds=['2','1'])
+                self.assertEqual(restored.epoch,session.epoch+1)
+                self.assertEqual(restored.status,{'0':'RUNNING','1':'PAUSED'})
+                self.assertEqual(restored.regroup_origin['worlds'],['2','1'])
+                for new,old in (('0','2'),('1','1')):
+                    actual=restored.engines[new].checkpoint();expected=saved['engines'][old]
+                    self.assertEqual(actual['seed'],expected['seed'])
+                    self.assertEqual(actual['control_tick'],expected['control_tick'])
+                    for field in ('v','h','rate','queue','spike_count','refractory_until','suppress','mute'):
+                        np.testing.assert_array_equal(actual['neural'][field],expected['neural'][field])
+                    np.testing.assert_array_equal(actual['encoder']['filtered'],expected['encoder']['filtered'])
+                    self.assertEqual(actual['pending'],expected['pending']);self.assertEqual(actual['active'],expected['active'])
+                gpu=restored.physics.snapshot()
+                for field in ('qpos','qvel','act','ctrl','qacc_warmstart','qfrc_applied','xfrc_applied','time'):
+                    np.testing.assert_array_equal(gpu['arrays'][field],saved['physics']['arrays'][field][[1]])
+                for field in ('state','drive','mode','ticks','push_left','push'):
+                    np.testing.assert_array_equal(gpu['controller'][field],saved['physics']['controller'][field][[1]])
+                restored.step(1)
+                self.assertEqual(restored.engines['0'].tick,200);self.assertEqual(restored.engines['1'].tick,100)
+                checkpoint=Path(tmp)/'regrouped';restored.checkpoint(checkpoint);expected=restored.summary();restored.close()
+                restored=BatchSession.restore(graph,binding,checkpoint)
+                self.assertEqual(restored.summary(),expected)
+                for worlds in ([],['2','2'],['3']):
+                    with self.assertRaises(ValueError):BatchSession.restore(graph,binding,path,worlds=worlds)
+        finally:
+            if restored is not None:restored.close()
+            session.close()
+
+    def test_failed_batch_does_not_advance_and_preparation_is_rolled_back(self):
+        from unittest.mock import patch
+        from tests.c_fixtures import graph_fixture,bindings_fixture
+        from flylab.c.batch import BatchSession
+        g=graph_fixture();session=BatchSession(g,bindings_fixture(g),[42,43])
+        try:
+            session.step(1)
+            before={key:(e.tick,e.encoder.control_tick,e.body.d.qpos.copy(),e.neural.snapshot()['v'].copy()) for key,e in session.engines.items()}
+            with patch.object(session.engines['1'],'_prepare_control',side_effect=ValueError('test preparation failure')):
+                with self.assertRaisesRegex(ValueError,'test preparation failure'):session.step(1)
+            self.assertEqual(session.active,[])
+            with self.assertRaisesRegex(RuntimeError,'Faulted batch'):session.step(1)
+            for key,e in session.engines.items():
+                self.assertEqual(session.status[key],'FAILED')
+                self.assertEqual((e.tick,e.encoder.control_tick),before[key][:2])
+                np.testing.assert_array_equal(e.body.d.qpos,before[key][2])
+                np.testing.assert_array_equal(e.neural.snapshot()['v'],before[key][3])
+        finally:session.close()
+
+    def test_paused_checkpoint_preserves_epoch_through_repeated_restore(self):
+        from tests.c_fixtures import graph_fixture,bindings_fixture
+        from flylab.c.batch import BatchSession
+        g=graph_fixture();binding=bindings_fixture(g);session=BatchSession(g,binding,[42])
+        try:
+            session.step(1);session.pause('0');expected=session.summary()
+            with tempfile.TemporaryDirectory() as tmp:
+                for i in range(2):
+                    path=Path(tmp)/str(i);session.checkpoint(path);session.close()
+                    session=BatchSession.restore(g,binding,path)
+                    self.assertEqual(session.summary(),expected)
+                session.resume('0');session.step(1)
+                self.assertEqual(session.engines['0'].tick,100)
+        finally:session.close()
+
     def test_neural_batch_world_independence_and_pulses(self):
         from tests.c_fixtures import graph_fixture
         from flylab.c.neural_cuda import CudaLIF
@@ -129,6 +274,10 @@ class CudaRemaining(unittest.TestCase):
         g=graph_fixture();binding=bindings_fixture(g);session=BatchSession(g,binding,[42,43])
         restored=None
         try:
+            metadata=session.engines['0'].body.physics_identity()
+            self.assertAlmostEqual(metadata['tolerance'],1e-6,places=12)
+            self.assertEqual(metadata['cpu_mirror_options']['tolerance'],1e-8)
+            self.assertNotEqual(metadata['disableflags'],metadata['cpu_mirror_options']['disableflags'])
             session.step(2);session.pause('1');frozen=session.engines['1'].checkpoint();session.step(1)
             self.assertEqual(frozen['control_tick'],session.engines['1'].control_tick)
             np.testing.assert_array_equal(frozen['neural']['v'],session.engines['1'].neural.snapshot()['v'])

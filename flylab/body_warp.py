@@ -11,7 +11,7 @@ import hashlib
 import json
 import numpy as np
 from .body import FlyGymBody
-from .physics import PhysicsProfile, profile_values
+from .physics import PhysicsProfile, profile_values, warp_option_metadata
 from . import PHYSICS_DT
 
 
@@ -43,6 +43,7 @@ class WarpBody(FlyGymBody):
             warp=self.runtime_identity), sort_keys=True).encode()).hexdigest()
         with wp.ScopedStream(self.stream):
             self.gpu_model = mjw.put_model(self.m)
+            self.gpu_options = warp_option_metadata(self.gpu_model)
             self.gpu_data = self._put_data()
             # Compile kernels against private dynamic state, before clock start.
             mjw.step(self.gpu_model, self.gpu_data)
@@ -124,10 +125,15 @@ class WarpBody(FlyGymBody):
             with self.wp.ScopedStream(self.stream):
                 self.wp.synchronize_stream(self.stream)
                 self.gpu_model = self.mjw.put_model(self.m)
+                self.gpu_options = warp_option_metadata(self.gpu_model)
             self.step_graph = self.forward_graph = None
 
     def physics_identity(self):
-        return dict(super().physics_identity(), precision='float32', runtime=self.runtime_identity,
+        identity=super().physics_identity()
+        if self.gpu_data is not None:
+            identity['cpu_mirror_options']={k:identity[k] for k in self.gpu_options}
+            identity.update(self.gpu_options)
+        return dict(identity, precision='float32', runtime=self.runtime_identity,
                     observation_source='MuJoCo-Warp with synchronized CPU mirror',
                     settling_backend='CPU with matching physics options',
                     controller_backend='CPU hybrid reflex at each physics tick',

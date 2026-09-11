@@ -4,6 +4,7 @@ analytic Gaussian field. Body angular velocity is an idealized proprioceptor.
 None of these sensors is claimed to reproduce compound-eye physiology.
 """
 import math
+import re
 import numpy as np
 from .common import RNG,TAU,clamp,number,integer,to_ui,clone
 
@@ -25,6 +26,8 @@ def validate_world(w):
         if o in w['sources']:
             if o.get('kind') not in ('food','hazard'): raise ValueError('Invalid source kind')
             number(o.get('strength'),'strength',0,5)
+            if 'odorant' in o and (not isinstance(o['odorant'],str) or re.fullmatch(r'[A-Z]{14}-[A-Z]{10}-[A-Z]',o['odorant']) is None):
+                raise ValueError('Odorant must be an explicit InChIKey')
         else: number(o.get('r'),'radius',.2,3)
     return w
 

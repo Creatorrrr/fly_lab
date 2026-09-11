@@ -39,6 +39,9 @@ class FlyGymBody:
         self.body_options=BodyOptions.parse(body_options)
         if self.body_options.model=='flybody' and self.backend==FlyGymBody.backend:self.backend='flygym-2.1.0-flybody'
         self.physics_profile=profile_values(physics_profile)
+        if self.body_options.actuation=='whole_body':
+            if self.physics_profile.backend!='cpu':raise ValueError('Whole-body actuation currently requires CPU MuJoCo physics')
+            self.backend='flygym-2.1.0-flybody-whole-body-v1'
         report=dependency_report()
         if not report['ready']:
             raise RuntimeError('물리 엔진 의존성이 없거나 버전이 다릅니다. '+report['hint']+' '+str(report['versions']))
@@ -53,7 +56,7 @@ class FlyGymBody:
         self.Observation=HybridControllerObservation; self.Action=LocomotionAction; self.apply=apply_locomotion_action
         self.optimized=optimized
         self.motor=MotorAdapter(); self.world_spec=clone(world); self.config=clone(config)
-        self.fly=make_locomotion_fly(name='flylab',add_adhesion=True,colorize=False) if self.body_options.model=='neuromechfly' else make_flybody('flylab')
+        self.fly=make_locomotion_fly(name='flylab',add_adhesion=True,colorize=False) if self.body_options.model=='neuromechfly' else make_flybody('flylab',whole_body=self.body_options.actuation=='whole_body')
         if self.body_options.render_camera:
             self.fly.add_tracking_camera(name='batch_view',pos_offset=(0.,-8.,0.),rotation=Rotation3D('euler',(1.57,0.,0.)),fovy=35.)
         self.native_world=make_world(self.body_options)
@@ -104,6 +107,15 @@ class FlyGymBody:
         self.sim.reset()  # official neutral-keyframe initialization before settling
         self.m=self.sim.mj_model; self.d=self.sim.mj_data
         self.order=self.fly.get_actuated_jointdofs_order(ActuatorType.POSITION)
+        self.full_order=list(self.order)
+        if self.body_options.servo_profile!='asset':
+            from .whole_body import configure_tracking_servos
+            configure_tracking_servos(self)
+        self.leg_action_indices=np.array([i for i,dof in enumerate(self.full_order) if dof.child.is_leg()],dtype=int)
+        if self.body_options.actuation=='whole_body':
+            from .whole_body import apply_leg_action
+            self.order=[self.full_order[i] for i in self.leg_action_indices]
+            self.apply=lambda sim,name,action:apply_leg_action(sim,name,action,self.leg_action_indices)
         if self.body_options.model=='flybody':
             from flygym.anatomy import JointDOF,RotationAxis
             self.order=[JointDOF(BodySegment(d.parent.name),BodySegment(d.child.name),RotationAxis(d.axis.value)) for d in self.order]
@@ -125,6 +137,7 @@ class FlyGymBody:
             raise RuntimeError('Missing compiled body segment IDs; refusing invalid telemetry')
         self.thorax=int(self.body_ids[self.body_indices['c_thorax']])
         self.act_ids=np.asarray(self.sim._intern_actuatorids_by_type_by_fly[ActuatorType.POSITION][self.fly.name])
+        if self.body_options.actuation=='whole_body':self.act_ids=self.act_ids[self.leg_action_indices]
         self.joint_ids=self.m.actuator_trnid[self.act_ids,0]
         self.qpos_ids=self.m.jnt_qposadr[self.joint_ids]
         self.qvel_ids=self.m.jnt_dofadr[self.joint_ids]
@@ -148,6 +161,8 @@ class FlyGymBody:
         self.set_world(world); self.set_config(config)
         # Neutral-pose physical settling; model clocks start AFTER these 0.2 s.
         for _ in range(2000): self._step_physics()
+        if any(self.d.warning.number) or abs(float(self.d.time)-2000*PHYSICS_DT)>1e-9:
+            raise RuntimeError('Invalid neutral settling: MuJoCo warning or automatic time reset; '+str(self.d.warning.number.tolist()))
         mj.mj_forward(self.m,self.d)
         self.t0=float(self.d.time); self.last_position=self.d.xpos[self.thorax].copy()
         identity=dict(commit=FLYGYM_COMMIT,adapter='B-0.2.1',mujoco=version('mujoco'),numpy=version('numpy'),joints=self.joint_names,nq=self.m.nq,nv=self.m.nv,nu=self.m.nu,body_names=[b.name for b in self.body_order])
@@ -158,10 +173,16 @@ class FlyGymBody:
         from .physics import PhysicsProfile
         if self.physics_profile != PhysicsProfile(): identity['physics_profile']=self.physics_profile.hash
         if self.body_options!=BodyOptions():
-            from dataclasses import asdict
-            identity['body_options']=asdict(self.body_options)
+            identity['body_options']=self.body_options.model_identity()
+        if self.body_options.terrain=='slope':identity['termination_frame']='slope-plane-v1'
+        if self.body_options.servo_profile!='asset':
+            identity['whole_body_servos']=dict(revision=3,gain=self.m.actuator_gainprm.tolist(),bias=self.m.actuator_biasprm.tolist())
         self.model_hash=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()
-        if not np.isfinite(self.d.qpos).all(): raise RuntimeError('Non-finite state after neutral settling')
+        if not np.isfinite(self.d.qpos).all() or not np.isfinite(self.d.qvel).all(): raise RuntimeError('Non-finite state after neutral settling')
+        self.whole_body_control=None
+        if self.body_options.actuation=='whole_body':
+            from .whole_body import WholeBodyControl
+            self.whole_body_control=WholeBodyControl(self)
 
     def _prepare_execution(self):
         from .locomotion import CachedHybridStepper
@@ -187,6 +208,10 @@ class FlyGymBody:
 
     def _step_physics(self):
         self.sim.step()
+
+    def outside_physical_domain(self,position,rotation):
+        from .body_options import outside_physical_domain
+        return outside_physical_domain(position,rotation,self.body_options)
 
     def _forward_physics(self):
         self.mj.mj_forward(self.m,self.d)
@@ -351,8 +376,17 @@ class FlyGymBody:
         if collision and not self.prev_contact: self.collisions += 1
         self.prev_contact = collision
         self.walk_ticks += 1
-        if R[2, 2] < .15 or p[2] < 0 or np.linalg.norm(p[:2]) > 80:
+        if self.outside_physical_domain(p,R):
             self.fault = 'Neural muscle body fell or left physical domain; no automatic pose correction'
+
+    def step_body_targets(self,targets,adhesion=None,dt=CONTROL_DT):
+        """Validated named targets for every active joint; no CPG advancement."""
+        if self.whole_body_control is None:raise ValueError('Whole-body actuation is not enabled')
+        self.whole_body_control.step(targets,adhesion,dt)
+
+    def whole_body_observation(self):
+        if self.whole_body_control is None:raise ValueError('Whole-body actuation is not enabled')
+        return self.whole_body_control.observation()
 
     def set_config(self,config):
         self.config=clone(config)
@@ -458,7 +492,7 @@ class FlyGymBody:
         collision=self.nonfoot_contact()
         if collision and not self.prev_contact: self.collisions+=1
         self.prev_contact=collision; self.walk_ticks+=1
-        if R[2,2]<0.15 or p[2]<0 or np.linalg.norm(p[:2])>80:
+        if self.outside_physical_domain(p,R):
             self.fault='넘어짐 또는 유효 영역 이탈. 자동으로 위치를 보정하지 않습니다.'
 
     def nonfoot_contact(self):
@@ -493,10 +527,11 @@ class FlyGymBody:
                      bodyModel=self.body_options.model,terrain=self.body_options.terrain,
                      physicsTime=float(self.d.time-self.t0),settlingTime=self.t0,substeps=round(CONTROL_DT/PHYSICS_DT),
                      jointNames=self.joint_names,jointAngles=self.d.qpos[self.qpos_ids].tolist(),jointVelocities=self.d.qvel[self.qvel_ids].tolist(),
-                     jointTargets=np.asarray(self.last_action.joint_angles).tolist(),actuatorForces=self.sim.get_actuator_forces(self.fly.name,self.ActuatorType.POSITION).tolist(),
+                     jointTargets=np.asarray(self.last_action.joint_angles).tolist(),actuatorForces=self.d.actuator_force[self.act_ids].tolist(),
                      torqueUnit='MuJoCo model units (not SI calibrated)',contactsBW=contacts.tolist(),contactVectorsBW=[to_ui(f/max(self.weight0,1e-30)) for f in foot_forces],
                      adhesion=np.asarray(self.last_action.adhesion_onoff,dtype=int).tolist(),cpgPhases=self.controller.cpg_network.curr_phases.tolist(),
                      descending=self.descending.tolist(),fault=self.fault,gravity=self.config['gravity'],friction=self.config['friction'],bodyModelHash=self.model_hash)
+        if self.whole_body_control is not None:physics['wholeBody']=self.whole_body_control.observation()
         return body,physics
 
     def snapshot(self):
@@ -544,11 +579,14 @@ class FlyGymBody:
             self.camera_error='MuJoCo offscreen renderer: '+str(e)
             raise RuntimeError(self.camera_error) from e
 
-    def compound_eye_observation(self):
+    def compound_eye_observation(self,*,include_rgb=True):
         from .flygym_senses import CompoundEyeObserver
         if not hasattr(self,'_eye_observer'):
             self._eye_observer=CompoundEyeObserver(self)
-        return self._eye_observer.observe()
+        return self._eye_observer.observe(include_rgb=include_rgb)
+
+    def retinal_observation(self):
+        return self.compound_eye_observation(include_rgb=False)
 
     def close(self):
         if hasattr(self,'_eye_observer'):

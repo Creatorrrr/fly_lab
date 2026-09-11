@@ -12,6 +12,7 @@ MOTOR_GROUPS = ('forward', 'backward', 'stop', 'yaw_left', 'yaw_right')
 RETINAL_CHANNELS={f'retina_{kind}_{side}' for kind in ('luminance','motion','loom') for side in ('left','right')}|{'retina_ommatidium'}
 ODOR_SITE_CHANNELS={f'odor_{site}_{component}' for site in ('antenna_left','antenna_right','palp_left','palp_right') for component in ('food','hazard')}
 CHANNELS |= RETINAL_CHANNELS|ODOR_SITE_CHANNELS
+CHANNELS.add('chemical_odor')
 
 
 class PortBindings:
@@ -25,8 +26,12 @@ class PortBindings:
             LIFParameters(**s['neural_parameters'])
         if s.get('schema') != 'flylab.bindings.v3' or s.get('graph_hash') != graph.hash:
             raise ValueError('BLOCKED_PORT_BINDING: schema or graph identity mismatch')
-        if not isinstance(s.get('sensory'), list) or not 1 <= len(s['sensory']) <= 128:
+        if not isinstance(s.get('sensory'), list) or not 1 <= len(s['sensory']) <= 2048:
             raise ValueError('BLOCKED_PORT_BINDING: explicit sensory ports required')
+        chemistry=s.get('sensor_model',{}).get('chemical_odor')
+        if chemistry is not None:
+            from ..chemical_odor import ChemicalOdor
+            ChemicalOdor(chemistry,None)
         seen = set()
         self.sensory = []
         for p in s['sensory']:
@@ -46,6 +51,11 @@ class PortBindings:
                 bounded_int(p.get('ommatidium'),'ommatidium',0,720)
                 if p.get('eye') not in ('left','right') or not p.get('retinotopy_evidence'):
                     raise ValueError('Per-ommatidium ports require an eye and retinotopy evidence')
+            if p['channel']=='chemical_odor':
+                chemistry=s.get('sensor_model',{}).get('chemical_odor',{})
+                rows=[r for r in chemistry.get('receptors',[]) if r.get('receptor')==p.get('receptor')]
+                if len(rows)!=1 or p.get('site') not in (rows[0]['site']+'_left',rows[0]['site']+'_right'):
+                    raise ValueError('Chemical port requires a measured receptor and explicit site')
             self._review(p)
             ids = graph.resolve(p.get('ids'), maximum=10000)
             if len(ids) == 0:
@@ -131,6 +141,7 @@ class PortBindings:
 
     def summary(self):
         return dict(hash=self.hash, profile=self.spec.get('profile', 'custom'),
+                    chemical_odorants=copy.deepcopy(self.spec.get('sensor_model',{}).get('chemical_odor',{}).get('odorants',[])),
                     hazard_semantics=self.spec.get('hazard_semantics', 'unbound'),
                     sensory_binding_hash=self.sensory_hash, motor_binding_hash=self.motor_hash,
                     sensory=[dict(name=p['name'], channel=p['channel'], input_kind=p['input_kind'],
@@ -147,6 +158,10 @@ class PortBindings:
 
 def feature(packet, port, supplemental=None):
     channel = port['channel']
+    if channel=='chemical_odor':
+        key=port['receptor']+':'+port['site']
+        if supplemental is None or key not in supplemental.get('chemical_odor',{}):raise ValueError('Chemical receptor observation missing')
+        return finite(supplemental['chemical_odor'][key],channel,-1.,1.)
     if channel=='retina_ommatidium':
         if supplemental is None or 'retina_ommatidia' not in supplemental:raise ValueError('Retinal image unavailable')
         return finite(supplemental['retina_ommatidia'][('left','right').index(port['eye'])][port['ommatidium']],channel,0.,1.)
@@ -173,12 +188,45 @@ class SensoryEncoder:
         self.filtered = np.zeros(len(bindings.sensory), dtype=np.float64)
         self.delays = [[0.] * p['delay_controls'] for p, _ in bindings.sensory]
         self.control_tick = 0
+        self.all_drives=all(p['method']=='drive_mV' for p,_ in bindings.sensory)
+        if self.all_drives:
+            self.drive_parameters={key:np.array([p[key] for p,_ in bindings.sensory],np.float64)
+                for key in ('baseline','gain','offset','scale','cap')}
+            self.drive_targets=np.concatenate([ids for _,ids in bindings.sensory])
+            self.drive_counts=np.array([len(ids) for _,ids in bindings.sensory])
+            self.drive_dt=None
+
+    def _encode_drives(self,packet,dt,disabled,supplemental):
+        # Preserve float64 transduction and the original port/target addition
+        # order, while avoiding one NumPy kernel dispatch per ommatidial port.
+        ports=self.bindings.sensory;p=self.drive_parameters
+        raw=np.array([feature(packet,port,supplemental) for port,_ in ports],np.float64)
+        requested=p['baseline']+p['gain']*(raw-p['offset'])*p['scale']
+        if self.drive_dt!=dt:
+            self.drive_alpha=np.array([1. if port['tau_s']==0 else 1.-math.exp(-dt/port['tau_s']) for port,_ in ports])
+            self.drive_dt=dt
+        self.filtered+=self.drive_alpha*(np.clip(requested,0,p['cap'])-self.filtered)
+        values=self.filtered.copy()
+        for i,(port,_) in enumerate(ports):
+            if port['delay_controls']:
+                self.delays[i].append(float(values[i]));values[i]=self.delays[i].pop(0)
+        disabled=set(disabled)
+        enabled=np.array([port['name'] not in disabled and port['channel'] not in disabled and '*' not in disabled for port,_ in ports])
+        values=np.where(enabled,values,0.)
+        drive=np.zeros(self.bindings.graph.n,np.float32)
+        np.add.at(drive,self.drive_targets,np.repeat(values,self.drive_counts))
+        rows=[dict(name=port['name'],value=float(values[i]),unit='mV',enabled=bool(enabled[i]),
+            feature=float(raw[i]),requested=float(requested[i]),clipped=bool(requested[i]<0 or requested[i]>port['cap']))
+            for i,(port,_) in enumerate(ports)]
+        self.control_tick+=1
+        return drive,None,rows
 
     def encode(self, packet, dt, neural_dt, disabled=(), supplemental=None):
         validate_sensor_packet(packet)
         count = round(dt / neural_dt)
         if abs(count * neural_dt - dt) > 1e-12:
             raise ValueError('Encoder requires integral neural ticks')
+        if self.all_drives:return self._encode_drives(packet,dt,disabled,supplemental)
         drive = np.zeros(self.bindings.graph.n, dtype=np.float32)
         pulse_ids, pulse_values = [], []
         values = []

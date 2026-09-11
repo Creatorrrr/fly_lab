@@ -87,4 +87,4 @@ def physical_joint_step(body,targets,dt=.005):
     body.mj.mj_forward(body.m,body.d)
     if not np.isfinite(body.d.qpos).all() or not np.isfinite(body.d.qvel).all():raise RuntimeError('Nonfinite physical state')
     p,R,_=body.pose();body.travel+=float(np.linalg.norm(p-body.last_position));body.last_position=p;body.walk_ticks+=1
-    if R[2,2]<.15 or p[2]<0:body.fault='CNS circuit body fell; no automatic correction'
+    if body.outside_physical_domain(p,R):body.fault='CNS circuit body fell or left domain; no automatic correction'

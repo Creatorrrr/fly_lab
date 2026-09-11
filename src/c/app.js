@@ -68,7 +68,7 @@ function applyFrame(f){
  $('port-values').textContent='현재 입력 세기: '+(f.sensory_ports.slice(0,12).map(p=>`${p.name} ${p.value.toFixed(3)} ${p.unit}${p.enabled?'':' (차단)'}`).join(' · ')||'아직 계산 전')+(f.sensory_ports.length>12?` · 총 ${f.sensory_ports.length}포트 중 12개 표시`:'')+' · 출력 집단: '+Object.entries(f.motor_rates_Hz).map(([name,rate])=>`${name} ${rate.toFixed(2)} Hz`).join(' · ');
  const legLoop=f.neuromuscular;
  const actuation=legLoop?.actuation;
- $('actuation-status').textContent=actuation?`현재 신체의 능동 ${actuation.active_axes}축 중 ${actuation.mapped_axes}축에 신경 출력 매핑 · 미연결 ${actuation.unmapped_axes}축${actuation.passive_joints===null?'':` · 수동 관절 ${actuation.passive_joints}개`} · 전체 운동뉴런 ${actuation.graph_motor_neurons}개 중 ${actuation.mapped_motor_neurons}개 사용, ${actuation.unmapped_motor_neurons}개 미연결. 매핑은 구동 가능 경로를 뜻하며, 실제 활성·행동 성공은 별도로 확인합니다.`:'현재 실행의 축별 신경 매핑 정보가 없습니다.';
+ $('actuation-status').textContent=actuation?`현재 신체의 위치 구동 ${actuation.active_axes}축 중 ${actuation.mapped_axes}축에 신경 출력 매핑 · 미연결 ${actuation.unmapped_axes}축${actuation.passive_joints===null?'':` · 수동 관절 ${actuation.passive_joints}개`} · 전체 운동뉴런 ${actuation.graph_motor_neurons}개 중 ${actuation.mapped_motor_neurons}개 사용, ${actuation.unmapped_motor_neurons}개 미연결. 매핑은 구동 가능 경로를 뜻하며, 실제 활성·행동 성공은 별도로 확인합니다.`:'현재 실행의 축별 신경 매핑 정보가 없습니다.';
  $('neuromuscular-status').textContent=legLoop?.enabled?`BANC 다리 폐루프 · 감각 ${legLoop.sensory_neurons.toLocaleString()}개 → 전체 신경망 → 운동 ${legLoop.motor_neurons}개 · 관절 ${legLoop.covered_dofs}/${legLoop.total_leg_dofs} 연결 · 사전 보행 궤적 CPG 꺼짐 · 미연결: ${legLoop.unbound_dofs.join(', ')||'없음'} · 근육 힘과 감각 세부 반응은 검증되지 않은 공학적 변환입니다.`:(['B_COMPAT','C_SHADOW'].includes(f.mode)?'현재 몸 구동: 기존 B 제어기와 보행 CPG를 사용합니다. C 전뇌 출력으로 구동하는 모드는 아닙니다.':'현재 몸 구동: 하행뉴런의 전진·회전 출력을 기존 CPG 보행기에 전달합니다.');
  $('leg-feedback-off').disabled=!legLoop?.enabled;
  const contact=legLoop?.contact?.support_load_bw?legLoop.contact:null;
@@ -77,7 +77,8 @@ function applyFrame(f){
  $('leg-receptor-diagnostics').textContent=legLoop?.schema==='flylab.neuromuscular.v2'?`방향 미확정 수용체 ${legLoop.unresolved_polarity_targets}개: 외부 각도·방향 자극 보류 · 출력 제한 범위를 넘은 축 ${(legLoop.muscles||[]).reduce((sum,m)=>sum+(m.bounded_axes||[]).filter(Boolean).length,0)}/42 · 보행 성공 여부는 별도 행동 검사로 판정합니다.`:'';
  $('motor').checked=f.config.motorCoupled;$('cue').checked=f.world.cueOn;$('food').checked=f.world.foodOn;
  const whole=f.physics.wholeBody;
- $('body-status').textContent=f.physics.testDouble?'TEST DOUBLE':whole?`${whole.names.length} 능동 · ${whole.passive.names.length} 수동 관절 · 신경 전신 제어 미검증`:`${f.physics.jointNames.length} 관절 · ${f.physics.backend}`;
+ renderBodyControls(f);
+ $('body-status').textContent=f.physics.testDouble?'TEST DOUBLE':whole?`${whole.names.length} 위치 서보 · ${f.physics.tendons?.names.length||0} 힘줄 · ${whole.passive.names.length} 수동 관절 · ${whole.root_fixed?'몸통 고정':'자유 이동'}`:`${f.physics.jointNames.length} 관절 · ${f.physics.backend}`;
  const feet=$('feet');
  if(!feet.children.length)['LF','LM','LH','RF','RM','RH'].forEach(leg=>{const row=document.createElement('div');row.className='foot';const label=document.createElement('span');label.textContent=leg;row.append(label,document.createElement('b'),document.createElement('i'));feet.append(row);});
  [...feet.children].forEach((row,i)=>{setText(row.children[1],f.physics.contactsBW[i].toFixed(2)+' BW');row.children[2].style.width=Math.min(100,f.physics.contactsBW[i]*100)+'%';});
@@ -139,7 +140,7 @@ function applyReady(result){state.profiles=result.profiles;state.supportedModes=
  labels['bindings-neuromuscular-v2.json']='BANC 하중 보정·방향 감각 v2 (보행 미검증)';
  labels['bindings-walking-visual-contact-v5.json']='보행·시각·머리 접촉 v5 (연구)';
  labels['bindings-walking-visual-contact-walk-off-v6.json']='보행·시각·접촉·Bluebell 정지 v6 (연구)';
- applyFrame(result.frame);$('binding-profile').replaceChildren(...(result.profiles||[]).map(p=>{const label=labels[p.name]||p.profile||p.name;const option=new Option(label+(p.available===false?' · 사용 불가':''),p.name,p.current,p.current);option.disabled=p.available===false;option.title=p.reason||'';return option;}));$('mode').value=result.frame.mode;$('seed').value=result.frame.seed;$('body-model').value=result.frame.physics.wholeBody?'flybody_whole':(result.frame.physics.bodyModel||'neuromechfly');$('body-terrain').value=result.frame.physics.terrain||'flat';
+ applyFrame(result.frame);$('binding-profile').replaceChildren(...(result.profiles||[]).map(p=>{const label=labels[p.name]||p.profile||p.name;const option=new Option(label+(p.available===false?' · 사용 불가':''),p.name,p.current,p.current);option.disabled=p.available===false;option.title=p.reason||'';return option;}));$('mode').value=result.frame.mode;$('seed').value=result.frame.seed;$('body-model').value=result.frame.physics.wholeBody?'flybody_whole':(result.frame.physics.bodyModel||'neuromechfly');$('body-terrain').value=result.frame.physics.terrain||'flat';$('body-attachment').value=result.frame.physics.attachment||'free';const tn=result.frame.physics.tendons?.names||[];$('body-tendons').value=tn.length===8?'all':tn.length===6?'tarsi':tn.length===2?'abdomen':'none';
  applyProfileModes();
  state.backend=result.capabilities.backend;$('backend').value=state.backend==='legacy_b_rate'?'exp_lif_cpu_reference':state.backend;$('backend').disabled=state.backend==='legacy_b_rate';
  const friction=String(result.frame.config.friction);
@@ -153,11 +154,28 @@ async function refreshExperiment(result,message){
  state.sequence=0;state.signals.clear();state.traces.clear();state.spikes=0;applyReady(result);
  $('search').value='DNa02';await search();await regions();await checkpoints();await workbench.ready();tell(message);
 }
-function selectedBodyOptions(){const full=$('body-model').value==='flybody_whole';return {model:full?'flybody':$('body-model').value,terrain:$('body-terrain').value,...(full?{actuation:'whole_body',servo_profile:'tracking_all'}:{})};}
+function renderBodyControls(f){
+ const supported=typeof f.physics.attachment==='string';for(const id of ['body-attachment','body-tendons','shared-init'])$(id).disabled=!supported;const select=$('body-command-name'),whole=supported?f.physics.wholeBody:null,t=f.physics.tendons,entries=[];
+ if(whole)whole.names.forEach((name,i)=>{if(!['lf','lm','lh','rf','rm','rh'].includes(whole.regions[i]))entries.push(['joint:'+name,name+' · rad',whole.limits_rad[i]]);});
+ if(t)t.names.forEach((name,i)=>entries.push(['tendon:'+name,name+' · 힘줄 모터',t.limits[i]]));
+ const signature=entries.map(e=>e[0]).join('|');if(select.dataset.signature!==signature){select.replaceChildren(...entries.map(([value,label,limits])=>new Option(label+' ['+limits.join(', ')+']',value)));select.dataset.signature=signature;}
+ $('body-command-apply').disabled=!entries.length;
+ $('tendon-status').textContent=t?t.names.map((name,i)=>`${name}: 입력 ${t.inputs[i].toFixed(3)}, 힘 ${t.actuator_forces[i].toFixed(4)}, 관절각 ${t.angles_rad[i].map(v=>v.toFixed(3)).join(', ')} rad`).join('\n')+'\n힘줄 신경 출력: 미연결':'힘줄 구동을 사용하지 않습니다.';
+}
+button('body-command-apply',async()=>{workbench.pause();const [kind,name]=$('body-command-name').value.split(':');const payload=kind==='joint'?{targets:{[name]:Number($('body-command-value').value)}}:{tendon_inputs:{[name]:Number($('body-command-value').value)}};applyFrame(await rpc.request('command',{type:'body_actuation',payload}));tell('직접 구동 명령을 적용했습니다. 한 단계 또는 재생으로 진행합니다.');});
+let sharedCheckpoint=null;
+function showShared(result){const obs=result.observation||result;const rows=Object.entries(obs.flies||{});$('shared-status').textContent=rows.length?`${obs.time_s.toFixed(3)} s · ${rows.length}개체 · 개체 간 접촉 ${obs.interfly_contacts.length}개\n`+rows.map(([name,f])=>`${name}: 위치 ${f.position_mm.map(v=>v.toFixed(2)).join(', ')} mm · 구동 ${f.drive.join(', ')}`).join('\n'):'공유 공간이 없습니다.';$('shared-status').dataset.time=String(obs.time_s||0);if(result.render_error){$('shared-status').textContent+='\n영상 오류: '+result.render_error;$('shared-image').hidden=true;}if(result.image){$('shared-image').src='data:image/png;base64,'+result.image;$('shared-image').hidden=false;}const names=Object.keys(obs.flies||{});if(names.length){const select=$('shared-fly');if([...select.options].map(o=>o.value).join()!==names.join())select.replaceChildren(...names.map(n=>new Option(n,n)));}for(const id of ['shared-step','shared-save','shared-close','shared-drive'])$(id).disabled=!names.length;}
+button('shared-init',async()=>{workbench.pause();showShared(await rpc.request('shared_init',{count:Number($('shared-count').value),seed:Number($('seed').value)}));sharedCheckpoint=null;$('shared-restore').disabled=true;});
+button('shared-step',async()=>{workbench.pause();showShared(await rpc.request('shared_advance',{steps:20}));});
+button('shared-drive',async()=>showShared(await rpc.request('shared_drive',{drives:{[$('shared-fly').value]:[Number($('shared-left').value),Number($('shared-right').value)]}})));
+button('shared-save',async()=>{const r=await rpc.request('shared_save',{});sharedCheckpoint=r.name;$('shared-restore').disabled=false;tell('공유 공간 상태를 저장했습니다.');});
+button('shared-restore',async()=>showShared(await rpc.request('shared_restore',{name:sharedCheckpoint})));
+button('shared-close',async()=>{await rpc.request('shared_close',{});showShared({closed:true});$('shared-image').hidden=true;$('shared-restore').disabled=true;sharedCheckpoint=null;});
+function selectedBodyOptions(){const full=$('body-model').value==='flybody_whole';return {model:full?'flybody':$('body-model').value,terrain:$('body-terrain').value,...($('body-attachment').value==='tethered'?{attachment:'tethered'}:{}),...($('body-tendons').value!=='none'?{tendons:$('body-tendons').value}:{}),...(full?{actuation:'whole_body',servo_profile:'tracking_all'}:{})};}
 async function init(){
  state.playing=false;updatePlay();$('waiting').hidden=false;
  const payload={mode:$('mode').value,seed:Number($('seed').value),metabolism:$('metabolism-enabled').checked?{}:null};
- if($('body-model').value!=='neuromechfly'||$('body-terrain').value!=='flat')payload.body_options=selectedBodyOptions();
+ payload.body_options=selectedBodyOptions();if(payload.body_options.attachment==='tethered')payload.motion_expected=false;
  // Before attach/init there is no catalog: honor the server's --bindings.
  if(state.frame)payload.profile=$('binding-profile').value;
  let result;try{result=await rpc.request('init',payload);}catch(e){$('waiting').hidden=!!state.frame;throw e;}
@@ -241,7 +259,7 @@ async function batchRequest(op,payload){
  }
 }
 $('batch-world').addEventListener('change',()=>{batchControls();$('batch-image').hidden=true;$('batch-image-time').textContent='';});
-button('batch-init',async()=>{if(selectedBodyOptions().actuation==='whole_body')throw new Error('전신 78관절은 CPU 물리의 단일 실험에서 지원합니다.');workbench.pause();$('batch-init').disabled=true;try{showBatch(await rpc.request('batch_init',{worlds:Number($('batch-count').value),seed:Number($('seed').value),profile:$('binding-profile').value,mode:$('mode').value==='B_COMPAT'?'C_SHADOW':$('mode').value,body_options:selectedBodyOptions()}));tell('별도 CUDA 배치를 준비했습니다.');}finally{batchControls();}});
+button('batch-init',async()=>{if(selectedBodyOptions().actuation==='whole_body'||selectedBodyOptions().attachment==='tethered'||selectedBodyOptions().tendons!=='none')throw new Error('전신·몸통 고정·힘줄은 CPU 물리의 단일 실험에서 지원합니다.');workbench.pause();$('batch-init').disabled=true;try{showBatch(await rpc.request('batch_init',{worlds:Number($('batch-count').value),seed:Number($('seed').value),profile:$('binding-profile').value,mode:$('mode').value==='B_COMPAT'?'C_SHADOW':$('mode').value,body_options:selectedBodyOptions()}));tell('별도 CUDA 배치를 준비했습니다.');}finally{batchControls();}});
 button('batch-step',async()=>showBatch(await batchRequest('batch_advance',{steps:1})));
 for(const action of ['pause','resume','cancel'])button('batch-'+action,async()=>showBatch(await batchRequest('batch_control',{action,world:$('batch-world').value})));
 button('batch-save',async()=>{const r=await rpc.request('batch_checkpoint');await batchCheckpoints();$('batch-checkpoints').value=r.name;tell('전체 배치 저장: '+r.name);});

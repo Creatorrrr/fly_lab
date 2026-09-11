@@ -13,6 +13,8 @@ class BodyOptions:
     render_camera: bool = False
     actuation: str = 'legs'
     servo_profile: str = 'asset'
+    attachment: str = 'free'
+    tendons: str = 'none'
 
     def __post_init__(self):
         if self.model not in ('neuromechfly','flybody'):raise ValueError('Unknown comparison body')
@@ -20,6 +22,11 @@ class BodyOptions:
         if self.actuation=='whole_body' and self.model!='flybody':raise ValueError('Whole-body actuation requires FlyBody')
         if self.servo_profile not in ('asset','tracking','tracking_all'):raise ValueError('Unknown servo profile')
         if self.servo_profile!='asset' and self.actuation!='whole_body':raise ValueError('Tracking servos require whole-body actuation')
+        if self.attachment not in ('free','tethered'):raise ValueError('Unknown body attachment')
+        if self.attachment=='tethered' and self.terrain!='flat':raise ValueError('Tethered experiments require flat terrain')
+        if self.tendons not in ('none','tarsi','abdomen','all'):raise ValueError('Unknown tendon selection')
+        if self.tendons!='none' and self.model!='flybody':raise ValueError('Tendons require FlyBody')
+        if self.tendons in ('abdomen','all') and self.actuation!='whole_body':raise ValueError('Abdomen tendons require whole-body actuation')
         if type(self.render_camera) is not bool:raise ValueError('render_camera must be boolean')
         if self.terrain not in ('flat','gaps','blocks','mixed','slope'):raise ValueError('Unknown terrain')
         if type(self.terrain_seed) is not int or not 0<=self.terrain_seed<2**32:raise ValueError('Invalid terrain seed')
@@ -34,6 +41,8 @@ class BodyOptions:
         # The omitted default preserves existing explicit FlyBody/terrain hashes.
         if self.actuation=='legs':values.pop('actuation')
         if self.servo_profile=='asset':values.pop('servo_profile')
+        if self.attachment=='free':values.pop('attachment')
+        if self.tendons=='none':values.pop('tendons')
         return values
 
 
@@ -53,6 +62,9 @@ def outside_physical_domain(position,rotation,options):
 def make_world(options):
     from flygym.compose import FlatGroundWorld
     from flygym.compose.world.complex_terrain import GappedTerrainWorld,BlocksTerrainWorld,MixedTerrainWorld
+    if options.attachment=='tethered':
+        from .tethered import TetheredGroundWorld
+        return TetheredGroundWorld(name='flylab_arena',half_size=100)
     if options.terrain in ('flat','slope'):
         world=FlatGroundWorld(name='flylab_arena',half_size=100)
         if options.terrain=='slope':
@@ -64,19 +76,32 @@ def make_world(options):
     return world
 
 
-def make_flybody(name,*,whole_body=False):
+def make_flybody(name,*,whole_body=False,tendons='none'):
     from flygym.compose import ActuatorType,KinematicPosePreset
     from flygym.compose.fly import FlyBody
     from flygym.flybody import FlyBodySkeleton,FlyBodyAxisOrder,FlyBodyJointPreset,FlyBodyActuatedDOFPreset
     fly=FlyBody(name=name)
     fly.add_joints(FlyBodySkeleton(axis_order=FlyBodyAxisOrder.YAW_ROLL_PITCH,
         joint_preset=FlyBodyJointPreset.ALL_BIOLOGICAL if whole_body else FlyBodyJointPreset.LEGS_ONLY),KinematicPosePreset.FLYBODY_NEUTRAL)
+    if tendons not in ('none','tarsi','abdomen','all') or (tendons in ('abdomen','all') and not whole_body):
+        raise ValueError('Invalid tendon selection for this skeleton')
+    if tendons!='none':
+        fly.add_tendons()
+        for dof,tendon in list(fly.jointdof_to_mjcftendon.items()):
+            abdominal='abdomen' in dof.name
+            if (tendons=='tarsi' and abdominal) or (tendons=='abdomen' and not abdominal):
+                fly.mjcf_root.delete(tendon)
+                del fly.jointdof_to_mjcftendon[dof]
+        fly.add_tendon_actuators()
     fly.add_actuators(fly.skeleton.get_actuated_dofs_from_preset(FlyBodyActuatedDOFPreset.LEGS_ACTIVE_ONLY),ActuatorType.POSITION,kp=100)
     if whole_body:
-        # Keep the 24 distal tarsal hinges passive. Head, antenna, mouth,
-        # abdomen, wings and halteres receive independent position servos.
+        # Distal tarsal hinges are passive unless their tendons were selected.
+        # Other joints get servos except hinges assigned to abdomen tendons.
         for dof in fly.skeleton.iter_jointdofs():
             if dof.child.is_leg():continue
+            # These twelve hinges are driven by two tendon motors instead.
+            # The thorax-abdomen1 joint remains independently controlled.
+            if tendons in ('abdomen','all') and dof.parent.link.startswith('abdomen') and dof.axis.value in ('pitch','yaw'):continue
             params=next((v['general'] for v in fly.actuator_config.values() if dof.name in v['apply_to']),{})
             gain=params.get('gainprm','1')
             kp=float(gain.split()[0] if isinstance(gain,str) else gain[0])

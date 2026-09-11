@@ -150,7 +150,7 @@ def replay_recording(graph, bindings, path, body_factory):
             for line in f:
                 event = json.loads(line)
                 kind = event['kind']
-                if kind not in ENVIRONMENT_COMMANDS | {'intervention_scheduled','cancel_intervention','release_all','stop','resume','configure','cue','food','push'}:
+                if kind not in ENVIRONMENT_COMMANDS | {'intervention_scheduled','cancel_intervention','release_all','stop','resume','configure','cue','food','push','body_actuation'}:
                     continue
                 at = event['tick']
                 if type(at) is not int or at<e.tick or (at-e.tick)%e.substeps or at>end:

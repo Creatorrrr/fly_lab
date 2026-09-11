@@ -1,7 +1,7 @@
 """Explicit whole-body servo interface for the composed FlyBody model.
 
 Position servos are engineering actuators, not reconstructed muscle physiology.
-Only ctrl is commanded. The floating root and passive joints remain physical.
+Only ctrl is commanded. Root attachment is explicit in BodyOptions.
 All held commands live in MuJoCo's integration state and follow its checkpoint.
 """
 
@@ -96,6 +96,8 @@ class WholeBodyControl:
         ):
             raise ValueError("Invalid whole-body actuator limits")
         active = set(self.joint_ids.tolist())
+        if body.tendon_control is not None:
+            active.update(body.tendon_control.joint_ids.tolist())
         self.passive_ids = np.array(
             [
                 j
@@ -118,9 +120,14 @@ class WholeBodyControl:
             values[i] = number(value, name, *self.limits[i])
         return values
 
-    def step(self, targets, adhesion, dt):
+    def step(self, targets, adhesion, dt, *, tendon_inputs=None):
         # Validate the entire request before changing any physical/control state.
-        values = self.command_vector(targets)
+        if targets is None and tendon_inputs is None:
+            raise ValueError('Provide position or tendon commands')
+        values = self.command_vector(targets) if targets is not None else self.body.d.ctrl[self.act_ids].copy()
+        if tendon_inputs is not None and self.body.tendon_control is None:
+            raise ValueError('Tendon actuation is not enabled')
+        tendon_values = self.body.tendon_control.command_vector(tendon_inputs) if tendon_inputs is not None else None
         number(dt, "body control dt", PHYSICS_DT, 0.05)
         if abs(round(dt / PHYSICS_DT) * PHYSICS_DT - dt) > 1e-10:
             raise ValueError("Integral physical steps required")
@@ -132,6 +139,8 @@ class WholeBodyControl:
         if self.body.fault:
             raise RuntimeError(self.body.fault)
         self.body.d.ctrl[self.act_ids] = values
+        if tendon_values is not None:
+            self.body.d.ctrl[self.body.tendon_control.act_ids] = tendon_values
         self.body.step_joint_targets(values[self.body.leg_action_indices], adhesion, dt)
 
     def observation(self):
@@ -159,6 +168,8 @@ class WholeBodyControl:
                 "velocities_rad_s": b.d.qvel[passive_v].tolist(),
             },
             "root_actuated": False,
+            "root_fixed": b.body_options.attachment == 'tethered',
+            "tendons": b.tendon_control.observation() if b.tendon_control is not None else None,
             "root_position_mm": b.d.xpos[b.thorax].tolist(),
             "root_rotation": b.d.xmat[b.thorax].reshape(3, 3).tolist(),
             "actuator_model": "engineering position servos; gains are not measured muscle physiology",

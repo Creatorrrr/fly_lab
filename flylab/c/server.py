@@ -35,6 +35,7 @@ class CDispatcher:
         self.last_fault_report = None
         self.jobs = CampaignJobs(self.artifacts/'campaigns', self.graph_path)
         self.batch=None
+        self.shared=None
 
     def load(self):
         if self.graph is None:
@@ -150,6 +151,39 @@ class CDispatcher:
             result['recovery'] = recovery
         elif op == 'attach': result = self.ready()
         elif op == 'frame': result = self.need().frame()
+        elif op == 'shared_init':
+            from ..shared_arena import SharedFlyArena
+            if set(payload)-{'count','seed','spacing_mm','collisions'}:raise ValueError('Unknown shared arena field')
+            candidate=SharedFlyArena(**payload)
+            candidate.set_drives({n:[.6,.6] for n in candidate.names})
+            old=self.shared;self.shared=candidate
+            if old:old.close()
+            result=self.shared_result()
+        elif isinstance(op,str) and op.startswith('shared_'):
+            if self.shared is None:raise ValueError('Create a shared arena first')
+            if op=='shared_advance':
+                if set(payload)-{'steps'}:raise ValueError('Unknown shared advance field')
+                self.shared.advance(bounded_int(payload.get('steps',20),'steps',1,20))
+                result=self.shared_result()
+            elif op=='shared_drive':
+                if set(payload)!={'drives'}:raise ValueError('Named drives required')
+                self.shared.set_drives(payload['drives']);result=self.shared_result()
+            elif op=='shared_save':
+                name='shared-'+secrets.token_hex(6)
+                directory=self.artifacts/'shared-checkpoints';directory.mkdir(parents=True,exist_ok=True)
+                write_json(directory/(name+'.json'),self.shared.snapshot());result=dict(name=name)
+            elif op=='shared_restore':
+                from ..shared_arena import SharedFlyArena
+                name=checked_name(payload.get('name'))
+                saved=read_json(self.artifacts/'shared-checkpoints'/(name+'.json'))
+                candidate=SharedFlyArena(**saved['spec'])
+                try:candidate.restore(saved)
+                except Exception:
+                    candidate.close();raise
+                self.shared.close();self.shared=candidate;result=self.shared_result()
+            elif op=='shared_close':
+                self.shared.close();self.shared=None;result=dict(closed=True)
+            else:raise ValueError('Unknown shared arena operation')
         elif op == 'backend':
             target = payload.get('backend')
             if target not in NEURAL_BACKENDS: raise ValueError('Unknown neural backend')
@@ -367,9 +401,21 @@ class CDispatcher:
             self.engine.selected_events = []
         return response
 
+    def shared_result(self):
+        import base64
+        import io
+        from PIL import Image
+        result=dict(observation=self.shared.observation())
+        try:
+            stream=io.BytesIO();Image.fromarray(self.shared.preview()).save(stream,format='PNG')
+            result['image']=base64.b64encode(stream.getvalue()).decode('ascii')
+        except Exception as exc:result['render_error']=str(exc)
+        return result
+
     def close(self):
         self.jobs.close()
         if self.batch:self.batch.close();self.batch=None
+        if self.shared:self.shared.close();self.shared=None
         if self.engine: self.engine.close(); self.engine = None
 
 

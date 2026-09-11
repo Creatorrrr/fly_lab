@@ -39,6 +39,8 @@ class FlyGymBody:
         self.body_options=BodyOptions.parse(body_options)
         if self.body_options.model=='flybody' and self.backend==FlyGymBody.backend:self.backend='flygym-2.1.0-flybody'
         self.physics_profile=profile_values(physics_profile)
+        if (self.body_options.attachment!='free' or self.body_options.tendons!='none') and self.physics_profile.backend!='cpu':
+            raise ValueError('Tethered and tendon experiments currently require CPU physics')
         if self.body_options.actuation=='whole_body':
             if self.physics_profile.backend!='cpu':raise ValueError('Whole-body actuation currently requires CPU MuJoCo physics')
             self.backend='flygym-2.1.0-flybody-whole-body-v1'
@@ -56,7 +58,7 @@ class FlyGymBody:
         self.Observation=HybridControllerObservation; self.Action=LocomotionAction; self.apply=apply_locomotion_action
         self.optimized=optimized
         self.motor=MotorAdapter(); self.world_spec=clone(world); self.config=clone(config)
-        self.fly=make_locomotion_fly(name='flylab',add_adhesion=True,colorize=False) if self.body_options.model=='neuromechfly' else make_flybody('flylab',whole_body=self.body_options.actuation=='whole_body')
+        self.fly=make_locomotion_fly(name='flylab',add_adhesion=True,colorize=False) if self.body_options.model=='neuromechfly' else make_flybody('flylab',whole_body=self.body_options.actuation=='whole_body',tendons=self.body_options.tendons)
         if self.body_options.render_camera:
             self.fly.add_tracking_camera(name='batch_view',pos_offset=(0.,-8.,0.),rotation=Rotation3D('euler',(1.57,0.,0.)),fovy=35.)
         self.native_world=make_world(self.body_options)
@@ -106,6 +108,10 @@ class FlyGymBody:
         self.sim=Simulation(w,timestep=PHYSICS_DT)
         self.sim.reset()  # official neutral-keyframe initialization before settling
         self.m=self.sim.mj_model; self.d=self.sim.mj_data
+        self.tendon_control=None
+        if self.body_options.tendons!='none':
+            from .tendon_control import TendonControl
+            self.tendon_control=TendonControl(self)
         self.order=self.fly.get_actuated_jointdofs_order(ActuatorType.POSITION)
         self.full_order=list(self.order)
         if self.body_options.servo_profile!='asset':
@@ -356,6 +362,7 @@ class FlyGymBody:
         n = round(dt/PHYSICS_DT)
         if abs(n*PHYSICS_DT-dt) > 1e-10: raise ValueError('Integral physical steps required')
         if self.fault: raise RuntimeError(self.fault)
+        expected_time=float(self.d.time)+dt
         self.descending.fill(0.)
         self.last_action = self.Action(joint_angles=targets.copy(), adhesion_onoff=adhesion.copy())
         for _ in range(n):
@@ -369,6 +376,7 @@ class FlyGymBody:
                 self.fault = 'non-finite physics state'
                 raise RuntimeError(self.fault)
         self._forward_physics()
+        self._audit_extension_step(expected_time)
         p, R, _ = self.pose()
         self.travel += float(np.linalg.norm(p-self.last_position))
         self.last_position = p
@@ -379,14 +387,31 @@ class FlyGymBody:
         if self.outside_physical_domain(p,R):
             self.fault = 'Neural muscle body fell or left physical domain; no automatic pose correction'
 
-    def step_body_targets(self,targets,adhesion=None,dt=CONTROL_DT):
+    def step_body_targets(self,targets=None,adhesion=None,dt=CONTROL_DT,*,tendon_inputs=None):
         """Validated named targets for every active joint; no CPG advancement."""
         if self.whole_body_control is None:raise ValueError('Whole-body actuation is not enabled')
-        self.whole_body_control.step(targets,adhesion,dt)
+        self.whole_body_control.step(targets,adhesion,dt,tendon_inputs=tendon_inputs)
+
+    def set_body_actuation(self,*,targets=None,tendon_inputs=None):
+        """Set held controls without advancing the engine's physical clock."""
+        if targets is None and tendon_inputs is None:raise ValueError('Provide a body command')
+        if self.fault:raise RuntimeError(self.fault)
+        if targets is not None and self.whole_body_control is None:raise ValueError('Whole-body actuation is not enabled')
+        if tendon_inputs is not None and self.tendon_control is None:raise ValueError('Tendon actuation is not enabled')
+        positions=self.whole_body_control.command_vector(targets) if targets is not None else None
+        tendons=self.tendon_control.command_vector(tendon_inputs) if tendon_inputs is not None else None
+        if positions is not None:self.d.ctrl[self.whole_body_control.act_ids]=positions
+        if tendons is not None:self.d.ctrl[self.tendon_control.act_ids]=tendons
 
     def whole_body_observation(self):
         if self.whole_body_control is None:raise ValueError('Whole-body actuation is not enabled')
         return self.whole_body_control.observation()
+
+    def _audit_extension_step(self,expected_time):
+        if self.body_options.attachment=='free' and self.body_options.tendons=='none':return
+        if any(self.d.warning.number) or abs(float(self.d.time)-expected_time)>1e-8:
+            self.fault='Numerical warning or automatic time reset in body experiment'
+            raise RuntimeError(self.fault)
 
     def set_config(self,config):
         self.config=clone(config)
@@ -467,6 +492,7 @@ class FlyGymBody:
         if self.fault: raise RuntimeError('물리 중단: '+self.fault+' · 초기화가 필요합니다.')
         n=round(dt/PHYSICS_DT)
         if abs(n*PHYSICS_DT-dt)>1e-10: raise ValueError('Control dt must be integer physical steps')
+        expected_time=float(self.d.time)+dt
         self.descending=self.motor.map(command)
         parked=np.max(np.abs(self.descending))<1e-7
         if self.optimized and not parked:
@@ -488,6 +514,7 @@ class FlyGymBody:
         # mj_step leaves some derived fields at the previous integration point.
         # Recompute for timestamp-consistent displayed poses/contact force telemetry.
         self._forward_physics()
+        self._audit_extension_step(expected_time)
         p,R,_=self.pose(); self.travel+=float(np.linalg.norm(p-self.last_position)); self.last_position=p
         collision=self.nonfoot_contact()
         if collision and not self.prev_contact: self.collisions+=1
@@ -532,6 +559,8 @@ class FlyGymBody:
                      adhesion=np.asarray(self.last_action.adhesion_onoff,dtype=int).tolist(),cpgPhases=self.controller.cpg_network.curr_phases.tolist(),
                      descending=self.descending.tolist(),fault=self.fault,gravity=self.config['gravity'],friction=self.config['friction'],bodyModelHash=self.model_hash)
         if self.whole_body_control is not None:physics['wholeBody']=self.whole_body_control.observation()
+        if self.tendon_control is not None:physics['tendons']=self.tendon_control.observation()
+        physics['attachment']=self.body_options.attachment
         return body,physics
 
     def snapshot(self):

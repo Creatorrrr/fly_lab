@@ -87,4 +87,8 @@ def describe_actuation(loop):
         "biological_validation": False,
         "mapping_kind": "signed_rate_to_position_engineering_proxy",
         "axes": axes,
+        "tendon_controls": [{"name": name, "status": "unmapped"} for name in body.tendon_control.names]
+            if getattr(body,"tendon_control",None) is not None else [],
+        "tendon_driven_joints": len(body.tendon_control.joint_ids)
+            if getattr(body,"tendon_control",None) is not None else 0,
     }

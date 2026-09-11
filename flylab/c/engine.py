@@ -64,6 +64,8 @@ class CEngine:
         if initial_pose is not None:body_kwargs['initial_pose']=initial_pose
         if body_options is not None:body_kwargs['body_options']=body_options
         self.body = body_factory(seed, self.world, self.config, **body_kwargs)
+        if getattr(getattr(self.body,'body_options',None),'attachment','free')=='tethered':
+            self.motion_expected=False
         self.neuromuscular = None
         self.control_tick = 0
         self.sensor_tick = 0
@@ -451,6 +453,17 @@ class CEngine:
             self.body.set_world(self.world)
         elif kind == 'push':
             self.body.perturb(finite(payload.get('bw', .5), 'bw', -2, 2), finite(payload.get('duration', .05), 'duration', .005, .2))
+        elif kind == 'body_actuation':
+            if set(payload)-{'targets','tendon_inputs'}:raise ValueError('Unknown body actuation field')
+            whole=getattr(self.body,'whole_body_control',None)
+            targets=payload.get('targets')
+            if targets is not None:
+                if not isinstance(targets,dict):raise ValueError('Named targets required')
+                # The engine owns leg targets on its next tick. Direct leg
+                # experiments use the standalone body API instead.
+                allowed={d.name for d in whole.order if not d.child.is_leg()} if whole is not None else set()
+                if set(targets)-allowed:raise ValueError('Engine body commands accept nonleg joints only')
+            self.body.set_body_actuation(targets=targets,tendon_inputs=payload.get('tendon_inputs'))
         elif kind in ENVIRONMENT_COMMANDS: edit_environment(self, kind, payload)
         else: raise ValueError('Unknown C command')
         self.event(kind, payload)

@@ -222,6 +222,21 @@ class NeuromuscularLoop:
         self.joints = np.array(self.joints, np.int32)
         if len(np.unique(self.joints)) != 42: raise ValueError('42 unique physical DOFs required')
         self.motor_indices = np.array(sorted({int(i) for groups in self.muscles for _, ids, _ in groups for i in ids}), np.int32)
+        self.tendon_adapter = None
+        self.tendon_inputs = {}
+        if getattr(body, 'tendon_control', None) is not None:
+            from .tendon_neural import NeuralTendonAdapter
+            self.tendon_adapter = NeuralTendonAdapter(graph, s, body)
+            # LTM drives the distal tendon instead of the first-tarsal-joint
+            # position proxy. Depressor/levator continue to control that joint;
+            # LTM's existing explicit adhesion request is retained.
+            for leg, groups in zip(LEGS, self.muscles):
+                if leg in self.tendon_adapter.rerouted_legs:
+                    for name, _, vector in groups:
+                        if name == 'long_tendon_muscle': vector[:] = 0.
+            self.motor_indices = np.union1d(self.motor_indices, self.tendon_adapter.motor_indices)
+            self.hash = digest(dict(leg_adapter=s, tendon_adapter=self.tendon_adapter.spec,
+                                    body_model_hash=getattr(body, 'model_hash', None)))
         from .actuation_map import describe_actuation
         self._actuation_map = describe_actuation(self)
         self.channels = {'leg_feedback'} | {f'leg_{leg}' for leg in LEGS} | {f'leg_{leg}_{kind}' for leg, kind, _ in self.ports}
@@ -294,6 +309,7 @@ class NeuromuscularLoop:
             raise ValueError('Invalid muscle neural rates')
         table = dict(zip(self.motor_indices, rates))
         requested = np.zeros(42)
+        leg_outputs = {}
         diagnostics, adhesion = [], np.ones(6, bool)
         for i, groups in enumerate(self.muscles):
             vector = np.zeros(7)
@@ -315,6 +331,7 @@ class NeuromuscularLoop:
                                  for j, r, c in zip(ids, unit_rates, contributions))
                 outputs[name] = output
                 vector += output * moment * self.spec['motor_gain_rad_per_Hz']
+            leg_outputs[LEGS[i]] = outputs
             limit=self.spec['maximum_offset_rad']
             requested[self.joints[i]] = (np.clip(vector,-limit,limit) if self.version==1 else limit*np.tanh(vector/limit))
             # A pad is released by the relative tarsal elevator drive. This is
@@ -350,20 +367,24 @@ class NeuromuscularLoop:
                 row.update(adhesion_applied=bool(adhesion[i]), lift_release=bool(release[i]),
                            target_lift_mm=float(lift[i]), foot_velocity_mm_s=velocity[i].tolist())
         self.offset[:] = next_offset
+        if self.tendon_adapter:
+            self.tendon_inputs = self.tendon_adapter.decode(table, leg_outputs, disconnected, dt)
         self.motor_tick += 1
         self.last_motor = diagnostics
         return targets, adhesion
 
     def summary(self):
-        result = dict(enabled=True, hash=self.hash, covered_dofs=self.spec['covered_dofs'], total_leg_dofs=42,
+        result = dict(enabled=True, hash=self.hash, covered_dofs=self._actuation_map['mapped_axes'], total_leg_dofs=42,
                     motor_neurons=len(self.motor_indices), sensory_neurons=self.spec['sensory_neurons'],
                     sensor_tick=self.sensor_tick, motor_tick=self.motor_tick, imposed_cpg=False,
                     biological_validation=False, sensory=copy.deepcopy(self.last_sensory),
                     muscles=copy.deepcopy(self.last_motor), offset_rad=self.offset.tolist(),
-                    unbound_dofs=[f"{r['leg']}_{d}" for r in self.spec['rows'] for d in DOFS
-                                  if not any(d in g['vector'] for g in r['muscles'])],
+                    unbound_dofs=[f"{leg}_{d}" for leg, groups in zip(LEGS, self.muscles) for axis,d in enumerate(DOFS)
+                                  if not any(vector[axis] != 0 for _,_,vector in groups)],
                     tuning=self.spec['tuning'], muscle_model=self.spec['muscle_model'])
         result['actuation'] = copy.deepcopy(self._actuation_map)
+        if self.tendon_adapter:
+            result['tendons'] = self.tendon_adapter.summary()
         if self.version>=2:
             result.update(schema=self.spec['schema'],contact=copy.deepcopy(self.last_contact),
                 unresolved_polarity_targets=sum(len(ids) for j,(_,kind,ids) in enumerate(self.ports)
@@ -384,10 +405,16 @@ class NeuromuscularLoop:
                     filtered=self.filtered.copy(), delayed=self.delayed.copy(), offset=self.offset.copy(),
                     last_sensory=clone(self.last_sensory), last_motor=clone(self.last_motor))
         if self.version>=2:result.update(velocity_lowpass=self.velocity_lowpass.copy(),last_contact=clone(self.last_contact))
+        if self.tendon_adapter:
+            result['tendons'] = self.tendon_adapter.snapshot()
         return result
 
     def restore(self, state):
         if state.get('hash') != self.hash: raise ValueError('Neuromuscular checkpoint identity mismatch')
+        if self.tendon_adapter:
+            self.tendon_adapter.validate_state(state.get('tendons'))
+        elif state.get('tendons') is not None:
+            raise ValueError('Checkpoint requires neural tendons')
         st = bounded_int(state.get('sensor_tick'), 'leg sensory tick')
         mt = bounded_int(state.get('motor_tick'), 'leg motor tick')
         arrays = {}
@@ -415,3 +442,8 @@ class NeuromuscularLoop:
         self.last_sensory = copy.deepcopy(state.get('last_sensory', []))
         self.last_motor = copy.deepcopy(state.get('last_motor', []))
         if self.version>=2:self.last_contact=contact
+        if self.tendon_adapter:
+            self.tendon_adapter.restore(state['tendons'])
+            self.tendon_inputs = {name: float(self.tendon_adapter.activation[i])
+                for i, name in enumerate(self.tendon_adapter.control.names)
+                if self.tendon_adapter.modes[name] == 'neural'}

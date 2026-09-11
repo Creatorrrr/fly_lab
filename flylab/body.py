@@ -351,7 +351,7 @@ class FlyGymBody:
         np.divide(weighted,lengths[:,None],out=normals,where=lengths[:,None]>1e-12)
         return dict(normal_bw=load/max(self.weight0,1e-30),normals=normals)
 
-    def step_joint_targets(self, targets, adhesion, dt=CONTROL_DT):
+    def step_joint_targets(self, targets, adhesion, dt=CONTROL_DT, *, tendon_inputs=None):
         """Direct neural muscle adapter. Does not advance the predefined CPG."""
         targets, adhesion = np.asarray(targets), np.asarray(adhesion)
         if targets.shape != (42,) or not np.isfinite(targets).all() or np.max(np.abs(targets)) > 10:
@@ -362,6 +362,10 @@ class FlyGymBody:
         n = round(dt/PHYSICS_DT)
         if abs(n*PHYSICS_DT-dt) > 1e-10: raise ValueError('Integral physical steps required')
         if self.fault: raise RuntimeError(self.fault)
+        if tendon_inputs is not None:
+            if self.tendon_control is None:raise ValueError('Tendon actuation is not enabled')
+            tendon_values=self.tendon_control.command_vector(tendon_inputs)
+            self.d.ctrl[self.tendon_control.act_ids]=tendon_values
         expected_time=float(self.d.time)+dt
         self.descending.fill(0.)
         self.last_action = self.Action(joint_angles=targets.copy(), adhesion_onoff=adhesion.copy())

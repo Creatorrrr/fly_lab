@@ -230,8 +230,14 @@ class CDispatcher:
                                review_status=p['review_status'],uncertainty=p['uncertainty'])
                           for p,_ in e.bindings.research_cohorts)
             if e.neuromuscular:
-                result.append(dict(name='BANC leg motor neurons',
+                result.append(dict(name='BANC connected motor neurons',
                     ids=[e.graph.nodes[int(i)]['id'] for i in e.neuromuscular.motor_indices], binding_hash=e.bindings.hash))
+                if e.neuromuscular.tendon_adapter:
+                    for row in e.neuromuscular.tendon_adapter.rows:
+                        for group in row['groups']:
+                            name=f"Tendon {row['name']} {group.get('side',group.get('muscle',''))}"
+                            result.append(dict(name=name, ids=group['ids'], binding_hash=e.bindings.hash,
+                                               review_status='engineering_reviewed', uncertainty=row['hypothesis']))
                 for row in e.neuromuscular.spec['rows']:
                     result.extend(dict(name=f"{row['leg']} {p['kind']}"+(' '+p['cell_type'] if p.get('cell_type') else ''), ids=p['ids'], binding_hash=e.bindings.hash)
                                   for p in row['sensory'] if len(p['ids'])<=512)

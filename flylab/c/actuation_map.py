@@ -1,4 +1,4 @@
-"""Inspectable coverage of the instantiated neural-to-position adapter.
+"""Inspectable coverage of instantiated position and tendon neural adapters.
 
 An anatomical motor roster is not a joint binding. Only nonzero vectors in
 the active adapter count as mappings, and none imply validated muscle forces.
@@ -61,6 +61,27 @@ def describe_actuation(loop):
         for i, name in enumerate(names)
     ]
     mapped_motors = set().union(*positive, *negative)
+    tendon_rows = []
+    adapter = getattr(loop, "tendon_adapter", None)
+    if adapter is not None:
+        for row, groups in zip(adapter.rows, adapter.groups):
+            plus = {
+                int(i) for group, ids in groups if group["coefficient"] > 0 for i in ids
+            }
+            minus = {
+                int(i) for group, ids in groups if group["coefficient"] < 0 for i in ids
+            }
+            mapped_motors.update(plus | minus)
+            tendon_rows.append(
+                {
+                    "name": row["name"],
+                    "status": row["status"],
+                    "motor_neurons": len(plus | minus),
+                    "positive_motor_neurons": len(plus),
+                    "negative_motor_neurons": len(minus),
+                    "hypothesis": row["hypothesis"],
+                }
+            )
     all_motors = {
         i for i, node in enumerate(loop.graph.nodes) if node["super_class"] == "motor"
     }
@@ -70,7 +91,7 @@ def describe_actuation(loop):
     ):
         raise ValueError("Actuator motor roster differs from neural decoder")
     mapped_count = sum(row["status"] == "engineering_map" for row in axes)
-    if mapped_count != loop.spec["covered_dofs"]:
+    if adapter is None and mapped_count != loop.spec["covered_dofs"]:
         raise ValueError("Actuator coverage differs from neural decoder")
     return {
         "schema": "flylab.actuation-map.v1",
@@ -85,10 +106,18 @@ def describe_actuation(loop):
         "mapped_motor_neurons": len(mapped_motors),
         "unmapped_motor_neurons": len(all_motors - mapped_motors),
         "biological_validation": False,
-        "mapping_kind": "signed_rate_to_position_engineering_proxy",
+        "mapping_kind": "position_and_tendon_engineering_proxies"
+        if adapter
+        else "signed_rate_to_position_engineering_proxy",
         "axes": axes,
-        "tendon_controls": [{"name": name, "status": "unmapped"} for name in body.tendon_control.names]
-            if getattr(body,"tendon_control",None) is not None else [],
+        "tendon_controls": tendon_rows,
+        "mapped_tendon_controls": sum(
+            row["status"] != "unmapped" for row in tendon_rows
+        ),
+        "unmapped_tendon_controls": sum(
+            row["status"] == "unmapped" for row in tendon_rows
+        ),
         "tendon_driven_joints": len(body.tendon_control.joint_ids)
-            if getattr(body,"tendon_control",None) is not None else 0,
+        if getattr(body, "tendon_control", None) is not None
+        else 0,
     }

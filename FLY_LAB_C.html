@@ -10,9 +10,10 @@
 <section class="toolbar"><div class="play-group"><button id="play" class="primary" disabled>▶ 재생</button><button id="step" disabled>한 단계 · 50ms</button><strong id="clock">0.000 s</strong></div><label>신경 계산 <select id="backend"><option value="exp_lif_cpu_reference">CPU · 기준 계산</option><option value="exp_lif_mps">MPS · Apple GPU</option><option value="exp_lif_cuda">CUDA · NVIDIA GPU</option></select></label><label>다음 새 실험 모드 <select id="mode"><option value="C_SHADOW">C_SHADOW · B 구동 / C 관측</option><option value="C_STRICT">C_STRICT · C 신경 출력</option><option value="C_ASSISTED">C_ASSISTED · C + 회피 보조</option><option value="B_COMPAT">B_COMPAT · 기존 B 기준선</option></select></label><label>새 실험 감각 포트 <select id="binding-profile" aria-label="새 실험 감각 포트"><option value="bindings.json">기존 평균 냄새</option></select></label><label>시드 <input id="seed" type="number" value="42" min="0" max="4294967295"></label><label><input id="metabolism-enabled" type="checkbox"> 새 실험에 가상 섭취·에너지 적용</label><button id="init">새 실험</button></section>
 <p id="mode-explanation" class="mode-explanation"></p>
 <p id="experiment-status" class="mode-explanation" role="status" hidden></p>
+<p id="motor-activity" class="muted" hidden></p>
 <div class="input-row"><label>새 실험 몸 <select id="body-model"><option value="neuromechfly">NeuroMechFly</option><option value="flybody">FlyBody · 비교 실험</option><option value="flybody_whole">FlyBody · 전신 (CPU 물리)</option></select></label><label>새 실험 지형 <select id="body-terrain"><option value="flat">평면</option><option value="gaps">틈</option><option value="blocks">블록</option><option value="mixed">혼합 지형</option><option value="slope">경사 10°</option></select></label><span class="muted">복잡 지형·FlyBody는 별도 비교 실험입니다. 신경 보행의 검증 상태를 바꾸지 않습니다.</span></div>
 <div class="input-row"><label>몸통 <select id="body-attachment"><option value="free">자유 이동</option><option value="tethered">고정 · 평면 실험</option></select></label><label>힘줄 구동 <select id="body-tendons"><option value="none">사용 안 함</option><option value="tarsi">발마디 · 6입력</option><option value="abdomen">복부 · 2입력</option><option value="all">발마디와 복부 · 8입력</option></select></label><span class="muted">힘줄은 FlyBody에서 선택합니다. 복부 힘줄은 전신 몸을 사용하며, 해당 관절의 위치 서보를 대체합니다.</span></div>
-<details class="card"><summary>비다리 관절·힘줄 직접 구동</summary><div class="input-row"><select id="body-command-name" aria-label="직접 구동 대상"></select><label>입력 <input id="body-command-value" type="number" step="0.01" value="0"></label><button id="body-command-apply" disabled>명령 적용</button></div><p class="muted">관절은 rad, 힘줄은 표시된 범위의 모터 입력입니다. 적용 후 한 단계 또는 재생으로 진행합니다. 다리는 선택된 보행·신경 제어기가 구동합니다.</p><pre id="tendon-status">힘줄 구동을 사용하지 않습니다.</pre></details>
+<details class="card"><summary>비다리 관절·힘줄 직접 구동</summary><div class="input-row"><select id="body-command-name" aria-label="직접 구동 대상"></select><label>입력 <input id="body-command-value" type="number" step="0.01" value="0"></label><button id="body-command-apply" disabled>수동 명령 적용</button><button id="body-command-neural" disabled>신경 구동으로 복귀</button></div><p class="muted">관절은 rad, 힘줄은 표시된 범위의 모터 입력입니다. 적용 후 한 단계 또는 재생으로 진행합니다. 다리는 선택된 보행·신경 제어기가 구동합니다. 힘줄 수동 명령은 선택한 힘줄의 신경 구동을 해제하며, 복귀 버튼으로 다시 연결합니다.</p><pre id="tendon-status">힘줄 구동을 사용하지 않습니다.</pre></details>
 <details class="card"><summary>한 공간에서 여러 초파리 실험</summary><div class="input-row"><label>개체 수 <select id="shared-count"><option>2</option><option>3</option><option>4</option></select></label><button id="shared-init">공유 공간 만들기</button><button id="shared-step" disabled>100ms 진행</button><button id="shared-save" disabled>상태 저장</button><button id="shared-restore" disabled>저장 상태 복원</button><button id="shared-close" disabled>종료</button></div><div class="input-row"><label>개체 <select id="shared-fly"></select></label><label>왼쪽 구동 <input id="shared-left" type="number" value="0.6" min="-1.3" max="1.3" step="0.1"></label><label>오른쪽 구동 <input id="shared-right" type="number" value="0.6" min="-1.3" max="1.3" step="0.1"></label><button id="shared-drive" disabled>구동 변경</button></div><p class="muted">하나의 CPU 물리 공간에서 개체끼리 접촉합니다. 개체별 FlyGym 보행 제어기를 사용하며, 전뇌 회로는 연결하지 않은 물리 실험입니다.</p><img id="shared-image" alt="공유 공간의 실제 MuJoCo 렌더" hidden style="max-width:100%"><pre id="shared-status">공유 공간이 없습니다.</pre></details>
 <section class="card"><p id="neuromuscular-status" class="muted">감각–운동 연결을 확인합니다.</p><pre id="leg-contact-diagnostics" hidden></pre><p id="leg-receptor-diagnostics" class="muted"></p><button id="leg-feedback-off" disabled>다리 감각만 1모델초 차단</button></section>
 <div id="alert" class="alert" role="status" hidden></div>
@@ -430,6 +431,37 @@ F.createPlaybackPump=function({shouldRun,advance,onBusy=()=>{},onError,
 /* Read-only interpretation of the current frame; never changes neural input. */
 (function(F){
 'use strict';
+// Display thresholds discard the subnormal tail of the activation filter.
+const EPS=1e-7;
+F.neuromuscularActivity=function(f){
+ const loop=f?.neuromuscular;
+ if(!loop?.enabled)return null;
+ const muscleRates=(loop.muscles||[]).flatMap(row=>Object.values(row.muscle_rates_Hz||{}));
+ const tendonRates=(loop.tendons?.last||[]).flatMap(row=>(row.sources||[]).map(source=>{
+  const rates=source.rates_Hz||[];
+  return rates.length?rates.reduce((sum,v)=>sum+v,0)/rates.length:0;
+ }));
+ const maxAbs=values=>values.length?Math.max(...values.map(v=>Math.abs(v))):0;
+ const tendons=f.physics?.tendons;
+ const modes=tendons?.neural_controls?.modes||loop.tendons?.modes||{};
+ const neuralInputs=[],manualInputs=[];
+ for(const [i,name] of (tendons?.names||[]).entries()){
+  if(modes[name]==='neural')neuralInputs.push(tendons.inputs?.[i]);
+  if(modes[name]==='manual')manualInputs.push(tendons.inputs?.[i]);
+ }
+ const available=muscleRates.length>0&&Array.isArray(loop.offset_rad)&&loop.offset_rad.length>0&&
+  (!loop.tendons||!!tendons)&&(!tendons||(tendons.names||[]).every((name,i)=>
+   ['neural','manual'].includes(modes[name])&&Number.isFinite(tendons.inputs?.[i])))&&
+  [...muscleRates,...tendonRates,...(loop.offset_rad||[])].every(Number.isFinite);
+ const motorRateMaxHz=maxAbs([...muscleRates,...tendonRates]);
+ const jointOffsetMaxRad=maxAbs(loop.offset_rad||[]);
+ const neuralTendonMaxInput=maxAbs(neuralInputs),manualTendonMaxInput=maxAbs(manualInputs);
+ const metrics=`운동 집단 발화율 최대 ${motorRateMaxHz.toFixed(3)} Hz · 신경 관절 목표 변화 최대 ${jointOffsetMaxRad.toFixed(4)} rad · 신경 힘줄 입력 최대 ${neuralTendonMaxInput.toFixed(4)} (모델 단위)`;
+ return {available,motorRateMaxHz,jointOffsetMaxRad,neuralTendonMaxInput,manualTendonMaxInput,
+  hasNeuralInput:jointOffsetMaxRad>EPS||neuralTendonMaxInput>EPS,
+  hasMotorSpikes:motorRateMaxHz>EPS,hasManualInput:manualTendonMaxInput>EPS,
+  message:available?metrics:'운동 활성 측정값을 기다리는 중입니다.'};
+};
 F.describeStrictExperiment=function(f,playing){
  if(!f||f.mode!=='C_STRICT')return {state:'other_mode',message:'',warnings:[]};
  const warnings=[],ports=f.sensory_ports||[],command=f.command||{};
@@ -442,13 +474,20 @@ F.describeStrictExperiment=function(f,playing){
     odor.concentration.every(row=>row.every(v=>v===0))){
   warnings.push('현재 후각 지점의 냄새 농도가 0입니다. 냄새원 위치와 바람 방향을 확인하세요.');
  }
- if(f.physics?.attachment==='tethered'||f.physics?.wholeBody?.root_fixed)warnings.push('몸통 고정 실험입니다. 이동 거리 대신 관절·힘 반응을 확인하세요.');
+ if(f.physics?.attachment==='tethered'||f.physics?.wholeBody?.root_fixed)warnings.push('현재 몸통이 고정되어 공간 이동이 불가능합니다. 자유 이동은 몸통 설정을 바꾸고 새 실험을 만들 때 적용됩니다.');
+ const activity=F.neuromuscularActivity(f);
+ if(activity?.hasManualInput)warnings.push('수동 힘줄 입력이 적용되어 있습니다. 신경 출력과 별도로 몸을 구동합니다.');
  let state,message;
  if(f.fault){state='fault';message='실험 오류로 중단: '+f.fault;}
  else if(f.stopped){state='stopped';message='실험 중지 상태입니다.';}
  else if(!f.simTime){state='ready';message='아직 계산 전입니다. 재생 또는 한 단계로 시작하세요.';}
  else if(command.motor_coupled===false){state='disconnected';message='신경–몸 연결이 차단되어 운동 출력이 몸에 적용되지 않습니다.';}
- else if(f.neuromuscular?.enabled){state='joint_output';message='신경→관절 구동 경로를 사용합니다. 관절 출력과 실제 운동을 함께 확인하세요.';}
+ else if(activity){
+  if(!activity.available){state='joint_pending';message='신경→관절 경로는 연결됐습니다. 현재 운동 활성 측정값은 아직 없습니다.';}
+  else if(activity.hasNeuralInput){state='joint_output';message='신경 관절 목표 변화 또는 힘줄 입력이 적용 중입니다. 자세 유지·국소 반응과 보행은 구분해서 확인하세요.';}
+  else if(activity.hasMotorSpikes){state='zero_joint_command';message='운동 집단은 발화하지만 신경 관절 목표 변화와 힘줄 입력은 0입니다. 상쇄·부착 제어와 출력 변환을 확인하세요.';}
+  else {state='silent_joint_motor';message='신경 경로는 연결됐지만 현재 운동 집단 발화와 신경 구동 입력은 0입니다. 재생은 계산을 진행하며, 자동으로 보행 자극을 만들지 않습니다.';}
+ }
  else if(Object.values(command.u_final||{}).some(v=>Math.abs(v)>1e-7)){
   state='motor_output';message='C 신경 운동 명령이 발생하고 있습니다. 실제 이동·방향과 과제 성공 여부는 별도 확인이 필요합니다.';
  }else if(Object.values(f.motor_rates_Hz||{}).some(v=>v>1e-7)){
@@ -725,14 +764,18 @@ function applyFrame(f){
  $('physics-device').textContent=f.physics.backend.includes('warp')?'CUDA 물리 · 검증 후보':'CPU 물리';
  $('mean-rate').textContent=f.neural?f.neural.mean_rate_Hz.toFixed(3)+' Hz':'B rate';$('performance').textContent=f.performance.sim_wall_ratio.toFixed(3)+'×';
  $('command-source').textContent=f.neuromuscular?.enabled?'BANC 운동뉴런 → 관절':f.command.command_source;$('neural-command').textContent=commandText(f.command.u_neural)+(f.neuromuscular?.enabled?' (관측값)':'');
- $('assist-command').textContent=commandText(f.command.u_assist);$('final-command').textContent=f.neuromuscular?.enabled?'근육별 관절 목표 적용':commandText(f.command.u_final);
+ const activity=F.neuromuscularActivity(f);
+ $('motor-activity').hidden=!activity;$('motor-activity').textContent=activity?.message||'';
+ $('neural-command').previousElementSibling.textContent=activity?'참고 · 하행뉴런 출력':'신경 출력';
+ if(activity)$('neural-command').textContent=commandText(f.command.u_neural)+' (현재 관절 제어에 사용 안 함)';
+ $('assist-command').textContent=commandText(f.command.u_assist);$('final-command').textContent=activity?(activity.available?`신경 관절 변화 최대 ${activity.jointOffsetMaxRad.toFixed(4)} rad · 신경 힘줄 입력 최대 ${activity.neuralTendonMaxInput.toFixed(4)}`:'신경 구동 측정 대기'):commandText(f.command.u_final);
  const dt=f.neuralDt||.0001;$('causal-time').textContent=`감각 ${(f.command.sensor_tick*dt).toFixed(4)}s → 신경 출력 ${(f.command.neural_readout_tick*dt).toFixed(4)}s → 몸 구동 [${(f.command.interval_start_tick*dt).toFixed(4)}, ${(f.command.interval_end_tick*dt).toFixed(4)})s`+(f.command.assist_reason?' · '+f.command.assist_reason:'');
  const channelTotals=new Map();for(const p of f.binding.sensory){const row=channelTotals.get(p.channel)||{ports:0,targets:0};row.ports++;row.targets+=p.targets;channelTotals.set(p.channel,row);}
  $('port-note').textContent='현재 C 입력: '+[...channelTotals].map(([channel,row])=>`${channel} · ${row.ports}포트 / ${row.targets}대상 연결`).join(', ')+` · 미연결: ${f.binding.unused_observations.join(', ')} · 위험 입력: ${f.binding.chemical_odorants?.length?'지정한 물질의 DoOR 반응 (농도·이득 미교정)':f.binding.hazard_semantics==='unbound'?'미연결':'geosmin 가정 (실험)'} · 미확정 전달물질 ${f.scope.unknownNeurotransmitters.toLocaleString()} 뉴런 / 효력 0인 연결 ${f.scope.maskedEdges.toLocaleString()}개`;
  $('port-values').textContent='현재 입력 세기: '+(f.sensory_ports.slice(0,12).map(p=>`${p.name} ${p.value.toFixed(3)} ${p.unit}${p.enabled?'':' (차단)'}`).join(' · ')||'아직 계산 전')+(f.sensory_ports.length>12?` · 총 ${f.sensory_ports.length}포트 중 12개 표시`:'')+' · 출력 집단: '+Object.entries(f.motor_rates_Hz).map(([name,rate])=>`${name} ${rate.toFixed(2)} Hz`).join(' · ');
  const legLoop=f.neuromuscular;
  const actuation=legLoop?.actuation;
- $('actuation-status').textContent=actuation?`현재 신체의 위치 구동 ${actuation.active_axes}축 중 ${actuation.mapped_axes}축에 신경 출력 매핑 · 미연결 ${actuation.unmapped_axes}축${actuation.passive_joints===null?'':` · 수동 관절 ${actuation.passive_joints}개`} · 전체 운동뉴런 ${actuation.graph_motor_neurons}개 중 ${actuation.mapped_motor_neurons}개 사용, ${actuation.unmapped_motor_neurons}개 미연결. 매핑은 구동 가능 경로를 뜻하며, 실제 활성·행동 성공은 별도로 확인합니다.`:'현재 실행의 축별 신경 매핑 정보가 없습니다.';
+ $('actuation-status').textContent=actuation?`현재 신체의 위치 구동 ${actuation.active_axes}축 중 ${actuation.mapped_axes}축에 신경 출력 매핑 · 미연결 ${actuation.unmapped_axes}축${actuation.passive_joints===null?'':` · 수동 관절 ${actuation.passive_joints}개`} · 힘줄 신경 연결 ${actuation.mapped_tendon_controls||0}/${actuation.tendon_controls?.length||0}개 · 전체 운동뉴런 ${actuation.graph_motor_neurons}개 중 ${actuation.mapped_motor_neurons}개 사용, ${actuation.unmapped_motor_neurons}개 미연결. 매핑은 구동 가능 경로를 뜻하며, 실제 활성·행동 성공은 별도로 확인합니다.`:'현재 실행의 축별 신경 매핑 정보가 없습니다.';
  $('neuromuscular-status').textContent=legLoop?.enabled?`BANC 다리 폐루프 · 감각 ${legLoop.sensory_neurons.toLocaleString()}개 → 전체 신경망 → 운동 ${legLoop.motor_neurons}개 · 관절 ${legLoop.covered_dofs}/${legLoop.total_leg_dofs} 연결 · 사전 보행 궤적 CPG 꺼짐 · 미연결: ${legLoop.unbound_dofs.join(', ')||'없음'} · 근육 힘과 감각 세부 반응은 검증되지 않은 공학적 변환입니다.`:(['B_COMPAT','C_SHADOW'].includes(f.mode)?'현재 몸 구동: 기존 B 제어기와 보행 CPG를 사용합니다. C 전뇌 출력으로 구동하는 모드는 아닙니다.':'현재 몸 구동: 하행뉴런의 전진·회전 출력을 기존 CPG 보행기에 전달합니다.');
  $('leg-feedback-off').disabled=!legLoop?.enabled;
  const contact=legLoop?.contact?.support_load_bw?legLoop.contact:null;
@@ -824,9 +867,13 @@ function renderBodyControls(f){
  if(t)t.names.forEach((name,i)=>entries.push(['tendon:'+name,name+' · 힘줄 모터',t.limits[i]]));
  const signature=entries.map(e=>e[0]).join('|');if(select.dataset.signature!==signature){select.replaceChildren(...entries.map(([value,label,limits])=>new Option(label+' ['+limits.join(', ')+']',value)));select.dataset.signature=signature;}
  $('body-command-apply').disabled=!entries.length;
- $('tendon-status').textContent=t?t.names.map((name,i)=>`${name}: 입력 ${t.inputs[i].toFixed(3)}, 힘 ${t.actuator_forces[i].toFixed(4)}, 관절각 ${t.angles_rad[i].map(v=>v.toFixed(3)).join(', ')} rad`).join('\n')+'\n힘줄 신경 출력: 미연결':'힘줄 구동을 사용하지 않습니다.';
+ const mapping=new Map((t?.neural_controls?.controls||[]).map(row=>[row.name,row]));
+ const [kind,selected]=select.value.split(':');$('body-command-neural').disabled=kind!=='tendon'||!mapping.has(selected)||mapping.get(selected).status==='unmapped';
+ $('tendon-status').textContent=t?t.names.map((name,i)=>{const row=mapping.get(name),status=!row||row.status==='unmapped'?'신경 미연결':row.status==='population_hypothesis'?'신경 연결 · 복부 집단 가설':'신경 연결 · 장힘줄 근육 매핑',mode=t.neural_controls?.modes[name]==='neural'?'신경 구동':'수동 구동';return `${name}: ${status} · ${mode}\n입력 ${t.inputs[i].toFixed(3)}, 힘 ${t.actuator_forces[i].toFixed(4)}, 관절각 ${t.angles_rad[i].map(v=>v.toFixed(3)).join(', ')} rad`;}).join('\n')+(t.neural_controls?.controls.some(row=>row.status==='population_hypothesis')?'\n복부는 MNad26의 좌우 평균 → 양의 pitch, 좌우 차이 → yaw를 사용하는 실험용 가설입니다. 목표 근육·생리적 방향은 미확정입니다.':''):'힘줄 구동을 사용하지 않습니다.';
 }
+ $('body-command-name').addEventListener('change',()=>{if(state.frame)renderBodyControls(state.frame);});
 button('body-command-apply',async()=>{workbench.pause();const [kind,name]=$('body-command-name').value.split(':');const payload=kind==='joint'?{targets:{[name]:Number($('body-command-value').value)}}:{tendon_inputs:{[name]:Number($('body-command-value').value)}};applyFrame(await rpc.request('command',{type:'body_actuation',payload}));tell('직접 구동 명령을 적용했습니다. 한 단계 또는 재생으로 진행합니다.');});
+button('body-command-neural',async()=>{workbench.pause();const [kind,name]=$('body-command-name').value.split(':');if(kind!=='tendon')return;applyFrame(await rpc.request('command',{type:'body_actuation',payload:{tendon_modes:{[name]:'neural'}}}));tell('선택한 힘줄을 신경 구동으로 되돌렸습니다.');});
 let sharedCheckpoint=null;
 function showShared(result){const obs=result.observation||result;const rows=Object.entries(obs.flies||{});$('shared-status').textContent=rows.length?`${obs.time_s.toFixed(3)} s · ${rows.length}개체 · 개체 간 접촉 ${obs.interfly_contacts.length}개\n`+rows.map(([name,f])=>`${name}: 위치 ${f.position_mm.map(v=>v.toFixed(2)).join(', ')} mm · 구동 ${f.drive.join(', ')}`).join('\n'):'공유 공간이 없습니다.';$('shared-status').dataset.time=String(obs.time_s||0);if(result.render_error){$('shared-status').textContent+='\n영상 오류: '+result.render_error;$('shared-image').hidden=true;}if(result.image){$('shared-image').src='data:image/png;base64,'+result.image;$('shared-image').hidden=false;}const names=Object.keys(obs.flies||{});if(names.length){const select=$('shared-fly');if([...select.options].map(o=>o.value).join()!==names.join())select.replaceChildren(...names.map(n=>new Option(n,n)));}for(const id of ['shared-step','shared-save','shared-close','shared-drive'])$(id).disabled=!names.length;}
 button('shared-init',async()=>{workbench.pause();showShared(await rpc.request('shared_init',{count:Number($('shared-count').value),seed:Number($('seed').value)}));sharedCheckpoint=null;$('shared-restore').disabled=true;});

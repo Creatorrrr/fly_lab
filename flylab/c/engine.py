@@ -300,6 +300,9 @@ class CEngine:
                     command.update(motor_execution=self.bindings.motor_execution,
                                    high_level_command_applied=False, joint_targets_rad=joint_targets.tolist(),
                                    adhesion=adhesion.tolist())
+                    if self.neuromuscular.tendon_adapter:
+                        command.update(tendon_inputs=self.neuromuscular.tendon_inputs.copy(),
+                                       tendon_modes=self.neuromuscular.tendon_adapter.modes.copy())
                 if self.neural:
                     self.last_ports = ports
                 self.timings['ports_s'] += time.perf_counter() - began
@@ -311,7 +314,9 @@ class CEngine:
                 began = time.perf_counter()
                 try:
                     if self.neuromuscular:
-                        self.body.step_joint_targets(joint_targets, adhesion, CONTROL_DT)
+                        tendon_inputs=self.neuromuscular.tendon_inputs
+                        self.body.step_joint_targets(joint_targets, adhesion, CONTROL_DT,
+                            **({'tendon_inputs':tendon_inputs} if tendon_inputs else {}))
                     else:
                         self.body.step(command['u_final'], CONTROL_DT)
                 finally:
@@ -451,7 +456,7 @@ class CEngine:
         elif kind == 'push':
             self.body.perturb(finite(payload.get('bw', .5), 'bw', -2, 2), finite(payload.get('duration', .05), 'duration', .005, .2))
         elif kind == 'body_actuation':
-            if set(payload)-{'targets','tendon_inputs'}:raise ValueError('Unknown body actuation field')
+            if set(payload)-{'targets','tendon_inputs','tendon_modes'}:raise ValueError('Unknown body actuation field')
             whole=getattr(self.body,'whole_body_control',None)
             targets=payload.get('targets')
             if targets is not None:
@@ -460,7 +465,26 @@ class CEngine:
                 # experiments use the standalone body API instead.
                 allowed={d.name for d in whole.order if not d.child.is_leg()} if whole is not None else set()
                 if set(targets)-allowed:raise ValueError('Engine body commands accept nonleg joints only')
-            self.body.set_body_actuation(targets=targets,tendon_inputs=payload.get('tendon_inputs'))
+            inputs=payload.get('tendon_inputs')
+            adapter=self.neuromuscular.tendon_adapter if self.neuromuscular else None
+            modes=payload.get('tendon_modes')
+            if modes is not None:
+                if adapter is None:raise ValueError('No neural tendon adapter is active')
+                adapter.validate_modes(modes)
+            if inputs is not None and adapter is not None:
+                # Validate before either the physical state or ownership changes.
+                self.body.tendon_control.command_vector(inputs)
+                if modes and any(modes.get(name)=='neural' for name in inputs):
+                    raise ValueError('A manual input cannot also request neural ownership')
+            if targets is not None or inputs is not None:
+                self.body.set_body_actuation(targets=targets,tendon_inputs=inputs)
+            elif modes is None:raise ValueError('Provide a body command')
+            if adapter is not None:
+                if inputs is not None:adapter.set_modes({name:'manual' for name in inputs})
+                if modes is not None:
+                    adapter.set_modes(modes)
+                    resumed={name:0. for name,mode in modes.items() if mode=='neural'}
+                    if resumed:self.body.set_body_actuation(tendon_inputs=resumed)
         elif kind in ENVIRONMENT_COMMANDS: edit_environment(self, kind, payload)
         else: raise ValueError('Unknown C command')
         self.event(kind, payload)
@@ -542,6 +566,8 @@ class CEngine:
             if e.neuromuscular:
                 if not s.get('neuromuscular'): raise ValueError('Missing neuromuscular checkpoint state')
                 e.neuromuscular.restore(s['neuromuscular'])
+                if e.neuromuscular.tendon_adapter:
+                    e.neuromuscular.tendon_adapter.verify_applied_inputs()
             elif s.get('neuromuscular') is not None:
                 raise ValueError('Checkpoint requires a neuromuscular model')
             if e.metabolism:

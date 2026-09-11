@@ -1,4 +1,4 @@
-"""Named fixed-tendon motor inputs. No muscle or neural mapping is implied."""
+"""Named fixed-tendon inputs and optional instantiated neural-adapter telemetry."""
 
 from collections.abc import Mapping
 
@@ -54,6 +54,7 @@ class TendonControl:
 
     def observation(self):
         b = self.body
+        adapter = getattr(self, "neural_adapter", None)
         return {
             "schema": "flylab.tendons.v1",
             "names": self.names.copy(),
@@ -74,6 +75,9 @@ class TendonControl:
                 for group in self.joints
             ],
             "actuator_model": "fixed-tendon motor; input is not a joint angle or Hill muscle activation",
-            "neural_mapping": "unmapped",
+            "neural_mapping": "connected_experimental"
+            if adapter and any(r["groups"] for r in adapter.rows)
+            else "unmapped",
+            "neural_controls": adapter.summary() if adapter else None,
             "biological_validation": False,
         }

@@ -43,7 +43,7 @@ def run(out, graph_path, bindings_path):
         "backend": "exp_lif_cuda",
         "body_options": options.model_identity(),
         "seconds_per_condition": 0.1,
-        "tendon_neural_mapping": "unmapped",
+        "tendon_neural_mapping": "not_initialized",
         "biological_validation": False,
         "cases": [],
     }
@@ -59,6 +59,12 @@ def run(out, graph_path, bindings_path):
             body_options=options,
         )
         initial = engine.checkpoint()
+        report["tendon_neural_mapping"] = engine.body.tendon_control.observation()[
+            "neural_mapping"
+        ]
+        report["tendon_validation_tool"] = (
+            "tools/verify_c_tendon_neural.py; this assay directly stimulates the tibia flexor"
+        )
         StateStore.save(out / "initial", initial)
         # Use reviewed peripheral target annotations already in the decoder.
         ids = [

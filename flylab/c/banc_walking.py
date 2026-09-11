@@ -59,8 +59,15 @@ class BancWalkingParameters:
     motor_gain: float = 0.002
     descending_drive: float = 0.0
     pooling: str = "mean"
+    neural_dt_s: float = 0.00025
 
     def __post_init__(self):
+        if type(self.neural_dt_s) not in (int, float) or self.neural_dt_s not in (
+            0.0001,
+            0.0002,
+            0.00025,
+        ):
+            raise ValueError("BANC neural dt must be 0.1, 0.2 or 0.25 ms")
         if self.pooling not in ("mean", "unit_response"):
             raise ValueError("Unknown BANC motor pooling")
         for name, lo, hi in (
@@ -83,11 +90,21 @@ class BancWalkingParameters:
 class BancWalkingSession:
     schema = "flylab.banc-walking.v1"
 
-    def __init__(self, graph, *, seed=42, parameters=None, world=None, device="auto"):
+    def __init__(
+        self,
+        graph,
+        *,
+        seed=42,
+        parameters=None,
+        world=None,
+        device="auto",
+        cuda_implementation="packed",
+    ):
         self.source_scope = validate_banc_roster(graph)
         self.graph = graph
         self.seed = bounded_int(seed, "seed", 0, 2**32 - 1)
         self.p = BancWalkingParameters(**(parameters or {}))
+        self.neural_steps_per_control = round(0.005 / self.p.neural_dt_s)
         if world is None:
             world = default_world()
             world["sources"], world["obstacles"] = [], []
@@ -118,7 +135,12 @@ class BancWalkingSession:
                 ],
                 adaptation_gain=self.p.adaptation_gain,
                 adaptation_tau_s=self.p.adaptation_tau_s,
+                dt=self.p.neural_dt_s,
+                capture_steps=10
+                if self.p.neural_dt_s == 0.0001
+                else self.neural_steps_per_control,
                 device=device,
+                cuda_implementation=cuda_implementation,
             )
             self.descending = np.array(
                 [
@@ -144,6 +166,7 @@ class BancWalkingSession:
         self.fault = None
         self.closed = False
         self.wall_s = 0.0
+        self.last_speed_ratio = None
         self.initial_position = self.body.pose()[0]
         self.signed_forward_mm = 0.0
         self.rate = np.zeros(len(self.adapter.motor_ids), np.float32)
@@ -171,12 +194,13 @@ class BancWalkingSession:
         if self.closed or self.fault or self.body.fault:
             raise RuntimeError(self.fault or self.body.fault or "Closed BANC session")
         began = time.perf_counter()
+        began_tick = self.control_tick
         try:
             for _ in range(controls):
                 prior, rotation, _ = self.body.pose()
                 drive = self.adapter.encode(sensory_cut=self.cuts["sensory"])
                 drive[self.descending] += self.p.descending_drive
-                self.network.advance(drive, 50)
+                self.network.advance(drive, self.neural_steps_per_control)
                 self.rate = self.network.readout(self.adapter.motor_ids)
                 target, adhesion = self.adapter.decode(
                     self.rate, motor_cut=self.cuts["motor"]
@@ -195,13 +219,15 @@ class BancWalkingSession:
             self.fault = str(exc)
             raise
         finally:
-            self.wall_s += time.perf_counter() - began
+            elapsed = time.perf_counter() - began
+            self.wall_s += elapsed
+            self.last_speed_ratio = (self.control_tick - began_tick) * 0.005 / elapsed
         return self.frame()
 
     def _clocks(self):
         physical_time = self.body.physics_time()
         if (
-            self.network.tick != self.control_tick * 50
+            self.network.tick != self.control_tick * self.neural_steps_per_control
             or not math.isfinite(physical_time)
             or abs(physical_time - self.control_tick * 0.005) > 1e-5
         ):
@@ -217,6 +243,8 @@ class BancWalkingSession:
             "time_s": self.control_tick * 0.005,
             "control_tick": self.control_tick,
             "neural_tick": self.network.tick,
+            "neural_dt_s": self.network.dt,
+            "neural_steps_per_control": self.neural_steps_per_control,
             "position_mm": to_ui(position),
             "horizontal_net_mm": float(np.linalg.norm(offset[:2])),
             "signed_forward_mm": self.signed_forward_mm,
@@ -225,6 +253,7 @@ class BancWalkingSession:
             "parameters": asdict(self.p),
             "cuts": self.cuts.copy(),
             "wall_s": self.wall_s,
+            "last_speed_ratio": self.last_speed_ratio,
             "graph_hash": self.graph.hash,
             "source_scope": copy.deepcopy(self.source_scope),
             "neurons": self.graph.n,
@@ -243,6 +272,7 @@ class BancWalkingSession:
             else "Constant bilateral DNg100 drive and measured leg receptor feedback",
             "descending_drive": self.p.descending_drive,
             "device": self.network.device,
+            "cuda_implementation": self.network.cuda_implementation,
             "walking_status": "EXPERIMENTAL_RUN_NOT_ASSESSED",
             "biological_validation": False,
             "cpg_advanced": digest(self.body.snapshot()["cpg"]) != self.cpg_hash,
@@ -273,7 +303,7 @@ class BancWalkingSession:
         }
 
     @classmethod
-    def from_checkpoint(cls, graph, saved):
+    def from_checkpoint(cls, graph, saved, *, cuda_implementation="packed"):
         if saved.get("schema") != cls.schema or saved.get("graph_hash") != graph.hash:
             raise ValueError("BANC rate checkpoint graph/schema mismatch")
         if not isinstance(saved.get("cuts"), dict) or set(saved["cuts"]) != {
@@ -293,12 +323,17 @@ class BancWalkingSession:
             or not np.isfinite(position).all()
         ):
             raise ValueError("Invalid BANC checkpoint initial position")
+        # Missing dt identifies the original 0.1ms checkpoint contract even if
+        # a future new-session default changes. Never reinterpret an old tick.
+        parameters = dict(saved["parameters"])
+        parameters.setdefault("neural_dt_s", 0.0001)
         session = cls(
             graph,
             seed=saved["seed"],
-            parameters=saved["parameters"],
+            parameters=parameters,
             world=saved["world"],
             device=saved["network"]["device"],
+            cuda_implementation=cuda_implementation,
         )
         try:
             session.body.restore(saved["body"])

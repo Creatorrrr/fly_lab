@@ -251,6 +251,56 @@ class AdaptiveRateCudaNumerics(unittest.TestCase):
             raise unittest.SkipTest("CUDA device unavailable")
         cls.torch = torch
 
+    def test_packed_graph_refreshes_rates_and_cuts_after_restore_without_adaptation(
+        self,
+    ):
+        reference = AdaptiveRateNetwork(
+            *AdaptiveRateNumerics.arguments(),
+            dt=0.00025,
+            capture_steps=20,
+            device="cuda",
+        )
+        packed = AdaptiveRateNetwork(
+            *AdaptiveRateNumerics.arguments(),
+            dt=0.00025,
+            capture_steps=20,
+            device="cuda",
+            cuda_implementation="packed",
+        )
+        self.assertEqual(packed.cuda_implementation, "packed")
+        initial = reference.snapshot()
+        initial["rate"] = np.array([31, 5, 12], np.float32)
+        initial["output_mask"] = np.array([0, 1, 1], np.float32)
+        for network in (reference, packed):
+            network.restore(initial)
+        for drive, steps, cut in (
+            ([35, 0, 7], 40, [0]),
+            ([0, 20, 0], 21, [2]),
+            ([0, 0, 0], 1, [0, 1, 2]),
+            ([4, 0, 30], 60, []),
+        ):
+            for network in (reference, packed):
+                network.set_muted(cut)
+                saved = network.snapshot()
+                network.advance(drive, steps)
+                future = network.snapshot()
+                # Captured temporary buffers must be recomputed after reset
+                # and restore, even when their old values are still allocated.
+                network.reset()
+                network.restore(saved)
+                network.advance(drive, steps)
+                for key in ("rate", "adaptation", "drive", "output_mask"):
+                    np.testing.assert_array_equal(
+                        network.snapshot()[key].view(np.uint32),
+                        future[key].view(np.uint32),
+                    )
+            self.assertEqual(reference.tick, packed.tick)
+            for key in ("rate", "adaptation", "drive", "output_mask"):
+                np.testing.assert_array_equal(
+                    reference.snapshot()[key].view(np.uint32),
+                    packed.snapshot()[key].view(np.uint32),
+                )
+
     def test_fixed_warp_sum_matches_independent_matrix_and_repeats(self):
         rng = np.random.default_rng(91)
         weights = rng.normal(0, 0.015, (67, 67)).astype(np.float32)
@@ -287,6 +337,118 @@ class AdaptiveRateCudaNumerics(unittest.TestCase):
         gpu.advance(drive, 100)
         for key in ("rate", "adaptation", "drive", "output_mask"):
             np.testing.assert_array_equal(gpu.snapshot()[key], future[key])
+
+    def test_packed_integrator_preserves_tensor_and_scalar_division_rounding(self):
+        rng = np.random.default_rng(36)
+        n = 67
+        weights = rng.normal(0, 0.1, (n, n)).astype(np.float32)
+        args = (
+            csr_matrix(weights),
+            rng.uniform(0.02, 0.08, n),
+            rng.uniform(0.5, 2, n),
+            rng.uniform(1, 10, n),
+            rng.uniform(50, 250, n),
+        )
+        # These nonbinary scalar values distinguish true float division from
+        # reciprocal multiplication and expose unintended fused multiply-add.
+        for adaptation_tau in (0.03, 0.0602):
+            with self.subTest(adaptation_tau=adaptation_tau):
+                options = {
+                    "adaptation_gain": 2.7,
+                    "adaptation_tau_s": adaptation_tau,
+                    "dt": 0.00025,
+                    "capture_steps": 20,
+                    "device": "cuda",
+                }
+                reference = AdaptiveRateNetwork(*args, **options)
+                packed = AdaptiveRateNetwork(
+                    *args, cuda_implementation="packed", **options
+                )
+                state = reference.snapshot()
+                state["rate"] = rng.uniform(0, 200, n).astype(np.float32)
+                state["adaptation"] = rng.uniform(0, 80, n).astype(np.float32)
+                state["rate"][-4:] = [0, -0.0, 1e-40, 1e-35]
+                state["adaptation"][-4:] = [0, -0.0, 1e-40, 1e-35]
+                state["drive"] = rng.uniform(-100, 150, n).astype(np.float32)
+                state["output_mask"][::3] = 0
+                outputs = []
+                for network in (reference, packed):
+                    network.restore(state)
+                    outputs.append(
+                        tuple(
+                            value.cpu().numpy()
+                            for value in network._derivative_pair(
+                                network.rate, network.adaptation
+                            )
+                        )
+                    )
+                for left, right in zip(*outputs):
+                    np.testing.assert_array_equal(
+                        left.view(np.uint32), right.view(np.uint32)
+                    )
+                for network in (reference, packed):
+                    network.advance(state["drive"], 43)
+                for key in ("rate", "adaptation"):
+                    np.testing.assert_array_equal(
+                        reference.snapshot()[key].view(np.uint32),
+                        packed.snapshot()[key].view(np.uint32),
+                    )
+
+    def test_packed_weights_and_changed_capture_size_preserve_exact_future(self):
+        rng = np.random.default_rng(82)
+        weights = (rng.integers(-70, 100, size=(263, 263)) * 0.03).astype(np.float32)
+        weights[rng.uniform(size=weights.shape) < 0.7] = 0
+        weights[0] = 0
+        args = (
+            csr_matrix(weights),
+            np.full(263, 0.02),
+            np.ones(263),
+            np.full(263, 7.5),
+            np.full(263, 200.0),
+        )
+        reference = AdaptiveRateNetwork(*args, adaptation_gain=4, device="cuda")
+        packed = AdaptiveRateNetwork(
+            *args,
+            adaptation_gain=4,
+            device="cuda",
+            cuda_implementation="packed",
+            capture_steps=25,
+        )
+        self.assertEqual(packed.cuda_implementation, "packed")
+        self.assertEqual(reference.identity, packed.identity)
+        initial = reference.snapshot()
+        initial["rate"] = rng.uniform(0, 200, 263).astype(np.float32)
+        initial["adaptation"] = rng.uniform(0, 30, 263).astype(np.float32)
+        reference.restore(initial)
+        packed.restore(initial)
+        for steps, cut in (
+            (63, []),
+            (75, [0, 26, 160]),
+            (100, list(range(263))),
+            (7, []),
+        ):
+            drive = rng.uniform(0, 150, 263).astype(np.float32)
+            for net in (reference, packed):
+                net.set_muted(cut)
+                net.advance(drive, steps)
+            for key in ("rate", "adaptation", "drive", "output_mask"):
+                np.testing.assert_array_equal(
+                    reference.snapshot()[key].view(np.uint32),
+                    packed.snapshot()[key].view(np.uint32),
+                )
+        altered = AdaptiveRateNetwork(
+            *args,
+            adaptation_gain=4,
+            device="cuda",
+            dt=0.00025,
+            capture_steps=20,
+            cuda_implementation="packed",
+        )
+        before = altered.snapshot()
+        with self.assertRaisesRegex(ValueError, "Incompatible research rate"):
+            altered.restore(packed.snapshot())
+        for key in ("rate", "adaptation", "drive", "output_mask"):
+            np.testing.assert_array_equal(before[key], altered.snapshot()[key])
 
 
 if __name__ == "__main__":

@@ -30,6 +30,27 @@ extern "C" __global__ void csr_current(
 }
 """
 
+_PACKED_CSR_CURRENT = r"""
+extern "C" __global__ void csr_current(
+    const int* rowptr, const unsigned int* entries,
+    const float* lookup, const float* masked_rate,
+    float* current, int n) {
+    int lane = threadIdx.x & 31;
+    int row = (blockIdx.x * blockDim.x + threadIdx.x) >> 5;
+    if (row >= n) return;
+    float value = 0.0f;
+    for (int edge = rowptr[row] + lane; edge < rowptr[row + 1]; edge += 32) {
+        unsigned int item = entries[edge];
+        int column = item & 0x3ffff;
+        float weight = lookup[item >> 18];
+        value += weight * masked_rate[column];
+    }
+    for (int offset = 16; offset > 0; offset >>= 1)
+        value += __shfl_down_sync(0xffffffff, value, offset);
+    if (lane == 0) current[row] = value;
+}
+"""
+
 
 class AdaptiveRateNetwork(ResearchRateNetwork):
     def __init__(
@@ -44,9 +65,15 @@ class AdaptiveRateNetwork(ResearchRateNetwork):
         adaptation_tau_s=0.15,
         dt=0.0001,
         device="auto",
+        capture_steps=10,
+        cuda_implementation="reference",
     ):
         import torch
 
+        if type(capture_steps) is not int or not 1 <= capture_steps <= 50:
+            raise ValueError("Bounded integer CUDA capture interval required")
+        if cuda_implementation not in ("reference", "packed"):
+            raise ValueError("Unknown adaptive rate CUDA implementation")
         if not np.isfinite([adaptation_gain, adaptation_tau_s]).all() or not (
             0 <= adaptation_gain <= 100 and 0.01 <= adaptation_tau_s <= 10
         ):
@@ -54,6 +81,7 @@ class AdaptiveRateNetwork(ResearchRateNetwork):
         # Build without the parent's CUDA capture: the additional neural state
         # must exist before _step can be captured. No dynamics advance here.
         super().__init__(weights, tau, a, threshold, cap, dt=dt, device="cpu")
+        self.interval_steps = capture_steps
         if adaptation_gain and dt > adaptation_tau_s / 50:
             raise ValueError("Integration step must resolve adaptation time constant")
         self.adaptation_gain = float(adaptation_gain)
@@ -81,6 +109,7 @@ class AdaptiveRateNetwork(ResearchRateNetwork):
             setattr(self, name, getattr(self, name).to(self.device))
         self.adaptation = torch.zeros_like(self.rate)
         self._csr_kernel = None
+        self.cuda_implementation = "torch-cpu-csr"
         if self.device == "cuda":
             import cupy as cp
 
@@ -88,8 +117,27 @@ class AdaptiveRateNetwork(ResearchRateNetwork):
             self._rowptr = self.weights.crow_indices()
             self._columns = self.weights.col_indices()
             self._weight_values = self.weights.values()
+            source = _CSR_CURRENT
+            self.cuda_implementation = "reference"
+            if cuda_implementation == "packed":
+                # Keep the exact existing float bits; recomputing from integer
+                # synapse counts changes some weights by float32 rounding.
+                values = self._weight_values.cpu().numpy()
+                unique, inverse = np.unique(values.view(np.uint32), return_inverse=True)
+                if self.n <= 2**18 and len(unique) <= 2**14 and len(values) < 2**31:
+                    columns = self._columns.cpu().numpy().astype(np.uint32)
+                    entries = columns | (inverse.astype(np.uint32) << 18)
+                    self._rowptr = self._rowptr.to(torch.int32)
+                    self._columns = torch.as_tensor(
+                        entries.view(np.int32), device=self.device
+                    )
+                    self._weight_values = torch.as_tensor(
+                        unique.view(np.float32), device=self.device
+                    )
+                    source = _PACKED_CSR_CURRENT
+                    self.cuda_implementation = "packed"
             self._csr_kernel = cp.RawKernel(
-                _CSR_CURRENT, "csr_current", options=("--fmad=false",)
+                source, "csr_current", options=("--fmad=false",)
             )
             self._csr_kernel.compile()
         self.identity = hashlib.sha256(
@@ -128,6 +176,14 @@ class AdaptiveRateNetwork(ResearchRateNetwork):
         if self._csr_kernel is not None:
             # One warp owns one postsynaptic neuron. Fixed lane order, no
             # floating-point atomics. This also runs on the CUDA capture stream.
+            if self.cuda_implementation == "packed":
+                # Recompute for every RK stage, including CUDA Graph replays:
+                # rate changes within an interval and cuts/restores change the
+                # mask between intervals. Preserve the original float32 product
+                # while avoiding a repeated mask gather for every synapse.
+                inputs = (rate * self.output_mask,)
+            else:
+                inputs = (rate, self.output_mask)
             result = self.torch.empty_like(rate)
             with self._cupy.cuda.ExternalStream(
                 self.torch.cuda.current_stream().cuda_stream
@@ -141,8 +197,7 @@ class AdaptiveRateNetwork(ResearchRateNetwork):
                             self._rowptr,
                             self._columns,
                             self._weight_values,
-                            rate,
-                            self.output_mask,
+                            *inputs,
                             result,
                         )
                     )

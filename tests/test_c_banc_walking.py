@@ -73,6 +73,9 @@ class BancWorkbenchContracts(unittest.TestCase):
             ("sensory_gain", 401),
             ("descending_drive", -1),
             ("pooling", "CPG"),
+            ("neural_dt_s", float("nan")),
+            ("neural_dt_s", True),
+            ("neural_dt_s", 0.0003),
         ):
             with self.assertRaises(ValueError):
                 BancWalkingParameters(**{field: value})
@@ -90,10 +93,29 @@ class BancWorkbenchContracts(unittest.TestCase):
     def test_nonfinite_physics_clock_is_rejected(self):
         session = object.__new__(BancWalkingSession)
         session.control_tick = 0
+        session.neural_steps_per_control = 50
         session.network = SimpleNamespace(tick=0)
         session.body = SimpleNamespace(physics_time=lambda: float("nan"))
         with self.assertRaisesRegex(RuntimeError, "clocks diverged"):
             session._clocks()
+
+    def test_control_clock_uses_selected_neural_dt(self):
+        from flylab.c.integrity import digest
+
+        for dt, steps in ((0.0001, 50), (0.0002, 25), (0.00025, 20)):
+            self.assertEqual(BancWalkingParameters(neural_dt_s=dt).neural_dt_s, dt)
+            session = object.__new__(BancWalkingSession)
+            session.neural_steps_per_control = steps
+            session.control_tick = 7
+            session.network = SimpleNamespace(tick=7 * steps)
+            session.cpg_hash = digest({})
+            session.body = SimpleNamespace(
+                physics_time=lambda: 0.035, snapshot=lambda: {"cpg": {}}
+            )
+            session._clocks()
+            session.network.tick += 1
+            with self.assertRaisesRegex(RuntimeError, "clocks diverged"):
+                session._clocks()
 
 
 if __name__ == "__main__":

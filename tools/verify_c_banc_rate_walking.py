@@ -88,6 +88,8 @@ def run(args):
             "motor_gain": args.motor_gain,
             "pooling": args.pooling,
             "adaptation_tau_s": args.adaptation_tau,
+            "neural_dt_s": args.neural_dt,
+            "cuda_implementation": args.cuda_implementation,
             "weights": "Source counts * .03 and existing NT signs; no edge normalization, deletion or rewiring",
             "cpg": False,
             "timed_reset": False,
@@ -128,6 +130,11 @@ def run(args):
             *[np.full(graph.n, value, np.float32) for value in (0.02, 1.0, 7.5, 200.0)],
             adaptation_gain=gain,
             adaptation_tau_s=args.adaptation_tau,
+            dt=args.neural_dt,
+            capture_steps=10
+            if args.neural_dt == 0.0001
+            else round(0.005 / args.neural_dt),
+            cuda_implementation=args.cuda_implementation,
         )
         if args.cut == "descending":
             net.set_muted(descending)
@@ -149,7 +156,7 @@ def run(args):
                         raise TimeoutError("Bounded physical neural trial wall limit")
                     drive = adapter.encode(sensory_cut=args.cut == "sensory")
                     drive[descending] += args.descending_drive
-                    net.advance(drive, 50)
+                    net.advance(drive, round(0.005 / args.neural_dt))
                     rate = net.readout(adapter.motor_ids)
                     target, adhesion = adapter.decode(
                         rate, motor_cut=args.cut == "motor"
@@ -228,6 +235,12 @@ if __name__ == "__main__":
         default=Path("data/acquisitions/banc888-windows-20260910/bundle"),
     )
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument(
+        "--neural-dt", type=float, choices=(0.0001, 0.0002, 0.00025), default=0.0001
+    )
+    parser.add_argument(
+        "--cuda-implementation", choices=("reference", "packed"), default="reference"
+    )
     parser.add_argument("--seconds", type=float, choices=(3.0, 10.0), default=3.0)
     parser.add_argument(
         "--case", action="append", choices=("0:18", "4:0", "20:0", "4:18", "20:18")

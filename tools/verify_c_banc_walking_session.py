@@ -28,6 +28,8 @@ def run(args):
             "same_start_checkpoint": True,
             "decision": "Checkpoint future must match; circuit and motor cuts must remove their downstream contribution. Sensory/descending effects are measured, not assumed. This is not a walking task pass.",
             "graph_hash": graph.hash,
+            "neural_dt_s": args.neural_dt,
+            "cuda_implementation": args.cuda_implementation,
             "sources": {
                 str(p): file_hash(p)
                 for p in (
@@ -39,7 +41,11 @@ def run(args):
             },
         },
     )
-    original = BancWalkingSession(graph)
+    original = BancWalkingSession(
+        graph,
+        parameters={"neural_dt_s": args.neural_dt},
+        cuda_implementation=args.cuda_implementation,
+    )
     try:
         for _ in range(10):
             original.advance(20)
@@ -56,7 +62,9 @@ def run(args):
     reference = None
     for cut in ("intact", "sensory", "descending", "circuit", "motor"):
         session = BancWalkingSession.from_checkpoint(
-            graph, StateStore.load(args.out / "start")
+            graph,
+            StateStore.load(args.out / "start"),
+            cuda_implementation=args.cuda_implementation,
         )
         try:
             if cut != "intact":
@@ -144,4 +152,10 @@ if __name__ == "__main__":
         default=Path("data/acquisitions/banc888-windows-20260910/bundle"),
     )
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument(
+        "--neural-dt", type=float, choices=(0.0001, 0.0002, 0.00025), default=0.0001
+    )
+    parser.add_argument(
+        "--cuda-implementation", choices=("reference", "packed"), default="reference"
+    )
     run(parser.parse_args())

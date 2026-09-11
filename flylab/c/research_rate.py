@@ -64,6 +64,7 @@ class ResearchRateNetwork:
         self.drive = torch.zeros_like(self.rate)
         self.output_mask = torch.ones_like(self.rate)
         self.tick = 0
+        self.interval_steps = 10
         self.graph = None
         if self.device == "cuda":
             # Same full-precision matmul setting as the fixed MANC comparison.
@@ -102,7 +103,7 @@ class ResearchRateNetwork:
         self.rate.add_((dt / 6) * (k1 + 2 * k2 + 2 * k3 + k4))
 
     def _interval(self):
-        for _ in range(10):
+        for _ in range(self.interval_steps):
             self._step()
 
     def set_muted(self, indices=()):
@@ -138,12 +139,12 @@ class ResearchRateNetwork:
                     values, dtype=self.torch.float32, device=self.device
                 )
             )
-            for _ in range(steps // 10):
+            for _ in range(steps // self.interval_steps):
                 if self.graph is None:
                     self._interval()
                 else:
                     self.graph.replay()
-            for _ in range(steps % 10):
+            for _ in range(steps % self.interval_steps):
                 self._step()
             self.tick += steps
             if not bool(self.torch.isfinite(self.rate).all()) or bool(

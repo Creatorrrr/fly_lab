@@ -94,7 +94,7 @@ class ModelContractTests(unittest.TestCase):
 
     def test_banc_default_pilot_and_explicit_incompatible_modes(self):
         graph,binding=banc_bindings()
-        self.assertEqual(execution_capabilities(binding)['modes'],['C_STRICT'])
+        self.assertEqual(execution_capabilities(binding)['modes'],['C_STRICT','FLYGYM_AUTONOMOUS'])
         default=pilot_spec(bindings=binding)
         self.assertEqual(len(default['cases']),18)
         validate_spec(default,binding)
@@ -126,7 +126,7 @@ class ModelContractTests(unittest.TestCase):
                 ready=d.handle(dict(protocol=PROTOCOL,requestId=1,op='init',payload={}))
                 # Dispatcher wraps responses in its protocol envelope.
                 data=ready.get('result',ready)
-                self.assertEqual(data['capabilities']['modes'],['C_STRICT'])
+                self.assertEqual(data['capabilities']['modes'],['C_STRICT','FLYGYM_AUTONOMOUS'])
                 self.assertEqual(data['profiles'][0]['execution']['pilot_modes'],['C_STRICT'])
                 before=d.engine.checkpoint()
                 with self.assertRaisesRegex(ValueError,'requires C_STRICT'):

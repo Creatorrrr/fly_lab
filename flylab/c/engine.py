@@ -11,6 +11,7 @@ from .ports import SensoryEncoder, MotorDecoder, RecoverySupervisor, MotorArbite
 from .storage import Recorder, StateStore, runtime_versions
 from .inputs import InputRejected, validate_input, validate_stimulus_schedule, validate_schedule
 from ..body import FlyGymBody
+from ..autonomy import AUTONOMOUS_MODE, SENSOR_MODEL, SensoryWalkingPolicy, autonomous_world
 from ..brain import Circuit
 from ..legacy import LegacyBRate
 from ..engine import config_values, default_graph, validate_sensor_packet
@@ -29,7 +30,7 @@ class CEngine:
     def __init__(self, graph, bindings, *, mode='C_SHADOW', seed=42, config=None,
                  world=None, backend='exp_lif_cpu_reference', parameters=None,
                  body_factory=FlyGymBody, motion_expected=True, metabolism=None, initial_pose=None,
-                 physics_profile=None,body_options=None):
+                 physics_profile=None,body_options=None,autonomy=None):
         if physics_profile is not None:
             from ..physics import body_factory as select_body, profile_values, PhysicsBodyFactory
             profile = profile_values(physics_profile)
@@ -44,22 +45,31 @@ class CEngine:
         if graph.hash != bindings.graph.hash: raise ValueError('Graph/port mismatch')
         self.seed = bounded_int(seed, 'seed', 0, 2**32-1)
         self.mode = mode
+        if autonomy is not None and mode != AUTONOMOUS_MODE:
+            raise ValueError('Autonomous policy parameters require FLYGYM_AUTONOMOUS')
+        self.autonomy = SensoryWalkingPolicy(autonomy) if mode == AUTONOMOUS_MODE else None
         self.motion_expected = boolean(motion_expected, 'motion_expected')
         self.metabolism = Metabolism(metabolism) if metabolism is not None else None
         self.config = config_values(config)
-        self.world = copy.deepcopy(validate_world(world if world is not None else default_world()))
+        self.world = copy.deepcopy(validate_world(world if world is not None else (autonomous_world() if self.autonomy else default_world())))
         self.initial_pose = copy.deepcopy(initial_pose)
         self.parameters = resolved_parameters
         self.substeps = round(CONTROL_DT / self.parameters.dt)
-        self.neural = None if mode == 'B_COMPAT' else create_backend(graph, self.parameters, backend)
+        self.neural = None if mode in ('B_COMPAT', AUTONOMOUS_MODE) else create_backend(graph, self.parameters, backend)
         if hasattr(self.neural, 'set_readout_cohort') and len(bindings.motor_indices)<=512:
             self.neural.set_readout_cohort(bindings.motor_indices)
         self.encoder = SensoryEncoder(bindings, seed)
         self.decoder = MotorDecoder(bindings)
         self.supervisor = RecoverySupervisor()
         self.legacy = LegacyBRate(Circuit(default_graph()), seed)
-        self.sensors = CSensorAdapter(seed, bindings.spec.get('sensor_model'))
+        self.sensors = CSensorAdapter(seed, SENSOR_MODEL if self.autonomy else bindings.spec.get('sensor_model'))
         self.body_factory = body_factory
+        if self.autonomy and body_options is None:
+            body_options = dict(model='flybody', actuation='whole_body', servo_profile='tracking_all', tendons='all')
+        if self.autonomy:
+            from ..body_options import BodyOptions
+            if BodyOptions.parse(body_options).attachment != 'free':
+                raise ValueError('Autonomous walking requires a free body')
         body_kwargs={}
         if initial_pose is not None:body_kwargs['initial_pose']=initial_pose
         if body_options is not None:body_kwargs['body_options']=body_options
@@ -70,7 +80,9 @@ class CEngine:
         self.control_tick = 0
         self.sensor_tick = 0
         try:
-            if bindings.spec.get('neuromuscular'):
+            if self.autonomy and getattr(self.body, 'tendon_control', None):
+                self.body.set_body_actuation(tendon_inputs={name: .2 for name in self.body.tendon_control.names})
+            if bindings.spec.get('neuromuscular') and not self.autonomy:
                 from .neuromuscular import NeuromuscularLoop
                 self.neuromuscular = NeuromuscularLoop(graph, bindings.spec['neuromuscular'], self.body)
                 if hasattr(self.neural, 'set_readout_cohort'):
@@ -80,7 +92,7 @@ class CEngine:
         except Exception:
             self.body.close()
             raise
-        self.subscription = graph.resolve([graph.nodes[int(i)]['id'] for i in bindings.motor_indices])
+        self.subscription = graph.resolve([] if self.autonomy else [graph.nodes[int(i)]['id'] for i in bindings.motor_indices])
         self.subscription_epoch = 1
         self.sequence = 0
         self.selected_events = []
@@ -94,14 +106,15 @@ class CEngine:
         self.intervention_history = []
         self.events = []
         self.recorder = None
-        self.record_indices = bindings.motor_indices.copy()
+        self.record_indices = np.empty(0, dtype=np.int32) if self.autonomy else bindings.motor_indices.copy()
         self.fault = None
         self.closed = False
         self.stopped = False
         self.last_ports = []
         self.last_motor_rates = {}
         self.last_command = MotorArbiter.choose(zero_command(), None, mode=mode,
-                                               legacy=zero_command(), motor_coupled=self.config['motorCoupled'])
+                                               legacy=zero_command(), motor_coupled=self.config['motorCoupled'],
+                                               autonomous=zero_command() if self.autonomy else None)
         self.last_command.update(sensor_tick=0, neural_readout_tick=0, interval_start_tick=0, interval_end_tick=0)
         self.timings = dict(neural_s=0., physics_s=0., ports_s=0., recording_s=0., total_s=0.)
         self.timing_controls = 0
@@ -116,16 +129,17 @@ class CEngine:
                     model_parameter_hash=self.parameters.hash, model_parameters=asdict(self.parameters),
                     body_model_hash=self.body.frame()[1]['bodyModelHash'], environment_hash=digest(self.world),
                     config_hash=digest(self.config), mode=self.mode, seed=self.seed,
-                    neural_backend=self.neural.backend if self.neural else 'legacy_b_rate',
+                    neural_backend=self.neural.backend if self.neural else ('flygym_hybrid' if self.autonomy else 'legacy_b_rate'),
                     neural_dt=self.parameters.dt if self.neural else CONTROL_DT, physical_dt=.0001,
-                    control_dt=CONTROL_DT, coupling_profile='readout-at-start-held-sensor-one-control-latency-v1' if self.neural else 'legacy-B-step-order',
+                    control_dt=CONTROL_DT, coupling_profile='readout-at-start-held-sensor-one-control-latency-v1' if self.neural else ('sensory-policy-hybrid-5ms-v1' if self.autonomy else 'legacy-B-step-order'),
                     motion_expected=self.motion_expected, dataset=self.graph.manifest,
                     initial_pose=self.initial_pose,
                     bindings=self.bindings.summary(), physical=not self.body.test_double,
                     physics=self.body.physics_identity() if hasattr(self.body,'physics_identity') else None,
                     full_brain=self.graph.full_brain and self.neural is not None,
                     metabolism_model=(dict(parameters=asdict(self.metabolism.p), parameter_hash=digest(asdict(self.metabolism.p))) if self.metabolism else None),
-                    motor_execution=self.bindings.motor_execution,
+                    motor_execution='flygym_sensory_hybrid' if self.autonomy else self.bindings.motor_execution,
+                    autonomy=self.autonomy.summary() if self.autonomy else None,
                     neuromuscular_hash=self.neuromuscular.hash if self.neuromuscular else None,
                     biological_validation=False, versions=runtime_versions())
 
@@ -142,7 +156,8 @@ class CEngine:
     def start_recording(self, path, ids=None, max_bytes=2*1024**3):
         if self.closed: raise RuntimeError('Closed engine cannot start recording')
         if self.recorder: raise ValueError('Recording already active')
-        selected = self.bindings.motor_indices.copy() if ids is None else self.graph.resolve(ids)
+        selected = (np.empty(0, dtype=np.int32) if self.autonomy else self.bindings.motor_indices.copy()) if ids is None else self.graph.resolve(ids)
+        if self.autonomy and len(selected): raise ValueError('Autonomous recordings contain body and policy signals, not neuron signals')
         if self.neural and not len(selected): raise ValueError('Choose a nonempty fixed recording cohort')
         names = [self.graph.nodes[int(i)]['id'] for i in selected]
         recorder = Recorder(path, self.provenance(), names, max_bytes=max_bytes)
@@ -166,6 +181,7 @@ class CEngine:
             self.recorder = None
 
     def subscribe(self, ids):
+        if self.autonomy and ids: raise ValueError('Autonomous mode does not simulate neurons')
         self.subscription = self.graph.resolve(ids)
         self.subscription_epoch += 1
         self.selected_events = []
@@ -176,6 +192,8 @@ class CEngine:
             raise ValueError('Unsupported intervention fields')
         kind = data.get('kind')
         if kind not in KINDS: raise ValueError('Unknown intervention kind')
+        if self.autonomy and kind in ('stimulate', 'suppress_spiking', 'mute_outgoing', 'mute_edges', 'assist_off'):
+            raise ValueError('Neural interventions are unavailable in the FlyGym autonomous mode')
         at = bounded_int(data.get('at_tick', self.tick), 'intervention tick', self.tick)
         if at % self.substeps: raise ValueError('Interventions must be scheduled on a 5ms control boundary')
         duration = bounded_int(data.get('duration_controls', 400), 'duration_controls', 1, 720000)
@@ -193,7 +211,12 @@ class CEngine:
             item['edges'] = list(edges)
         elif kind == 'sensor_off':
             channels = data.get('channels')
-            self.bindings.validate_sensory_channels(channels)
+            if self.autonomy:
+                allowed = {'*', 'odor', 'odor_mean', 'odor_left', 'odor_right', 'proximity', 'contact'}
+                if not isinstance(channels, list) or not channels or any(c not in allowed for c in channels) or len(set(channels)) != len(channels):
+                    raise ValueError('Unknown autonomous sensory channel')
+            else:
+                self.bindings.validate_sensory_channels(channels)
             item['channels'] = list(channels)
         return item
 
@@ -290,7 +313,8 @@ class CEngine:
                 assist, reason = (self.supervisor.step(self.last_sensors, CONTROL_DT)
                                   if self.mode == 'C_ASSISTED' and assist_enabled and coupled else (None, None))
                 command = MotorArbiter.choose(neural_command, assist, mode=self.mode, legacy=legacy_command,
-                                              motor_coupled=coupled, stopped=self.stopped, assist_reason=reason)
+                                               motor_coupled=coupled, stopped=self.stopped, assist_reason=reason,
+                                               autonomous=self.autonomy.step(packet, CONTROL_DT, prepared['disabled']) if self.autonomy else None)
                 command.update(sensor_tick=start, neural_readout_tick=start,
                                interval_start_tick=start, interval_end_tick=start + self.substeps)
                 self.last_command = command
@@ -385,6 +409,7 @@ class CEngine:
         body_time = self.body.physics_time() if hasattr(self.body,'physics_time') else self.body.frame()[1]['physicsTime']
         if abs(body_time - expected) > 1e-5: raise RuntimeError('Physics/control clock mismatch')
         if self.neural and self.encoder.control_tick != self.control_tick: raise RuntimeError('Encoder/control clock mismatch')
+        if self.autonomy and self.autonomy.tick != self.control_tick: raise RuntimeError('Autonomous/control clock mismatch')
         if self.neuromuscular and (self.neuromuscular.sensor_tick != self.control_tick or self.neuromuscular.motor_tick != self.control_tick):
             raise RuntimeError('Neuromuscular/control clock mismatch')
 
@@ -400,6 +425,7 @@ class CEngine:
                     motor_rates_Hz=dict(self.last_motor_rates), neural=self.neural.summary() if self.neural else None,
                     motor_diagnostics=copy.deepcopy(self.decoder.diagnostics),
                     neuromuscular=self.neuromuscular.summary() if self.neuromuscular else dict(enabled=False),
+                    autonomy=self.autonomy.summary() if self.autonomy else dict(enabled=False),
                     legacy=self.legacy.readout([]) if self.mode in ('B_COMPAT', 'C_SHADOW') else None,
                     scope=dict(fullBrain=self.graph.full_brain and self.neural is not None,
                                sourceNodes=self.graph.n, simulatedNodes=self.graph.n if self.neural else 0,
@@ -416,7 +442,7 @@ class CEngine:
                     recording=dict(active=self.recorder is not None, dropped=0,
                                    cohort_ids=[self.graph.nodes[int(i)]['id'] for i in self.record_indices],
                                    path=str(self.recorder.path) if self.recorder else None,
-                                   signals_hz=100, body_hz=10, motor_hz=200,
+                                   signals_hz=100 if self.neural else 0, body_hz=10, motor_hz=200,
                                    bytes=self.recorder.bytes if self.recorder else 0),
                     performance=self.performance())
 
@@ -449,6 +475,10 @@ class CEngine:
         elif kind == 'configure':
             new = config_values({**self.config, **payload})
             self.body.set_config(new); self.config = new
+        elif kind == 'autonomy':
+            if self.autonomy is None: raise ValueError('Autonomous mode is not active')
+            if set(payload) != {'enabled'}: raise ValueError('Autonomous walking enabled flag required')
+            self.autonomy.enabled = boolean(payload['enabled'], 'autonomous walking enabled')
         elif kind in ('cue', 'food'):
             value = boolean(payload.get('enabled'), 'enabled')
             self.world['cueOn' if kind == 'cue' else 'foodOn'] = value
@@ -510,6 +540,7 @@ class CEngine:
                     active=copy.deepcopy(self.active), event_serial=self.event_serial, object_serial=self.object_serial,
                     metabolism=self.metabolism.snapshot() if self.metabolism else None,
                     neuromuscular=self.neuromuscular.snapshot() if self.neuromuscular else None,
+                    autonomy=self.autonomy.snapshot() if self.autonomy else None,
                     environment_history=copy.deepcopy(self.environment_history), environment_updated_tick=self.environment_updated_tick,
                     intervention_history=copy.deepcopy(self.intervention_history),
                     record_cohort_ids=[self.graph.nodes[int(i)]['id'] for i in self.record_indices],
@@ -542,7 +573,8 @@ class CEngine:
                 backend=backend_override or (s['neural']['backend'] if s.get('neural') else 'exp_lif_cpu_reference'),
                 parameters=parameters, body_factory=body_factory, motion_expected=s['motion_expected'],
                 metabolism=s['metabolism']['parameters'] if s.get('metabolism') else None,
-                initial_pose=s.get('initial_pose'), physics_profile=s.get('physics_profile'),body_options=s.get('body_options'))
+                initial_pose=s.get('initial_pose'), physics_profile=s.get('physics_profile'),body_options=s.get('body_options'),
+                autonomy=s['autonomy']['parameters'] if s.get('autonomy') else None)
         try:
             if e.body.frame()[1]['bodyModelHash'] != s.get('body_model_hash'): raise ValueError('Body model hash mismatch')
             e.body.restore(s['body'])
@@ -563,6 +595,11 @@ class CEngine:
             elif s.get('neural') is not None: raise ValueError('B_COMPAT cannot restore a C neural state')
             e.sensors.restore(s['sensors']); e.legacy.restore(s['legacy']); e.supervisor.restore(s['supervisor'])
             e.control_tick, e.sensor_tick = ct, st
+            if e.autonomy:
+                if not s.get('autonomy'): raise ValueError('Missing autonomous policy state')
+                e.autonomy.restore(s['autonomy'])
+            elif s.get('autonomy') is not None:
+                raise ValueError('Checkpoint requires the autonomous policy')
             if e.neuromuscular:
                 if not s.get('neuromuscular'): raise ValueError('Missing neuromuscular checkpoint state')
                 e.neuromuscular.restore(s['neuromuscular'])

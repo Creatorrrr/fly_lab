@@ -98,7 +98,7 @@ class CDispatcher:
         self.profiles()
         support=execution_capabilities(e.bindings)
         return dict(capabilities=dict(version=VERSION, protocol=PROTOCOL, modes=support['modes'], execution=support,
-                    backend=e.neural.backend if e.neural else 'legacy_b_rate', neuralBackends=support['neural_backends'],
+                    backend=e.neural.backend if e.neural else ('flygym_hybrid' if e.autonomy else 'legacy_b_rate'), neuralBackends=support['neural_backends'],
                     physical=not e.body.test_double, fullBrain=e.neural is not None and e.graph.full_brain,
                     maxSubscription=512, maxAdvance=10, flight=False, biologicalValidation=False,
                     checkpoint=True, replay=True, selectedBinarySignals=True),
@@ -114,7 +114,7 @@ class CDispatcher:
         if not isinstance(payload, dict): raise ValueError('Payload object required')
         op = message.get('op')
         if op == 'init':
-            if set(payload)-{'mode', 'seed', 'config', 'motion_expected', 'profile','metabolism','initial_pose','body_options'}: raise ValueError('Unknown initialization field')
+            if set(payload)-{'mode', 'seed', 'config', 'motion_expected', 'profile','metabolism','initial_pose','body_options','autonomy'}: raise ValueError('Unknown initialization field')
             self.load()
             profile = payload.get('profile', self.binding_path.name)
             bindings = self.profiles().get(profile)
@@ -145,7 +145,7 @@ class CDispatcher:
             new = CEngine(self.graph, bindings, mode=payload.get('mode', self.default_mode),
                           seed=payload.get('seed', 42), config=payload.get('config'), backend=self.backend,
                           body_factory=self.factory, motion_expected=payload.get('motion_expected', True),metabolism=payload.get('metabolism'),
-                          initial_pose=payload.get('initial_pose'),body_options=payload.get('body_options'))
+                          initial_pose=payload.get('initial_pose'),body_options=payload.get('body_options'),autonomy=payload.get('autonomy'))
             result = self.replace(new)
             result['source_checkpoint'] = saved
             result['recovery'] = recovery
@@ -202,6 +202,7 @@ class CDispatcher:
             result = self.need().step(bounded_int(payload.get('steps', 10), 'steps', 0, 10))
         elif op == 'campaign_start':
             e=self.need()
+            if e.autonomy: raise ValueError('Use the autonomous walking verifier for sensory-policy comparisons')
             if e.recorder:raise ValueError('Finish live recording before launching a campaign')
             result=self.jobs.start(e.bindings,self.backend,payload.get('spec'))
         elif op == 'campaign_status': result=self.jobs.status(payload.get('id'))
@@ -275,6 +276,7 @@ class CDispatcher:
             result = self.need().command('load_environment', {'world': saved['world']})
         elif op == 'regions': result = self.need().region_summary()
         elif op == 'batch_init':
+            if payload.get('mode') == 'FLYGYM_AUTONOMOUS': raise ValueError('Autonomous walking currently uses the single CPU physics session')
             if set(payload)-{'worlds','seed','profile','mode','body_options'}:raise ValueError('Unknown batch initialization option')
             if self.batch is not None:raise ValueError('Save and close the current batch before preparing another')
             self.load()
@@ -384,6 +386,7 @@ class CDispatcher:
             result = dict(name=name, frame=self.need().frame())
         elif op == 'record_stop': self.need().stop_recording(); result = self.need().frame()
         elif op == 'paired':
+            if self.need().autonomy: raise ValueError('Use the autonomous walking verifier for sensory-policy comparisons')
             from .experiments import paired, paired_campaign
             name = checked_name(payload.get('name', 'pair-'+secrets.token_hex(6)))
             options = dict(seconds=payload.get('seconds', .5), onset=payload.get('onset', .2), ids=payload.get('ids'))

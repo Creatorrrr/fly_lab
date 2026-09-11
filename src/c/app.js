@@ -1,7 +1,8 @@
 /* C viewer: bounded subscriptions, raw units, explicit causality and source. */
 (function(F){
 'use strict';
-const PROTOCOL='flylab.protocol.v3', $=id=>document.getElementById(id);
+const PROTOCOL='flylab.protocol.v3', AUTO='FLYGYM_AUTONOMOUS', $=id=>document.getElementById(id);
+$('mode').add(new Option('감각 자율 보행 · FlyGym',AUTO));
 const view=new F.WorldView($('world'),$('world-overlay'));
 const state={frame:null,playing:false,busy:false,selected:[],catalog:[],offset:0,total:0,epoch:0,sequence:0,
   signals:new Map(),traces:new Map(),spikes:0,closed:false,names:new Map(),recording:false,backend:'exp_lif_cpu_reference',dataset:'연결망'};
@@ -81,6 +82,26 @@ function applyFrame(f){
  $('leg-receptor-diagnostics').textContent=legLoop?.schema==='flylab.neuromuscular.v2'?`방향 미확정 수용체 ${legLoop.unresolved_polarity_targets}개: 외부 각도·방향 자극 보류 · 출력 제한 범위를 넘은 축 ${(legLoop.muscles||[]).reduce((sum,m)=>sum+(m.bounded_axes||[]).filter(Boolean).length,0)}/42 · 보행 성공 여부는 별도 행동 검사로 판정합니다.`:'';
  $('motor').checked=f.config.motorCoupled;$('cue').checked=f.world.cueOn;$('food').checked=f.world.foodOn;
  const whole=f.physics.wholeBody;
+ const autonomy=f.autonomy;
+ for(const id of ['campaign-start','campaign-pilot','paired','batch-init'])$(id).disabled=!!autonomy?.enabled;
+ for(const row of $('catalog').children)row.disabled=!!autonomy?.enabled;
+ $('autonomy-toggle').disabled=!autonomy?.enabled;
+ $('autonomy-toggle').textContent=autonomy?.walking_enabled?'행동 중지':'행동 재개';
+ if(autonomy?.enabled){
+  const labels={ready:'재생 대기',seeking:'냄새를 따라 탐색 중',walking:'보행 중',avoiding:'장애물 회피 중',at_food:'먹이에 도착해 정지',stopped:'행동 중지'};
+  $('autonomy-status').textContent=(labels[autonomy.state]||autonomy.state)+' · 좌/우 냄새 '+autonomy.odor.map(v=>v.toFixed(3)).join(' / ');
+  $('scope').textContent='감각 자율 보행 · FlyGym';
+  $('neural-scope-note').textContent='감각 정책과 FlyGym CPG·접촉 보정으로 걷습니다. 이 실행에서는 BANC 신경망을 계산하지 않습니다.';
+  $('mean-rate').textContent='사용 안 함';
+  $('command-source').textContent='감각 정책 → FlyGym 보행기';
+  $('neural-command').textContent='사용 안 함';
+  $('neural-command').previousElementSibling.textContent='신경 출력';
+  $('causal-time').textContent=`감각 ${(f.command.sensor_tick*dt).toFixed(4)}s → 보행 구동 [${(f.command.interval_start_tick*dt).toFixed(4)}, ${(f.command.interval_end_tick*dt).toFixed(4)})s`;
+  $('port-note').textContent='실제 더듬이 위치의 좌우 냄새 · 거리·접촉 감각을 사용합니다. C 신경 포트는 이 실행에서 사용하지 않습니다.';
+  $('port-values').textContent='냄새 입력: '+autonomy.odor.map(v=>v.toFixed(4)).join(' / ');
+  $('neuromuscular-status').textContent='FlyGym의 여섯 다리 CPG, 보행 궤적과 접촉 보정을 사용합니다. 신경망에 의한 자발적 보행과 별도로 평가합니다.';
+  $('actuation-status').textContent='42개 다리 관절을 FlyGym 보행기가 구동합니다. 힘줄은 명시된 공학적 입력을 사용합니다.';
+ }else $('autonomy-status').textContent='FlyGym 보행기와 감각 정책으로 자유 이동합니다.';
  renderBodyControls(f);
  $('body-status').textContent=f.physics.testDouble?'TEST DOUBLE':whole?`${whole.names.length} 위치 서보 · ${f.physics.tendons?.names.length||0} 힘줄 · ${whole.passive.names.length} 수동 관절 · ${whole.root_fixed?'몸통 고정':'자유 이동'}`:`${f.physics.jointNames.length} 관절 · ${f.physics.backend}`;
  const feet=$('feet');
@@ -98,7 +119,7 @@ function renderSelection(){
  const root=$('selection'),key=state.selected.join('|');
  if(root.dataset.subscriptionKey!==key){root.replaceChildren();root.dataset.subscriptionKey=key;
   for(const id of state.selected){const row=document.createElement('div');row.className='signal-row';row.append(document.createElement('span'),document.createElement('span'),document.createElement('span'));row.children[1].className='voltage';row.children[2].className='rate';root.append(row);}
-  if(!state.selected.length)root.textContent='검색 결과에서 모니터링할 뉴런을 선택하세요.';
+  if(!state.selected.length)root.textContent=state.frame?.autonomy?.enabled?'감각 자율 보행에서는 신경 신호를 계산하지 않습니다.':'검색 결과에서 모니터링할 뉴런을 선택하세요.';
  }
  for(const [i,id] of state.selected.entries()){
   const value=state.signals.get(id),row=root.children[i],name=row.children[0];
@@ -117,7 +138,7 @@ async function search(reset=true){
   state.names.set(n.id,(n.cell_type||'유형 미지정')+' · '+n.root_id.slice(-5));
   const row=document.createElement('button');row.className='neuron-row';row.dataset.id=n.id;row.setAttribute('role','listitem');
   const group=document.createElement('div'),name=document.createElement('b'),id=document.createElement('code'),nt=document.createElement('span');name.textContent=n.cell_type||'유형 미지정';id.textContent=n.root_id+' · '+n.soma_side;nt.textContent=n.nt_type||'미확정';group.append(name,id);row.append(group,nt);
-  row.onclick=()=>toggle(n.id).catch(e=>tell(e.message,true));list.append(row);
+  row.disabled=!!state.frame?.autonomy?.enabled;row.onclick=()=>toggle(n.id).catch(e=>tell(e.message,true));list.append(row);
  });$('catalog-count').textContent=`${result.total.toLocaleString()}개 · ${result.offset+1}–${Math.min(result.offset+50,result.total)}`;$('previous').disabled=state.offset===0;$('next').disabled=state.offset+50>=state.total;renderSelection();
 }
 async function toggle(id){const ids=state.selected.includes(id)?state.selected.filter(x=>x!==id):[...state.selected,id];applyFrame(await rpc.request('subscribe',{ids}));}
@@ -146,7 +167,8 @@ function applyReady(result){state.profiles=result.profiles;state.supportedModes=
  labels['bindings-walking-visual-contact-walk-off-v6.json']='보행·시각·접촉·Bluebell 정지 v6 (연구)';
  applyFrame(result.frame);$('binding-profile').replaceChildren(...(result.profiles||[]).map(p=>{const label=labels[p.name]||p.profile||p.name;const option=new Option(label+(p.available===false?' · 사용 불가':''),p.name,p.current,p.current);option.disabled=p.available===false;option.title=p.reason||'';return option;}));$('mode').value=result.frame.mode;$('seed').value=result.frame.seed;$('body-model').value=result.frame.physics.wholeBody?'flybody_whole':(result.frame.physics.bodyModel||'neuromechfly');$('body-terrain').value=result.frame.physics.terrain||'flat';$('body-attachment').value=result.frame.physics.attachment||'free';const tn=result.frame.physics.tendons?.names||[];$('body-tendons').value=tn.length===8?'all':tn.length===6?'tarsi':tn.length===2?'abdomen':'none';
  applyProfileModes();
- state.backend=result.capabilities.backend;$('backend').value=state.backend==='legacy_b_rate'?'exp_lif_cpu_reference':state.backend;$('backend').disabled=state.backend==='legacy_b_rate';
+ state.backend=result.capabilities.backend;$('backend').value=['legacy_b_rate','flygym_hybrid'].includes(state.backend)?'exp_lif_cpu_reference':state.backend;$('backend').disabled=['legacy_b_rate','flygym_hybrid'].includes(state.backend);
+ if(result.frame.autonomy?.enabled)$('autonomy-task').value=result.frame.autonomy.parameters.task;
  const friction=String(result.frame.config.friction);
  if(![...$('friction').options].some(o=>o.value===friction))$('friction').add(new Option(friction+'×',friction));
  $('friction').value=friction;
@@ -184,6 +206,7 @@ async function init(){
  state.playing=false;updatePlay();$('waiting').hidden=false;
  const payload={mode:$('mode').value,seed:Number($('seed').value),metabolism:$('metabolism-enabled').checked?{}:null};
  payload.body_options=selectedBodyOptions();if(payload.body_options.attachment==='tethered')payload.motion_expected=false;
+ if(payload.mode===AUTO)payload.autonomy={task:$('autonomy-task').value};
  // Before attach/init there is no catalog: honor the server's --bindings.
  if(state.frame)payload.profile=$('binding-profile').value;
  let result;try{result=await rpc.request('init',payload);}catch(e){$('waiting').hidden=!!state.frame;throw e;}
@@ -193,6 +216,12 @@ async function init(){
 }
 async function command(type,payload={}){const r=await rpc.request('command',{type,payload});if(r.schema==='flylab.frame.v3')applyFrame(r);return r;}
 button('play',()=>{state.playing=!state.playing;updatePlay();});
+button('autonomy-start',async()=>{
+ $('mode').value=AUTO;$('body-model').value='flybody_whole';$('body-terrain').value='flat';$('body-attachment').value='free';$('body-tendons').value='all';
+ await init();state.playing=true;updatePlay();view.track();
+ tell('감각 자율 보행을 시작했습니다. 이전 실험은 체크포인트 목록에서 복원할 수 있습니다.');
+});
+button('autonomy-toggle',async()=>{await command('autonomy',{enabled:!state.frame.autonomy.walking_enabled});});
 button('leg-feedback-off',async()=>{workbench.pause();await command('intervene',{kind:'sensor_off',channels:['leg_feedback'],duration_controls:200});applyFrame(await rpc.request('frame'));tell('다리 감각만 1모델초 차단하도록 예약했습니다. 후각 입력은 유지됩니다.');});
 button('step',async()=>{state.playing=false;updatePlay();applyFrame(await rpc.request('advance',{steps:10}));});
 button('init',init);button('track',()=>view.track());button('wide',()=>view.home());button('top',()=>view.top());button('eye',()=>{view.follow=true;view.firstPerson=true;});

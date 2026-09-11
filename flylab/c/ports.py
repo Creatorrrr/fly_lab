@@ -389,9 +389,12 @@ class RecoverySupervisor:
 
 class MotorArbiter:
     @staticmethod
-    def choose(neural, assist, *, mode, legacy=None, motor_coupled=True, stopped=False, assist_reason=None):
+    def choose(neural, assist, *, mode, legacy=None, motor_coupled=True, stopped=False, assist_reason=None, autonomous=None):
         if stopped or not motor_coupled:
             final, source = zero_command(), 'safety_stop' if stopped else 'motor_disconnect'
+        elif mode == 'FLYGYM_AUTONOMOUS':
+            if autonomous is None: raise ValueError('Autonomous sensory command required')
+            final, source = autonomous, 'flygym_sensory_policy'
         elif mode in ('B_COMPAT', 'C_SHADOW'):
             if legacy is None: raise ValueError('Legacy command required for explicit B mode')
             final, source = legacy, 'legacy_b_rate'

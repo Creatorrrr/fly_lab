@@ -163,7 +163,7 @@ F.createWorkbench=function({state,rpc,view,applyFrame,tell,button,command,update
   const clipped=(f.sensory_ports||[]).filter(p=>p.clipped).map(p=>p.name);$('saturation-status').textContent='입력 상한 적용: '+(clipped.join(', ')||'없음')+' · 운동 출력 상한: '+Object.entries(f.motor_diagnostics?.clipped||{}).filter(([k,v])=>v).map(([k])=>k).join(', ');
 
   if(state.recording)wb.record=[...f.recording.cohort_ids];
-  $('mode-explanation').textContent=`현재 실행: ${f.mode} · `+(f.neuromuscular?.enabled?'BANC 운동뉴런이 관절을 직접 구동하고 다리 감각을 신경망에 되돌립니다.':({C_SHADOW:'B가 몸을 구동합니다. C 신경 개입은 관측·회로 검사에 적용됩니다.',C_STRICT:'C 신경 출력을 몸에 적용합니다.',C_ASSISTED:'C 신경 출력에 회피 보조가 개입할 수 있습니다.',B_COMPAT:'기존 B 회로가 몸을 구동합니다.'}[f.mode]))+` 현재 명령: ${f.command.command_source} · 위 모드 설정은 새 실험에만 적용됩니다.`;
+  $('mode-explanation').textContent=`현재 실행: ${f.mode} · `+(f.neuromuscular?.enabled?'BANC 운동뉴런이 관절을 직접 구동하고 다리 감각을 신경망에 되돌립니다.':({FLYGYM_AUTONOMOUS:'감각 정책과 FlyGym의 CPG·접촉 보정이 몸을 구동합니다. BANC 신경 계산은 사용하지 않습니다.',C_SHADOW:'B가 몸을 구동합니다. C 신경 개입은 관측·회로 검사에 적용됩니다.',C_STRICT:'C 신경 출력을 몸에 적용합니다.',C_ASSISTED:'C 신경 출력에 회피 보조가 개입할 수 있습니다.',B_COMPAT:'기존 B 회로가 몸을 구동합니다.'}[f.mode]))+` 현재 명령: ${f.command.command_source} · 위 모드 설정은 새 실험에만 적용됩니다.`;
   cohortDisplay();renderWorld();renderInterventions();timing();
  }
  async function ready(){

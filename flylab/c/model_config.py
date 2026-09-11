@@ -37,7 +37,7 @@ def model_ticks(seconds, dt, maximum=10000):
 
 def execution_capabilities(bindings):
     parameters = resolve_parameters(bindings)
-    modes = ['C_STRICT'] if bindings.spec.get('neuromuscular') else list(MODES)
+    modes = ['C_STRICT', 'FLYGYM_AUTONOMOUS'] if bindings.spec.get('neuromuscular') else list(MODES)
     backends = [b for b in NEURAL_BACKENDS
                 if b != 'exp_lif_mps' or parameters.dtype == 'float32']
     return dict(modes=modes, pilot_modes=[m for m in ('C_STRICT','C_SHADOW','C_ASSISTED') if m in modes],
@@ -57,6 +57,6 @@ def validate_execution(bindings, mode, backend, parameters=None):
     if backend not in NEURAL_BACKENDS:
         raise ValueError('Unknown neural backend: ' + str(backend))
     resolved = resolve_parameters(bindings, parameters)
-    if mode != 'B_COMPAT' and backend == 'exp_lif_mps' and resolved.dtype != 'float32':
+    if mode not in ('B_COMPAT', 'FLYGYM_AUTONOMOUS') and backend == 'exp_lif_mps' and resolved.dtype != 'float32':
         raise ValueError('MPS requires float32 neural parameters')
     return resolved

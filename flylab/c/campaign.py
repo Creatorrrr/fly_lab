@@ -39,6 +39,11 @@ def validate_spec(spec, bindings=None, backend='exp_lif_cpu_reference'):
         if bindings is not None:
             try: validate_execution(bindings, c['mode'], backend)
             except ValueError as exc: raise ValueError(f'Campaign case {name}: {exc}') from exc
+            for event in c.get('interventions', [c['intervention']] if 'intervention' in c else []):
+                if not isinstance(event, dict): raise ValueError('Intervention object required')
+                if event.get('kind') == 'sensor_off':
+                    try: bindings.validate_sensory_channels(event.get('channels'))
+                    except ValueError as exc: raise ValueError(f'Campaign case {name}: {exc}') from exc
         if c.get('task','diagnostic') not in ('walking','backward','food','hazard','obstacle','diagnostic','yaw_left','yaw_right','stop_resume'):
             raise ValueError('Unknown campaign task')
         control_parameters(c.get('task','diagnostic'),c.get('task_parameters'))
@@ -160,7 +165,7 @@ def run_campaign(graph, bindings, spec, out, *, backend='auto', resume=False,
                     write_json(out/'campaign.json',manifest)
                 trace=[]
                 for chunk in chunks:
-                    with (directory/chunk['file']).open() as f:
+                    with (directory/chunk['file']).open(encoding='utf-8') as f:
                         import json
                         trace.extend(json.loads(line) for line in f)
                 task=case.get('task',{'baseline':'walking','front_obstacle':'obstacle'}.get(case['scene'],case['scene'].split('_')[0]))

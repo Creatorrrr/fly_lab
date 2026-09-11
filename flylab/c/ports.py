@@ -133,6 +133,27 @@ class PortBindings:
             raise ValueError('Mapping uncertainty must be explicit')
 
     @property
+    def sensory_selectors(self):
+        known = {p['name'] for p, _ in self.sensory} | {p['channel'] for p, _ in self.sensory} | {'*'}
+        model = self.spec.get('neuromuscular')
+        if model:
+            known.add('leg_feedback')
+            for row in model['rows']:
+                prefix = 'leg_' + row['leg']
+                known.add(prefix)
+                for port in row['sensory']:
+                    name = prefix + '_' + port['kind']
+                    known.add(name)
+                    if model['schema'] != 'flylab.neuromuscular.v1':
+                        known.add(name + '_' + port['cell_type'])
+        return known
+
+    def validate_sensory_channels(self, channels):
+        known = self.sensory_selectors
+        if not isinstance(channels, list) or not channels or any(not isinstance(c, str) or c not in known for c in channels):
+            raise ValueError('Known sensory channels required for the selected profile')
+
+    @property
     def motor_execution(self):
         model = self.spec.get('neuromuscular')
         if not model:

@@ -46,7 +46,7 @@ class CDispatcher:
 
     def profiles(self):
         self.load()
-        paths = [self.binding_path]+[p for p in sorted(self.binding_path.parent.glob('bindings-*.json')) if p!=self.binding_path]
+        paths = [self.binding_path]+[p for p in sorted(self.binding_path.parent.glob('bindings*.json')) if p!=self.binding_path]
         available = {p.name for p in paths[:16]}
         self.profile_entries = {}
         for path in paths[:16]:

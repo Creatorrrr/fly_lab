@@ -146,7 +146,7 @@ def replay_recording(graph, bindings, path, body_factory):
                 e.step(min(1000, (tick-e.tick)//e.substeps))
                 if e.tick == before or e.fault:
                     raise RuntimeError('Replay stopped before requested model time')
-        with (path/'events.jsonl').open() as f:
+        with (path/'events.jsonl').open(encoding='utf-8') as f:
             for line in f:
                 event = json.loads(line)
                 kind = event['kind']

@@ -19,23 +19,39 @@ HAZARD_CRITERIA = dict(schema='flylab.matched-hazard.v1', minimum_seconds=10.,
     minimum_clearance_improvement_mm=.5, maximum_hazard_dwell_fraction=.5)
 
 
-def fixed_spec(seconds=30., conditions=INITIAL_CONDITIONS):
+def odor_channels(ports, kind):
+    """Generic food/hazard channels, without inventing chemical receptor roles."""
+    scalar = {'odor_mean', 'odor_left', 'odor_right'} if kind == 'food' else {'danger'}
+    return sorted({p['channel'] for p in ports if p['channel'] in scalar or
+                   (p['channel'].startswith('odor_') and p['channel'].endswith('_' + kind))})
+
+
+def fixed_spec(seconds=30., conditions=INITIAL_CONDITIONS, *, bindings=None, scenes=None):
+    from .campaign import SCENES
+    scenes = ('baseline','food_left','food_right','front_obstacle','hazard_left','hazard_right') if scenes is None else scenes
+    if not scenes or any(scene not in SCENES for scene in scenes): raise ValueError('Known scenes required')
+    cuts = dict(food=['odor_left','odor_right'], hazard=['danger'])
+    if bindings is not None:
+        for kind in ('food', 'hazard'):
+            cuts[kind] = odor_channels(bindings.spec['sensory'], kind)
+            if any(scene.startswith(kind + '_') for scene in scenes) and not cuts[kind]:
+                raise ValueError(f'Profile has no separate {kind} sensory channels; select supported scenes or prepare an explicit named-odorant assay')
     cases=[]
     for i,condition in enumerate(conditions):
-        for scene in ('baseline','food_left','food_right','front_obstacle','hazard_left','hazard_right'):
+        for scene in scenes:
             world=scene_world(scene)
             base=dict(name=f'{i:02}-{scene}',mode='C_STRICT',scene=scene,seconds=seconds,
                       world=world,**copy.deepcopy(condition))
             cases.append(base)
             if scene.startswith('hazard'):
                 off=copy.deepcopy(base);off['name']+='-sensory-off'
-                off['intervention']=dict(kind='sensor_off',channels=['danger'],duration_controls=round(seconds/.005))
+                off['intervention']=dict(kind='sensor_off',channels=cuts['hazard'].copy(),duration_controls=round(seconds/.005))
                 cases.append(off)
                 free=copy.deepcopy(base);free['name']+='-hazard-free';free['world']['sources']=[]
                 cases.append(free)
             elif scene.startswith('food'):
                 off=copy.deepcopy(base);off['name']+='-sensory-off'
-                off['intervention']=dict(kind='sensor_off',channels=['odor_left','odor_right'],duration_controls=round(seconds/.005))
+                off['intervention']=dict(kind='sensor_off',channels=cuts['food'].copy(),duration_controls=round(seconds/.005))
                 cases.append(off)
     return dict(schema='flylab.campaign.v1',cases=cases)
 
@@ -66,7 +82,9 @@ def evaluate_hazard(active, hazard_free, sensory_off, *, assay='natural'):
             result['reasons']=['Evoked background must be a declared positive neuronal stimulation from time zero'];return result
         events=events[len(shared):]
         result['shared_stimulation']=shared
-    if len(events)!=1 or events[0].get('kind')!='sensor_off' or events[0].get('channels')!=['danger'] or events[0].get('at_tick',0)!=0:
+    ports = active['provenance'].get('bindings',{}).get('sensory',[])
+    hazard_channels = odor_channels(ports, 'hazard')
+    if not hazard_channels or len(events)!=1 or events[0].get('kind')!='sensor_off' or events[0].get('channels')!=hazard_channels or events[0].get('at_tick',0)!=0:
         result['reasons']=['Require a hazard-only sensory-off arm'];return result
     hazards=[s for s in active['world']['sources'] if s['kind']=='hazard' and s['strength']>0]
     expected=copy.deepcopy(active['world']);expected['sources']=[s for s in expected['sources'] if s['kind']!='hazard']
@@ -87,9 +105,9 @@ def evaluate_hazard(active, hazard_free, sensory_off, *, assay='natural'):
     if any(not row['motion_enabled'] for t in traces for row in t[1:]):
         result['reasons']=['Motor connection must remain enabled'];return result
     # Verify suppression in raw input packets, not just a case label.
-    danger_names={p['name'] for p in active['provenance'].get('bindings',{}).get('sensory',[]) if p['channel']=='danger'}
+    danger_names={p['name'] for p in ports if p['channel'] in hazard_channels}
     danger_rows=[[p for p in t['sensory_ports'] if p['name'] in danger_names] for t in traces[2][1:]]
-    if any(not ports or any(p['enabled'] or p['value']!=0 for p in ports) for ports in danger_rows):
+    if any({p['name'] for p in rows} != danger_names or any(p['enabled'] or p['value']!=0 for p in rows) for rows in danger_rows):
         result['reasons']=['Hazard sensory-off control is unverified'];return result
     metrics=[behavior_metrics(t,r['world']) for t,r in zip(traces,runs)]
     if any(m['faults'] or m['observation_gaps'] for m in metrics):

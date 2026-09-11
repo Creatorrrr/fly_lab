@@ -193,10 +193,7 @@ class CEngine:
             item['edges'] = list(edges)
         elif kind == 'sensor_off':
             channels = data.get('channels')
-            known = {p['name'] for p, _ in self.bindings.sensory} | {p['channel'] for p, _ in self.bindings.sensory} | {'*'}
-            if self.neuromuscular: known |= self.neuromuscular.channels
-            if not isinstance(channels, list) or not channels or any(not isinstance(c, str) or c not in known for c in channels):
-                raise ValueError('Known sensory channels required')
+            self.bindings.validate_sensory_channels(channels)
             item['channels'] = list(channels)
         return item
 

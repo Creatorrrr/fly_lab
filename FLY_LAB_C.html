@@ -3,6 +3,8 @@
 [hidden]{display:none!important}.mode-explanation{padding:11px 15px;border-left:3px solid var(--teal);background:#10221f;font-size:12px;color:#b9d5cc;margin:-4px 0 18px}#world-preview{position:absolute;width:100%;height:100%;inset:0;pointer-events:none}.placing{cursor:crosshair}.environment-editor .input-row{align-items:center}.environment-editor select{max-width:100%}.environment-editor input:not([type=number]){max-width:230px;width:100%}.environment-editor .input-row>label{max-width:100%}#environment-object{max-width:420px;min-width:140px}#environment-pick[aria-pressed=true]{border-color:var(--teal);color:var(--teal);background:#193a35}#environment-preview-note{color:var(--gold)}#environment-x,#environment-y,#environment-z{width:78px}.cohort-details{margin:10px 0}.cohort-details pre{max-height:160px}.chart-picker{margin-top:14px}#chart-targets{display:flex;flex-wrap:wrap;gap:6px 12px;max-height:140px;overflow:auto;padding:8px 0}#chart-targets label{font-size:11px}#rate-trace,#raster,#comparison-chart{display:block;width:100%;height:135px;margin-top:10px;background:#0b171d;border-radius:5px}#raster{height:130px}#signal-timing{font-size:10px;font-variant-numeric:tabular-nums}.intervention h3{margin-bottom:8px}#intervention-list{max-height:265px;overflow:auto;margin-top:12px}.intervention-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;padding:9px 0;border-bottom:1px solid var(--line);font-size:11px}.intervention-item>div{white-space:pre-wrap}.intervention-item details{grid-column:1;min-width:0}.intervention-item summary{font-size:10px}.intervention-item button{grid-column:2;grid-row:1;padding:3px 8px;align-self:start}.intervention-item[data-status=active]{color:var(--teal)}.intervention-item[data-status=cancelled],.intervention-item[data-status=expired]{color:var(--muted)}#cohort-preset{max-width:230px}#cohort-name{width:180px}.bottom-grid .input-row{margin-bottom:12px}.action-row{flex-wrap:wrap}#pair-origin{max-width:230px}#pair-seed{width:120px}.neural .input-row{align-items:center}.neural input:not([type=number]):not([type=checkbox]){min-width:0}#observe-to-intervene{font-size:11px;padding:4px 8px}@media(max-width:600px){#environment-object{max-width:245px}.environment-editor .input-row{gap:7px}.environment-editor .input-row button{white-space:normal}#cohort-preset{max-width:200px}.mode-explanation{line-height:1.7}}
 
 #comparison-chart{height:330px}
+
+#banc-world,#banc-overlay{position:absolute;width:100%;height:100%;inset:0}#banc-overlay{pointer-events:none}#banc-trace-wrap{height:350px;margin-top:14px}
 </style></head><body>
 <header><a class="brand" href="/">FLY <b>LAB</b> <span>C</span></a><div class="title">전뇌 실험실<small id="dataset-label">연결망 · NeuroMechFly</small></div><div class="connection"><i id="status-dot"></i><span id="connection-status">연결 중</span></div></header>
 <div class="scope"><strong id="scope">연결망 확인 중…</strong><span>신경 신호는 모델 계산값입니다. 생물학적 재현은 검증되지 않았습니다.</span></div>
@@ -21,6 +23,13 @@
 <div class="input-row"><label>목표 X · mm <input id="banc-target-x" type="number" value="6" min="-100" max="100" step="0.5"></label><label>목표 Z · mm <input id="banc-target-z" type="number" value="-3" min="-100" max="100" step="0.5"></label><button id="banc-navigation-init">BANC 목표 보행 실험 만들기</button><button id="banc-target-apply" disabled>현재 몸에 목표 변경</button><label><input id="banc-target-cut" type="checkbox" disabled>목표 감각 차단</label></div>
 <p class="muted">목표 보행은 공학적 방향·거리 감각과 보정된 신경 입력을 사용하는 개발 실험입니다. 근육 운동은 BANC가 생성하며 외부 CPG를 사용하지 않습니다. 기준 평지 조건에서 목표 접근·정지를 확인했으며 다른 지형·외란의 안정성은 검증 중입니다. 목표 실험은 검증한 신경 0.25ms 설정으로 생성됩니다. 좌표는 바닥의 절대 X/Z이며 목표 변경은 몸과 신경 상태를 초기화하지 않습니다.</p>
 <pre id="banc-navigation-status" role="status">목표 보행 실험이 없습니다.</pre><canvas id="banc-navigation-map" width="600" height="240" aria-label="실제 초파리 위치와 목표 반경의 평면도" hidden style="max-width:100%"></canvas>
+<div class="input-row"><button id="banc-view-live">기록 지연 표시</button><button id="banc-replay">기록 1× 재생</button><button id="banc-replay-slow">기록 0.25× 재생</button><button id="banc-trace-export">상태·접촉 JSON 저장</button><button id="banc-native-preview">현재 실제 메시</button><button id="banc-view-track">추적</button><button id="banc-view-top">상단</button></div>
+<div class="canvas-wrap" id="banc-trace-wrap"><canvas id="banc-world" aria-label="BANC 5ms 측정 자세"></canvas><canvas id="banc-overlay" aria-hidden="true"></canvas></div>
+<p id="banc-display-status" class="muted" role="status">BANC 재생 시 5ms 상태를 기록합니다. 최대 최근 30모델초를 보관합니다.</p>
+<label style="display:flex">기록 시각 <input id="banc-replay-seek" type="range" min="0" max="1" step="0.001" value="0" style="width:100%"></label>
+<pre id="banc-contact-status">접촉 진단 기록이 없습니다.</pre>
+<p class="muted">표면은 도식이며 다리는 측정된 물리 분절 위치입니다. 5ms 상태를 그대로 표시하며 보간·미래 예측을 하지 않습니다. 기록 재생은 계산을 멈추고 저장된 자세만 재생합니다. 전체 기록과 초기 상태 대조는 tools/verify_c_banc_observation.py를 사용하세요.</p>
+<p id="banc-native-time" class="muted"></p>
 <img id="banc-walking-image" alt="BANC 운동 출력으로 구동하는 실제 MuJoCo 초파리" hidden style="width:600px;max-width:100%;image-rendering:auto"><pre id="banc-walking-status" role="status">BANC 보행 실험이 없습니다.</pre>
 </details>
 <div class="input-row"><button id="autonomy-start" class="primary">감각 자율 보행 시작</button><label>새 자율 실험 행동 <select id="autonomy-task"><option value="odor_seek">냄새 따라 먹이 찾기</option><option value="walk">계속 걷기·장애물 회피</option></select></label><button id="autonomy-toggle" disabled>행동 중지</button><span id="autonomy-status" class="muted">FlyGym 보행기와 감각 정책으로 자유 이동합니다.</span></div>
@@ -189,8 +198,9 @@
                 catch (e) {
                     console.warn('WebGL fallback', e);
                     this.gl = null;
-                    canvas.replaceWith(canvas.cloneNode());
-                    this.canvas = document.querySelector('#world');
+                    const replacement = canvas.cloneNode();
+                    canvas.replaceWith(replacement);
+                    this.canvas = replacement;
                     this.ctx = this.canvas.getContext('2d');
                 }
             }
@@ -438,6 +448,79 @@ F.createPlaybackPump=function({shouldRun,advance,onBusy=()=>{},onError,
   finally{busy=false;onBusy(false);sync();}
  }
  return {sync};
+};
+})(globalThis.Fly);
+
+/* Measured 5ms poses only. Display/replay never steps or edits the simulator. */
+(function(F){
+'use strict';
+class BancTimeline {
+ constructor(capacity=6000){this.capacity=capacity;this.reset(null);}
+ reset(epoch){this.epoch=epoch;this.samples=[];this.evicted=0;this.gaps=0;}
+ ingest(packet){
+  if(!packet||packet.schema!=='flylab.banc-trace.v1')throw Error('BANC 기록 형식이 다릅니다.');
+  if(packet.epoch!==this.epoch)this.reset(packet.epoch);
+  for(const row of packet.samples){
+   if(!Number.isInteger(row.control_tick)||!Number.isFinite(row.time_s)||Math.abs(row.time_s-row.control_tick*.005)>1e-10)throw Error('BANC 기록 시각 오류');
+   const last=this.samples.at(-1);
+   if(last&&row.control_tick<=last.control_tick)continue;
+   if(last)this.gaps+=Math.max(0,row.control_tick-last.control_tick-1);
+   this.samples.push(row);
+  }
+  const excess=Math.max(0,this.samples.length-this.capacity);
+  if(excess){this.samples.splice(0,excess);this.evicted+=excess;}
+ }
+ at(time){
+  if(!this.samples.length)return null;
+  let lo=0,hi=this.samples.length;
+  while(lo<hi){const mid=(lo+hi)>>1;if(this.samples[mid].time_s<=time)lo=mid+1;else hi=mid;}
+  // Zero-order hold, not synthetic contact/pose interpolation or extrapolation.
+  return this.samples[Math.max(0,lo-1)];
+ }
+}
+F.BancTimeline=BancTimeline;
+F.createBancTraceView=function({canvas,overlay,status,diagnostic,slider}){
+ const timeline=new BancTimeline(),view=new F.WorldView(canvas,overlay);
+ view.distance=10;view.showTrail=false;
+ let world=null,mode='live',speed=.25,cursor=0,lastWall=null,lastReceived=null,ratio=.18,lastDrawn=null;
+ function ingest(result){
+  if(result.trace_epoch&&result.trace_epoch!==timeline.epoch){timeline.reset(result.trace_epoch);lastDrawn=null;cursor=0;lastWall=null;lastReceived=null;mode='live';}
+  if(!result.trace)return;
+  const old=timeline.samples.at(-1),now=performance.now();
+  timeline.ingest(result.trace);world=result.world||world;
+  if(lastReceived!==null&&old){const delta=timeline.samples.at(-1).time_s-old.time_s;const wall=(now-lastReceived)/1000;if(delta>0&&wall>0)ratio=Math.min(10,Math.max(.001,.7*ratio+.3*delta/wall));}
+  lastReceived=now;
+  if(!lastDrawn&&timeline.samples.length){cursor=timeline.samples[0].time_s;view.target=[...timeline.samples[0].body.position];}
+ }
+ function replay(value=1){lastDrawn=null;if(!timeline.samples.length)return;mode='replay';speed=value;cursor=timeline.samples[0].time_s;lastWall=null;}
+ function live(){lastDrawn=null;mode='live';cursor=timeline.samples.at(-1)?.time_s||0;lastWall=null;}
+ function seek(fraction){lastDrawn=null;if(!timeline.samples.length)return;mode='paused';const first=timeline.samples[0].time_s,last=timeline.samples.at(-1).time_s;cursor=first+(last-first)*Math.max(0,Math.min(1,fraction));lastWall=null;}
+ function draw(now){
+  const dt=lastWall===null?0:Math.min(.1,(now-lastWall)/1000);lastWall=now;
+  const first=timeline.samples[0],latest=timeline.samples.at(-1);
+  if(!first||!world)return;
+  if(mode==='live'){
+   cursor=Math.max(cursor,first.time_s);
+   // Bound visual delay, but never invent a future physical state.
+   if(latest.time_s-cursor>.15)cursor=latest.time_s-.025;
+   cursor=Math.min(latest.time_s,cursor+dt*ratio);
+  }else if(mode==='replay'){
+   cursor=Math.min(latest.time_s,cursor+dt*speed);
+   if(cursor>=latest.time_s)mode='paused';
+  }
+  const sample=timeline.at(cursor);
+  if(sample!==lastDrawn){
+   view.setFrame({tick:sample.control_tick,simTime:sample.time_s,body:sample.body,world,config:{mode:'BANC'}});
+   const label=mode==='live'?'지연 표시 · 실제 기록':mode==='replay'?`기록 재생 ${speed}×`:'기록 정지';
+   status.textContent=`${label} | 표시 ${sample.time_s.toFixed(3)} 모델초 / 계산 ${latest.time_s.toFixed(3)} 모델초 | 5ms 측정 자세, 보간 없음 | 기록 ${timeline.samples.length}개${timeline.gaps?' | 누락 '+timeline.gaps+'구간':''}${timeline.evicted?' | 오래된 기록 '+timeline.evicted+'개 제외':''}`;
+   diagnostic.textContent=sample.feet.legs.map((leg,i)=>`${leg.toUpperCase()}: 하중 ${sample.feet.normal_load_bw[i].toFixed(3)} BW · ${sample.feet.load_bearing[i]?'지지':'비지지'} · 접촉점 미끄러짐 ${sample.feet.slip_mm_s[i]===null?'측정 대상 아님':sample.feet.slip_mm_s[i].toFixed(3)+' mm/s'} · 부착 ${sample.adhesion[i]?'켜짐':'꺼짐'}`).join('\n')+'\n하중은 부착 반력을 포함합니다. 5ms 표본의 진단값이며 보행 성공 판정이 아닙니다.';
+   const span=latest.time_s-first.time_s;slider.value=span>0?String((sample.time_s-first.time_s)/span):'0';
+   lastDrawn=sample;
+  }
+  if(view.needsDraw())view.draw();
+ }
+ function reset(){timeline.reset(null);mode='live';cursor=0;lastDrawn=null;lastReceived=null;lastWall=null;view.frame=null;status.textContent='새 BANC 상태 기록을 기다립니다.';diagnostic.textContent='접촉 진단 기록이 없습니다.';}
+ return {ingest,replay,live,seek,draw,reset,view,timeline};
 };
 })(globalThis.Fly);
 
@@ -912,7 +995,12 @@ button('body-command-neural',async()=>{workbench.pause();const [kind,name]=$('bo
 let sharedCheckpoint=null;
 for(const id of ['play','step','init','autonomy-start','restore','shared-init'])$(id).addEventListener('click',()=>pauseBanc());
 let bancPlaying=false,bancBusy=false;
-function pauseBanc(){bancPlaying=false;$('banc-walking-play').textContent='▶ BANC 재생';}
+const bancTraceView=F.createBancTraceView({canvas:$('banc-world'),overlay:$('banc-overlay'),status:$('banc-display-status'),diagnostic:$('banc-contact-status'),slider:$('banc-replay-seek')});
+const bancPlayback=F.createPlaybackPump({shouldRun:()=>bancPlaying&&!state.closed&&!document.hidden,targetMs:80,maxSteps:10,
+ advance:async steps=>showBanc(await rpc.request('banc_walking_advance',{steps,stream:true})),
+ onBusy:value=>{bancBusy=value;},onError:error=>{pauseBanc();tell(error.message,true);}});
+
+function pauseBanc(){bancPlaying=false;$('banc-walking-play').textContent='▶ BANC 재생';bancPlayback.sync();}
 function showBancNavigation(o,syncTarget=false){
  const n=o?.navigation, panel=$('banc-navigation-status'), canvas=$('banc-navigation-map');
  $('banc-target-apply').disabled=!n||!!o?.fault;$('banc-target-cut').disabled=!n||!!o?.fault;$('banc-target-cut').checked=!!n?.cue_cut;
@@ -935,6 +1023,10 @@ function showBancNavigation(o,syncTarget=false){
 }
 function showBanc(result,syncTarget=false){
  const o=result.observation;
+ if(!o)bancTraceView.reset();else bancTraceView.ingest(result);
+ if(result.trace)$('banc-walking-image').hidden=true;
+ if(result.image)$('banc-native-time').textContent=`정적 실제 메시 · ${o?.time_s.toFixed(3)} 모델초 (연속 영상 아님)`;
+ if(o?.trace_error)tell('상태 기록 오류: '+o.trace_error,true);
  showBancNavigation(o,syncTarget);
  $('banc-walking-status').dataset.time=String(o?.time_s||0);
  $('banc-walking-status').textContent=o?`${o.time_s.toFixed(3)} 모델초 · ${o.neurons.toLocaleString()}개 신경세포 · ${o.edges.toLocaleString()}개 연결\n현재 계산: ${(o.neural_dt_s||0.0001)===0.00025?'빠른 계산':(o.neural_dt_s||0.0001)===0.0001?'기존 기준':'비교 계산'} · 신경 ${((o.neural_dt_s||0.0001)*1000).toFixed(2)}ms · 물리 0.10ms · 감각·운동 5ms\n수평 이동 ${o.horizontal_net_mm.toFixed(3)} mm · 몸 방향 전진 ${o.signed_forward_mm.toFixed(3)} mm\n운동신경 평균 ${o.motor_rate_mean.toFixed(2)} 모델 단위 · ${o.device.toUpperCase()} 신경 계산 · 외부 CPG 사용 안 함\n${o.last_speed_ratio==null?'누적':'최근 진행'} 속도 ${(o.last_speed_ratio??o.time_s/Math.max(o.wall_s,0.001)).toFixed(3)} 모델초/실제초 · 현재 실행의 보행 판정은 별도 검증기에서 확인${o.fault?'\n중단: '+o.fault:''}`:'BANC 보행 실험이 없습니다.';
@@ -945,7 +1037,29 @@ function showBanc(result,syncTarget=false){
  $('banc-walking-close').disabled=!o;
  if(o?.fault)pauseBanc();
 }
-async function bancPump(){if(!bancPlaying||bancBusy)return;bancBusy=true;try{showBanc(await rpc.request('banc_walking_advance',{steps:10}));}catch(error){pauseBanc();tell(error.message);}finally{bancBusy=false;if(bancPlaying)setTimeout(bancPump,0);}}
+function bancPump(){bancPlayback.sync();}
+button('banc-view-live',()=>bancTraceView.live());
+button('banc-replay',()=>{pauseBanc();bancTraceView.replay(1);});
+button('banc-replay-slow',()=>{pauseBanc();bancTraceView.replay(.25);});
+$('banc-replay-seek').addEventListener('input',()=>{pauseBanc();bancTraceView.seek(Number($('banc-replay-seek').value));});
+button('banc-view-track',()=>{bancTraceView.view.track();bancTraceView.view.distance=10;});
+button('banc-view-top',()=>{const v=bancTraceView.view;v.top();v.target=v.frame?.body.position||[0,0,0];v.distance=12;});
+button('banc-native-preview',async()=>{pauseBanc();showBanc(await rpc.request('banc_walking_preview'));});
+button('banc-trace-export',async()=>{
+ pauseBanc();const samples=[];let after=-1,metadata=null;
+ for(let page=0;page<301;page++){
+  const result=await rpc.request('banc_walking_trace',{after,limit:200});
+  if(result.trace_error)throw Error('불완전한 상태 기록: '+result.trace_error);
+  if(metadata&&metadata.epoch!==result.epoch)throw Error('내보내기 중 실험이 변경됐습니다. 다시 저장하세요.');
+  if(!metadata)metadata={...result,samples:undefined};
+  samples.push(...result.samples);if(!result.has_more)break;
+  if(result.next_after<=after)throw Error('기록 페이지가 진행되지 않습니다.');after=result.next_after;
+ }
+ if(!samples.length)throw Error('기록이 없습니다. BANC 재생으로 상태를 기록하세요.');
+ const blob=new Blob([JSON.stringify({...metadata,samples},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');
+ link.href=url;link.download='banc-trace-'+metadata.epoch+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
+ tell(`${samples.length}개 측정 상태를 내보냈습니다. 서버 버퍼에서 제외된 이전 표본: ${metadata.evicted_samples}개.`);
+});
 async function bancCheckpoints(selected=$('banc-walking-checkpoints').value){const rows=await rpc.request('banc_walking_checkpoints');$('banc-walking-checkpoints').replaceChildren(new Option('BANC 저장 상태 선택',''),...rows.map(r=>new Option(r.name,r.name)));if(rows.some(r=>r.name===selected))$('banc-walking-checkpoints').value=selected;$('banc-walking-restore').disabled=!$('banc-walking-checkpoints').value;}
 button('banc-walking-refresh',()=>bancCheckpoints());
 $('banc-walking-checkpoints').addEventListener('change',()=>{$('banc-walking-restore').disabled=!$('banc-walking-checkpoints').value;});
@@ -954,8 +1068,8 @@ function bancTarget(){const target=[$('banc-target-x').value,$('banc-target-z').
 button('banc-navigation-init',async()=>{const target=bancTarget();workbench.pause();pauseBanc();const r=await rpc.request('banc_walking_init',{seed:Number($('seed').value),parameters:{neural_dt_s:0.00025,coxa_geometry:true,ltm_tendons:true},navigation:{target_xz_mm:target,forward_drive:5000}});showBanc(r);await bancCheckpoints(r.source_checkpoint||'');tell('BANC 목표 실험을 준비했습니다. BANC 재생으로 진행하세요.');});
 button('banc-target-apply',async()=>{const target=bancTarget();pauseBanc();showBanc(await rpc.request('banc_walking_target',{target_xz_mm:target}));});
 $('banc-target-cut').addEventListener('change',async()=>{pauseBanc();try{showBanc(await rpc.request('banc_walking_target_cut',{cut:$('banc-target-cut').checked}));}catch(error){tell(error.message);}});
-button('banc-walking-play',async()=>{if(bancPlaying){pauseBanc();return;}workbench.pause();bancPlaying=true;$('banc-walking-play').textContent='⏸ BANC 일시정지';await bancPump();});
-button('banc-walking-step',async()=>{workbench.pause();pauseBanc();showBanc(await rpc.request('banc_walking_advance',{steps:10}));});
+button('banc-walking-play',async()=>{if(bancPlaying){pauseBanc();return;}workbench.pause();bancTraceView.live();bancPlaying=true;$('banc-walking-play').textContent='⏸ BANC 일시정지';await bancPump();});
+button('banc-walking-step',async()=>{workbench.pause();pauseBanc();showBanc(await rpc.request('banc_walking_advance',{steps:10,stream:true}));});
 button('banc-walking-save',async()=>{pauseBanc();const r=await rpc.request('banc_walking_save',{});await bancCheckpoints(r.name);tell('BANC 신경·감각·몸 상태 저장: '+r.name);});
 button('banc-walking-restore',async()=>{const name=$('banc-walking-checkpoints').value;if(!name)throw Error('복원할 BANC 저장 상태를 선택하세요.');workbench.pause();pauseBanc();showBanc(await rpc.request('banc_walking_restore',{name}),true);});
 button('banc-walking-close',async()=>{pauseBanc();await rpc.request('banc_walking_close',{});showBanc({closed:true});$('banc-walking-image').hidden=true;});
@@ -1091,7 +1205,7 @@ playback=F.createPlaybackPump({
  onError:e=>{state.playing=false;updatePlay();tell(e.message,true);}
 });
 let lastDraw=0;
-function animate(now){requestAnimationFrame(animate);workbench.animate(now,false);if(!document.hidden&&now-lastDraw>=33&&view.needsDraw()){view.draw();workbench.drawPreview();lastDraw=now;}}
+function animate(now){requestAnimationFrame(animate);if(!document.hidden&&$('banc-walking-panel').open)bancTraceView.draw(now);workbench.animate(now,false);if(!document.hidden&&now-lastDraw>=33&&view.needsDraw()){view.draw();workbench.drawPreview();lastDraw=now;}}
 requestAnimationFrame(animate);
 rpc.connect().then(async(config)=>{
  $('status-dot').className='ready';

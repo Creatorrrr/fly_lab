@@ -90,8 +90,9 @@
                 catch (e) {
                     console.warn('WebGL fallback', e);
                     this.gl = null;
-                    canvas.replaceWith(canvas.cloneNode());
-                    this.canvas = document.querySelector('#world');
+                    const replacement = canvas.cloneNode();
+                    canvas.replaceWith(replacement);
+                    this.canvas = replacement;
                     this.ctx = this.canvas.getContext('2d');
                 }
             }

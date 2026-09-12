@@ -56,7 +56,7 @@ class BancWorkbenchContracts(unittest.TestCase):
         self.dispatcher.banc_walking = SimpleNamespace(
             advance=called.append, close=lambda: None
         )
-        self.dispatcher.banc_walking_result = lambda: {"observation": {"time_s": 0.1}}
+        self.dispatcher.banc_walking_result = lambda **kwargs: {"observation": {"time_s": 0.1}}
         before = self.dispatcher.engine.checkpoint()
         for count in (-1, 0, 21, True, 1.5):
             with self.assertRaises(ValueError):
@@ -65,6 +65,28 @@ class BancWorkbenchContracts(unittest.TestCase):
         self.call("banc_walking_advance", {"steps": 10})
         self.assertEqual(called, [10])
         same_state(before, self.dispatcher.engine.checkpoint())
+
+    def test_stream_uses_returned_frame_and_never_renders(self):
+        from flylab.c.walking_trace import WalkingTrace
+        calls=[]
+        observation={"time_s": .015}
+        def advance(steps, *, capture=False):
+            calls.append((steps,capture))
+            return observation
+        def forbidden():
+            raise AssertionError("Duplicate frame or PNG render")
+        self.dispatcher.banc_walking=SimpleNamespace(
+            control_tick=0,advance=advance,trace=WalkingTrace(),world={},
+            frame=forbidden,body=SimpleNamespace(preview=forbidden),close=lambda:None)
+        result=self.call("banc_walking_advance",{"steps":3,"stream":True})["result"]
+        self.assertIs(result["observation"],observation)
+        self.assertNotIn("image",result)
+        self.assertNotIn("render_error",result)
+        self.assertEqual(calls,[(3,True)])
+        for value in (1,"true",None):
+            with self.assertRaises(ValueError):
+                self.call("banc_walking_advance",{"stream":value})
+        self.assertEqual(calls,[(3,True)])
 
     def test_model_parameters_reject_nonfinite_and_wrong_types(self):
         for field, value in (

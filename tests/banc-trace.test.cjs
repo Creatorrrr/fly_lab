@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+globalThis.Fly={};require('../src/c/banc-trace.js');
+const T=Fly.BancTimeline,t=new T(3),row=i=>({control_tick:i,time_s:i*.005});
+const packet=(epoch,ids)=>({schema:'flylab.banc-trace.v1',epoch,samples:ids.map(row)});
+t.ingest(packet('a',[0,1,2]));assert.equal(t.at(.007).control_tick,1);assert.equal(t.at(10).control_tick,2);
+t.ingest(packet('a',[2,3]));assert.equal(t.samples.length,3);assert.equal(t.evicted,1);assert.equal(t.gaps,0);
+t.ingest(packet('a',[6]));assert.equal(t.gaps,2);assert.equal(t.at(.02).control_tick,3);
+t.ingest(packet('b',[0]));assert.equal(t.samples.length,1);assert.equal(t.epoch,'b');assert.equal(t.gaps,0);assert.equal(t.evicted,0);
+assert.throws(()=>t.ingest({schema:'wrong',epoch:'b',samples:[]}));
+assert.throws(()=>t.ingest({schema:'flylab.banc-trace.v1',epoch:'b',samples:[{control_tick:1,time_s:2}]}));
+console.log('BANC timeline: timestamp hold, duplicate, bounded buffer, gap and epoch tests passed');

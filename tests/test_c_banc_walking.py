@@ -76,9 +76,38 @@ class BancWorkbenchContracts(unittest.TestCase):
             ("neural_dt_s", float("nan")),
             ("neural_dt_s", True),
             ("neural_dt_s", 0.0003),
+            ("coxa_geometry", 1),
+            ("ltm_tendons", "true"),
+            ("coxa_endpoint", "true"),
+            ("coxa_endpoint", True),
         ):
             with self.assertRaises(ValueError):
                 BancWalkingParameters(**{field: value})
+
+    def test_target_updates_do_not_advance_or_replace_either_body(self):
+        calls = []
+        banc = SimpleNamespace(
+            set_navigation_target=lambda value: calls.append(("target", value)),
+            set_navigation_cut=lambda value: calls.append(("cut", value)),
+            close=lambda: None,
+        )
+        self.dispatcher.banc_walking = banc
+        self.dispatcher.banc_walking_result = lambda: {"observation": {}}
+        main = self.dispatcher.engine
+        before = main.checkpoint()
+        for op, payload in (
+            ("banc_walking_target", {"x": 1}),
+            ("banc_walking_target_cut", {"enabled": True}),
+        ):
+            with self.assertRaises(ValueError):
+                self.call(op, payload)
+        self.assertEqual(calls, [])
+        self.call("banc_walking_target", {"target_xz_mm": [6, -3]})
+        self.call("banc_walking_target_cut", {"cut": True})
+        self.assertEqual(calls, [("target", [6, -3]), ("cut", True)])
+        self.assertIs(self.dispatcher.engine, main)
+        self.assertIs(self.dispatcher.banc_walking, banc)
+        same_state(before, main.checkpoint())
 
     def test_small_graph_cannot_claim_the_banc_research_roster(self):
         graph = graph_fixture()

@@ -22,6 +22,7 @@ from .adaptive_rate import AdaptiveRateNetwork
 from .integrity import bounded_int, digest
 from .rate_body import RateBodyAdapter
 from .research_annotations import rate_weights
+from .target_navigation import BancTargetNavigation
 
 
 def validate_banc_roster(graph):
@@ -60,8 +61,19 @@ class BancWalkingParameters:
     descending_drive: float = 0.0
     pooling: str = "mean"
     neural_dt_s: float = 0.00025
+    coxa_geometry: bool = False
+    ltm_tendons: bool = False
+    coxa_endpoint: bool = False
 
     def __post_init__(self):
+        if type(self.coxa_geometry) is not bool:
+            raise ValueError("Boolean coxa geometry option required")
+        if type(self.ltm_tendons) is not bool:
+            raise ValueError("Boolean LTM tendon option required")
+        if type(self.coxa_endpoint) is not bool or (
+            self.coxa_endpoint and not self.coxa_geometry
+        ):
+            raise ValueError("Endpoint direction model requires physical coxa mapping")
         if type(self.neural_dt_s) not in (int, float) or self.neural_dt_s not in (
             0.0001,
             0.0002,
@@ -99,9 +111,13 @@ class BancWalkingSession:
         world=None,
         device="auto",
         cuda_implementation="packed",
+        navigation=None,
     ):
         self.source_scope = validate_banc_roster(graph)
         self.graph = graph
+        self.navigation = (
+            BancTargetNavigation(graph, navigation) if navigation is not None else None
+        )
         self.seed = bounded_int(seed, "seed", 0, 2**32 - 1)
         self.p = BancWalkingParameters(**(parameters or {}))
         self.neural_steps_per_control = round(0.005 / self.p.neural_dt_s)
@@ -125,8 +141,15 @@ class BancWalkingSession:
                 sensory_gain=self.p.sensory_gain,
                 motor_gain=self.p.motor_gain,
                 pooling=self.p.pooling,
+                coxa_geometry=self.p.coxa_geometry,
+                ltm_tendons=self.p.ltm_tendons,
+                coxa_endpoint=self.p.coxa_endpoint,
             )
             weights, _ = rate_weights(graph)
+            if self.navigation:
+                weights = self.navigation.encoder.calibrate_weights(
+                    weights, self.adapter.motor_ids
+                )
             self.network = AdaptiveRateNetwork(
                 weights,
                 *[
@@ -170,6 +193,22 @@ class BancWalkingSession:
         self.initial_position = self.body.pose()[0]
         self.signed_forward_mm = 0.0
         self.rate = np.zeros(len(self.adapter.motor_ids), np.float32)
+        if self.navigation:
+            self.navigation.set_target(
+                self.navigation.sensor.target_xz, 0.0, *self.body.pose()[:2]
+            )
+
+    def set_navigation_target(self, target_xz):
+        if self.navigation is None:
+            raise ValueError("Create a BANC target experiment first")
+        self.navigation.set_target(
+            target_xz, self.control_tick * 0.005, *self.body.pose()[:2]
+        )
+
+    def set_navigation_cut(self, value):
+        if self.navigation is None:
+            raise ValueError("Create a BANC target experiment first")
+        self.navigation.set_cut(value)
 
     def set_cuts(self, cuts):
         if (
@@ -200,11 +239,14 @@ class BancWalkingSession:
                 prior, rotation, _ = self.body.pose()
                 drive = self.adapter.encode(sensory_cut=self.cuts["sensory"])
                 drive[self.descending] += self.p.descending_drive
+                if self.navigation:
+                    drive += self.navigation.drive(prior, rotation)
                 self.network.advance(drive, self.neural_steps_per_control)
                 self.rate = self.network.readout(self.adapter.motor_ids)
                 target, adhesion = self.adapter.decode(
                     self.rate, motor_cut=self.cuts["motor"]
                 )
+                self.tendon_inputs.update(self.adapter.tendon_inputs)
                 self.body.step_joint_targets(
                     target, adhesion, tendon_inputs=self.tendon_inputs
                 )
@@ -212,6 +254,12 @@ class BancWalkingSession:
                 self.signed_forward_mm += float((current - prior)[:2] @ rotation[:2, 0])
                 self.control_tick += 1
                 self.fault = self.body.fault
+                if self.navigation:
+                    self.navigation.record(
+                        self.control_tick * 0.005,
+                        current,
+                        not (self.fault or self.body.nonfoot_contact()),
+                    )
                 if self.fault:
                     break
             self._clocks()
@@ -267,10 +315,13 @@ class BancWalkingSession:
             "feet": self.body.contact_probe(),
             "sensory_port_count": len(self.adapter.ports),
             "feedback_feature_mean": float(self.adapter.last_features.mean()),
-            "input_model": "Measured leg receptor feedback only"
+            "input_model": "Ideal target cue, calibrated inhibitory ports, tonic DNg100 and measured leg receptors"
+            if self.navigation
+            else "Measured leg receptor feedback only"
             if self.p.descending_drive == 0
             else "Constant bilateral DNg100 drive and measured leg receptor feedback",
-            "descending_drive": self.p.descending_drive,
+            "descending_drive": self.p.descending_drive
+            + (self.navigation.encoder.forward_drive if self.navigation else 0.0),
             "device": self.network.device,
             "cuda_implementation": self.network.cuda_implementation,
             "walking_status": "EXPERIMENTAL_RUN_NOT_ASSESSED",
@@ -279,6 +330,9 @@ class BancWalkingSession:
             "imposed_gait": False,
             "root_pose_correction": False,
             "motor_model": "Anatomical muscle pooling and bounded position servos; not calibrated muscle forces",
+            "navigation": self.navigation.view(position, rotation)
+            if self.navigation
+            else None,
         }
 
     def snapshot(self):
@@ -300,6 +354,7 @@ class BancWalkingSession:
             "signed_forward_mm": self.signed_forward_mm,
             "cpg_hash": self.cpg_hash,
             "wall_s": self.wall_s,
+            "navigation": self.navigation.snapshot() if self.navigation else None,
         }
 
     @classmethod
@@ -334,11 +389,15 @@ class BancWalkingSession:
             world=saved["world"],
             device=saved["network"]["device"],
             cuda_implementation=cuda_implementation,
+            navigation=saved["navigation"]["config"]
+            if saved.get("navigation") is not None
+            else None,
         )
         try:
             session.body.restore(saved["body"])
             session.network.restore(saved["network"])
             session.adapter.restore(saved["adapter"])
+            session.tendon_inputs.update(session.adapter.tendon_inputs)
             # Validate the saved causal mask before setting any new one.
             expected = np.ones(graph.n, np.float32)
             if saved["cuts"].get("circuit") is True:
@@ -361,6 +420,8 @@ class BancWalkingSession:
             if session.cpg_hash != saved["cpg_hash"]:
                 raise ValueError("BANC checkpoint changed CPG state")
             session.rate = session.network.readout(session.adapter.motor_ids)
+            if session.navigation:
+                session.navigation.restore(saved["navigation"], time_s=controls * 0.005)
             session._clocks()
         except Exception:
             session.close()

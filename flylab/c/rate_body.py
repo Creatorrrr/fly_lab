@@ -22,11 +22,40 @@ from .neuromuscular import (
 
 class RateBodyAdapter:
     def __init__(
-        self, graph, body, *, sensory_gain=18.0, motor_gain=0.002, pooling="mean"
+        self,
+        graph,
+        body,
+        *,
+        sensory_gain=18.0,
+        motor_gain=0.002,
+        pooling="mean",
+        coxa_geometry=False,
+        ltm_tendons=False,
+        coxa_endpoint=False,
     ):
         if pooling not in ("mean", "unit_response"):
             raise ValueError("Unknown rate motor pooling")
         self.pooling = pooling
+        if type(coxa_endpoint) is not bool or (coxa_endpoint and not coxa_geometry):
+            raise ValueError("Endpoint direction model requires physical coxa mapping")
+        self.coxa_endpoint = coxa_endpoint
+        if type(ltm_tendons) is not bool:
+            raise ValueError("Boolean neural LTM tendon option required")
+        self.ltm_tendons = ltm_tendons
+        self.tendon_activation = np.zeros(6)
+        if type(coxa_geometry) is not bool:
+            raise ValueError("Boolean physical coxa direction option required")
+        self.schema = "flylab.rate-body.v3" if coxa_geometry else "flylab.rate-body.v2"
+        self.coxa_sign = np.ones(6)
+        if coxa_geometry:
+            slope = np.asarray(body.coxa_rotation_kinematics()["d_anterior_dq"])
+            if (
+                slope.shape != (6,)
+                or not np.isfinite(slope).all()
+                or np.any(np.abs(slope) < 1e-4)
+            ):
+                raise ValueError("Unresolved physical coxa anterior rotation direction")
+            self.coxa_sign = np.sign(slope)
         if not np.isfinite([sensory_gain, motor_gain]).all() or not (
             0 <= sensory_gain <= 400 and 0 <= motor_gain <= 0.02
         ):
@@ -74,7 +103,58 @@ class RateBodyAdapter:
         )
         if len(np.unique(self.joints)) != 42:
             raise ValueError("Six complete and distinct leg joint mappings required")
+        endpoint_vectors = []
+        if coxa_endpoint:
+            geometry = body.coxa_endpoint_kinematics()
+            anterior, inward = [np.asarray(geometry[k]) for k in ("anterior", "inward")]
+            if any(
+                x.shape != (6, 3) or not np.isfinite(x).all()
+                for x in (anterior, inward)
+            ):
+                raise ValueError("Finite physical coxa endpoint Jacobians required")
+            directions = {
+                "tergopleural_promotor_muscle": (1.0, 0.0),
+                "pleural_remotor_and_abductor_muscle": (-1.0, -1.0),
+                "sternal_adductor_muscle": (0.0, 1.0),
+            }
+            for leg, groups in enumerate(self.muscles):
+                jacobian = np.stack([anterior[leg], inward[leg]])
+                if np.linalg.matrix_rank(jacobian, tol=1e-5) != 2:
+                    raise ValueError("Unresolved coxa movement plane")
+                for name, _, moment in groups:
+                    moment[0] *= self.coxa_sign[leg]
+                    if name not in directions:
+                        continue
+                    displacement = np.linalg.lstsq(
+                        jacobian, directions[name], rcond=1e-5
+                    )[0]
+                    displacement /= np.max(np.abs(displacement))
+                    moment[:3] = displacement
+                    endpoint_vectors.append(
+                        {"leg": LEGS[leg], "muscle": name, "vector": moment.tolist()}
+                    )
         self.motor_columns = {int(i): k for k, i in enumerate(self.motor_ids)}
+        if ltm_tendons:
+            control = getattr(body, "tendon_control", None)
+            if control is None:
+                raise ValueError("LTM motor mapping requires physical tarsal tendons")
+            for leg, groups in zip(LEGS, self.muscles):
+                name = leg + "_tarsus"
+                if name not in control.index:
+                    raise ValueError("Missing physical LTM tendon: " + name)
+                lo, hi = control.limits[control.index[name]]
+                if lo > 0.0 or hi < 0.1:
+                    raise ValueError("Physical LTM envelope mismatch")
+                matches = [
+                    moment
+                    for muscle, _, moment in groups
+                    if muscle == "long_tendon_muscle"
+                ]
+                if len(matches) != 1:
+                    raise ValueError("Unique anatomical LTM motor group required")
+                # The distal tendon replaces the first-tarsus position proxy.
+                # Tarsus depressor/levator and LTM adhesion requests remain.
+                matches[0].fill(0.0)
         self.offset = np.zeros(42)
         self.filtered = np.zeros(len(self.ports))
         self.velocity_lowpass = np.zeros(42)
@@ -106,6 +186,51 @@ class RateBodyAdapter:
                 "receptor_latency_controls": 1,
                 "adhesion": "tarsal-balance-and-lift-veto",
             }
+        )
+        if coxa_geometry:
+            self.identity = digest(
+                {
+                    "schema": self.schema,
+                    "rate_body_v2_hash": self.identity,
+                    "coxa_direction": "distal-coxa-forward-jacobian-v1",
+                    "coxa_motor_sign": self.coxa_sign.tolist(),
+                    "source": "https://faculty.washington.edu/tuthill/docs/azevedo24_appendix.pdf",
+                }
+            )
+        if ltm_tendons:
+            self.schema = "flylab.rate-body.v4"
+            self.identity = digest(
+                {
+                    "schema": self.schema,
+                    "base_adapter_hash": self.identity,
+                    "ltm": "six-distal-tendons-no-first-joint-double-count",
+                    "maximum_tendon_input": 0.1,
+                    "rate_scale_model_units": 100.0,
+                    "activation_tau_s": 0.03,
+                    "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11348827/",
+                }
+            )
+        if coxa_endpoint:
+            self.schema = "flylab.rate-body.v5"
+            self.identity = digest(
+                {
+                    "schema": self.schema,
+                    "base_adapter_hash": self.identity,
+                    "model": "minimum-norm-coxa-endpoint-direction-proxy-v1",
+                    "vectors": endpoint_vectors,
+                    "anatomical_scope": "Foreleg action labels generalized as an engineering hypothesis; not measured six-leg moments",
+                }
+            )
+
+    @property
+    def tendon_inputs(self):
+        return (
+            {
+                leg + "_tarsus": float(value)
+                for leg, value in zip(LEGS, self.tendon_activation)
+            }
+            if self.ltm_tendons
+            else {}
         )
 
     def encode(self, *, sensory_cut=False, dt=0.005):
@@ -193,6 +318,8 @@ class RateBodyAdapter:
                 )
                 vector += rate * moment * self.motor_gain
                 output[name] = rate
+            if not self.coxa_endpoint:
+                vector[0] *= self.coxa_sign[leg]
             vector[5] *= self.knee_sign[leg]
             requested[self.joints[leg]] = 0.5 * np.tanh(vector / 0.5)
             adhesion[leg] = (
@@ -212,12 +339,28 @@ class RateBodyAdapter:
         if lift.shape != (6,) or not np.isfinite(lift).all():
             raise ValueError("Invalid local pad lift observation")
         adhesion[lift > 0.02] = False
+        if self.ltm_tendons:
+            requested_tendons = 0.1 * np.tanh(
+                np.array(
+                    [
+                        row["muscle_rate_units"]["long_tendon_muscle"]
+                        for row in diagnostic
+                    ]
+                )
+                / 100.0
+            )
+            if motor_cut:
+                self.tendon_activation.fill(0.0)
+            else:
+                self.tendon_activation += (1 - math.exp(-dt / 0.03)) * (
+                    requested_tendons - self.tendon_activation
+                )
         self.last_motor = diagnostic
         return targets, adhesion
 
     def snapshot(self):
-        return {
-            "schema": "flylab.rate-body.v2",
+        state = {
+            "schema": self.schema,
             "hash": self.identity,
             "offset": self.offset.copy(),
             "filtered": self.filtered.copy(),
@@ -225,20 +368,23 @@ class RateBodyAdapter:
             "last_features": self.last_features.copy(),
             "last_motor": copy.deepcopy(self.last_motor),
         }
+        if self.ltm_tendons:
+            state["tendon_activation"] = self.tendon_activation.copy()
+        return state
 
     def restore(self, state):
-        if (
-            state.get("schema") != "flylab.rate-body.v2"
-            or state.get("hash") != self.identity
-        ):
+        if state.get("schema") != self.schema or state.get("hash") != self.identity:
             raise ValueError("Incompatible rate/body state")
         values = {}
-        for key, lo, hi in (
+        fields = (
             ("offset", -0.5, 0.5),
             ("filtered", 0, self.sensory_gain),
             ("velocity_lowpass", -1e10, 1e10),
             ("last_features", 0.0, 1.0),
-        ):
+        )
+        if self.ltm_tendons:
+            fields += (("tendon_activation", 0.0, 0.1),)
+        for key, lo, hi in fields:
             value = np.asarray(state.get(key))
             if (
                 value.dtype.kind not in "fiu"

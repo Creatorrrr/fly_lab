@@ -154,13 +154,13 @@ class CDispatcher:
         elif op == 'frame': result = self.need().frame()
         elif op == 'banc_walking_init':
             from .banc_walking import BancWalkingSession
-            if set(payload)-{'seed','parameters'}:raise ValueError('Unknown BANC walking field')
+            if set(payload)-{'seed','parameters','navigation'}:raise ValueError('Unknown BANC walking field')
             self.load()
             saved=None
             if self.banc_walking and not (self.banc_walking.fault or self.banc_walking.body.fault):
                 saved='before-init-'+secrets.token_hex(6)
                 StateStore.save(self.artifacts/'banc-walking-checkpoints'/saved,self.banc_walking.snapshot())
-            candidate=BancWalkingSession(self.graph,seed=payload.get('seed',42),parameters=payload.get('parameters'))
+            candidate=BancWalkingSession(self.graph,seed=payload.get('seed',42),parameters=payload.get('parameters'),navigation=payload.get('navigation'))
             old=self.banc_walking;self.banc_walking=candidate
             if old:old.close()
             result=self.banc_walking_result();result['source_checkpoint']=saved
@@ -172,6 +172,12 @@ class CDispatcher:
                 result=self.banc_walking_result()
             elif op=='banc_walking_cuts':
                 self.banc_walking.set_cuts(payload);result=self.banc_walking_result()
+            elif op=='banc_walking_target':
+                if set(payload)!={'target_xz_mm'}:raise ValueError('Explicit BANC target X/Z required')
+                self.banc_walking.set_navigation_target(payload['target_xz_mm']);result=self.banc_walking_result()
+            elif op=='banc_walking_target_cut':
+                if set(payload)!={'cut'}:raise ValueError('Boolean BANC target cue cut required')
+                self.banc_walking.set_navigation_cut(payload['cut']);result=self.banc_walking_result()
             elif op=='banc_walking_save':
                 if payload:raise ValueError('BANC save takes no options')
                 name='banc-'+secrets.token_hex(6)

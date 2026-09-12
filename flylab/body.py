@@ -320,6 +320,27 @@ class FlyGymBody:
         return dict(target_lift_mm=np.asarray(lifts), velocity_mm_s=np.asarray(velocities),
                     model='first-order tip displacement from actuated joints; support normal, +z fallback')
 
+    def coxa_rotation_kinematics(self):
+        """Distal coxa anterior motion per positive yaw, in the body frame.
+
+        The trochanter/femur origin is the distal coxa endpoint. Using a foot
+        instead would confound coxa rotation with downstream leg geometry.
+        This observes a direction; it does not calibrate muscle moment arms.
+        """
+        forward = self.pose()[1][:, 0]
+        slopes = []
+        for leg in LEGS:
+            endpoint = int(self.body_ids[self.body_indices[f'{leg}_trochanterfemur']])
+            matches = [i for i, name in enumerate(self.joint_names)
+                       if name.endswith(f'/c_thorax-{leg}_coxa-yaw')]
+            if len(matches) != 1:
+                raise ValueError('Unique physical coxa yaw required: ' + leg)
+            jacobian = np.zeros((3, self.m.nv))
+            self.mj.mj_jacBody(self.m, self.d, jacobian, None, endpoint)
+            slopes.append(float(forward @ jacobian[:, self.qvel_ids[matches[0]]]))
+        return dict(d_anterior_dq=np.asarray(slopes),
+                    model='distal-coxa-forward-jacobian-v1')
+
     def knee_kinematics(self):
         """Measured flexion and its physical hinge sign, invariant to root pose."""
         from .kinematic_senses import segment_flexion
@@ -342,6 +363,27 @@ class FlyGymBody:
             angles.append(angle);velocities.append(speed);derivatives.append(derivative)
         return dict(flexion_rad=np.asarray(angles),velocity_rad_s=np.asarray(velocities),
                     d_flexion_dq=np.asarray(derivatives),model='physical-segment-origins-and-jacobians-v1')
+
+    def coxa_endpoint_kinematics(self):
+        """Observe how all three local hip axes move the distal coxa endpoint."""
+        rotation = self.pose()[1]
+        anterior, inward = [], []
+        for leg in LEGS:
+            endpoint = int(self.body_ids[self.body_indices[f'{leg}_trochanterfemur']])
+            columns = []
+            for axis in ('yaw', 'pitch', 'roll'):
+                matches = [i for i, name in enumerate(self.joint_names)
+                           if name.endswith(f'/c_thorax-{leg}_coxa-{axis}')]
+                if len(matches) != 1:
+                    raise ValueError('Unique physical hip axis required')
+                columns.append(self.qvel_ids[matches[0]])
+            jacobian = np.zeros((3, self.m.nv))
+            self.mj.mj_jacBody(self.m, self.d, jacobian, None, endpoint)
+            anterior.append(rotation[:, 0] @ jacobian[:, columns])
+            medial_axis = rotation[:, 1] * (-1. if leg[0] == 'l' else 1.)
+            inward.append(medial_axis @ jacobian[:, columns])
+        return dict(anterior=np.asarray(anterior), inward=np.asarray(inward),
+                    model='distal-coxa-directional-jacobian-v1')
 
     def contact_probe(self):
         """Measured tip position/velocity and floor contact at this control boundary."""

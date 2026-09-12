@@ -1,0 +1,40 @@
+name: Apply reviewed BANC observation changes
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.ref == 'refs/heads/fix/banc-observation-stream-20260912'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: fix/banc-observation-stream-20260912
+      - name: Verify and apply reviewed source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64, gzip, hashlib
+          from pathlib import Path
+          data = gzip.decompress(base64.b64decode(Path('.banc-observation.patch.gz.b64').read_text()))
+          assert hashlib.sha256(data).hexdigest() == '543cee447d04bb025aac82ee94b3087270826219ce643efc37baf8a0c038b169'
+          Path('/tmp/banc-observation.patch').write_bytes(data)
+          PY
+          git apply --check /tmp/banc-observation.patch
+          git apply --index /tmp/banc-observation.patch
+          python3 build_c.py
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+          assert hashlib.sha256(Path('FLY_LAB_C.html').read_bytes()).hexdigest() == 'f6a971e379122a6a2d32d524f74ea42ed0633ae78e8c756f6c2716d6cc036885'
+          PY
+          python3 -m compileall -q flylab tools
+          node tests/banc-trace.test.cjs
+          node tests/playback.test.cjs
+          git diff --check
+          git add FLY_LAB_C.html
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Add measured BANC body replay, contact diagnostics and exact-readout optimizations'
+          git push origin HEAD:refs/heads/fix/banc-observation-stream-20260912

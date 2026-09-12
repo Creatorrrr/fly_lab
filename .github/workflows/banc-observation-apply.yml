@@ -1,6 +1,8 @@
 name: Apply reviewed BANC observation changes
 on:
-  workflow_dispatch:
+  push:
+    branches: [fix/banc-observation-stream-20260912]
+    paths: [.banc-observation.patch.4.b64]
 permissions:
   contents: write
 jobs:
@@ -19,7 +21,8 @@ jobs:
           python3 - <<'PY'
           import base64, gzip, hashlib
           from pathlib import Path
-          data = gzip.decompress(base64.b64decode(Path('.banc-observation.patch.gz.b64').read_text()))
+          encoded = ''.join(Path(f'.banc-observation.patch.{i}.b64').read_text().strip() for i in range(1,5))
+          data = gzip.decompress(base64.b64decode(encoded, validate=True))
           assert hashlib.sha256(data).hexdigest() == '543cee447d04bb025aac82ee94b3087270826219ce643efc37baf8a0c038b169'
           Path('/tmp/banc-observation.patch').write_bytes(data)
           PY

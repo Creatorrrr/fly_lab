@@ -120,6 +120,30 @@ class ResearchRateNetwork:
             ] = 0
 
     def advance(self, drive, steps=10):
+        self._advance(drive, steps)
+
+    def advance_readout(self, drive, indices, steps=10):
+        """Validate the complete state and read selected outputs in one transfer.
+
+        Same integration and per-control rejection criteria as advance/readout.
+        The blocking CPU copy is intentional: physics must never consume an
+        unfinished GPU result. No asynchronous host-buffer reuse is introduced.
+        """
+        ids = np.asarray(indices)
+        if ids.ndim != 1 or (
+            ids.size
+            and (ids.dtype.kind not in "iu" or np.any(ids < 0) or np.any(ids >= self.n))
+        ):
+            raise ValueError("Invalid readout neuron indices")
+        key = tuple(int(i) for i in ids)
+        if getattr(self, "_readout_key", None) != key:
+            self._readout_indices = self.torch.tensor(
+                key, dtype=self.torch.int64, device=self.device
+            )
+            self._readout_key = key
+        return self._advance(drive, steps, readout_indices=self._readout_indices)
+
+    def _advance(self, drive, steps, *, readout_indices=None):
         values = np.asarray(drive)
         if (
             values.shape != (self.n,)
@@ -134,11 +158,7 @@ class ResearchRateNetwork:
         if type(steps) is not int or not 0 < steps <= 10000:
             raise ValueError("Bounded positive integer rate steps required")
         with self.torch.inference_mode():
-            self.drive.copy_(
-                self.torch.as_tensor(
-                    values, dtype=self.torch.float32, device=self.device
-                )
-            )
+            self.drive.copy_(self.torch.as_tensor(values, dtype=self.torch.float32))
             for _ in range(steps // self.interval_steps):
                 if self.graph is None:
                     self._interval()
@@ -147,6 +167,18 @@ class ResearchRateNetwork:
             for _ in range(steps % self.interval_steps):
                 self._step()
             self.tick += steps
+            if readout_indices is not None:
+                # Reductions remain on device until the selected motor outputs
+                # and a complete-network fault flag are copied together.
+                bad = (~self.torch.isfinite(self.rate)).any() | (
+                    self.rate < -1e-4
+                ).any()
+                selected = self.torch.index_select(self.rate, 0, readout_indices)
+                packet = self.torch.cat((selected, bad.reshape(1).to(self.rate.dtype)))
+                result = packet.detach().cpu().numpy()
+                if result[-1] != 0:
+                    raise RuntimeError("Invalid raw complete-network rate state")
+                return result[:-1].copy()
             if not bool(self.torch.isfinite(self.rate).all()) or bool(
                 (self.rate < -1e-4).any()
             ):

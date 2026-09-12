@@ -23,6 +23,7 @@ from .integrity import bounded_int, digest
 from .rate_body import RateBodyAdapter
 from .research_annotations import rate_weights
 from .target_navigation import BancTargetNavigation
+from .walking_trace import WalkingTrace, capture_control
 
 
 def validate_banc_roster(graph):
@@ -178,7 +179,7 @@ class BancWalkingSession:
             self.body.close()
             raise
         self.tendon_inputs = {name: 0.2 for name in self.body.tendon_control.names}
-        self.cpg_hash = digest(self.body.snapshot()["cpg"])
+        self.cpg_hash = self._cpg_digest()
         self.cuts = {
             "sensory": False,
             "descending": False,
@@ -186,6 +187,9 @@ class BancWalkingSession:
             "motor": False,
         }
         self.control_tick = 0
+        self.trace = WalkingTrace()
+        self.trace_error = None
+        self.fused_readout = True
         self.fault = None
         self.closed = False
         self.wall_s = 0.0
@@ -228,12 +232,33 @@ class BancWalkingSession:
             else ()
         )
 
-    def advance(self, controls=20):
+    def _cpg_digest(self):
+        reader = getattr(self.body, "cpg_state", None)
+        return digest(reader() if reader else self.body.snapshot()["cpg"])
+
+    def _record_control(self):
+        # Instrumentation errors are visible, but must not change model state
+        # or convert an otherwise healthy simulation into a neural fault.
+        if self.trace_error:
+            return
+        try:
+            self.trace.append(capture_control(self))
+        except Exception as exc:
+            self.trace_error = str(exc)
+
+    def advance(self, controls=20, *, capture=False):
+        if type(capture) is not bool:
+            raise ValueError("Boolean capture option required")
         bounded_int(controls, "BANC controls", 1, 20)
         if self.closed or self.fault or self.body.fault:
             raise RuntimeError(self.fault or self.body.fault or "Closed BANC session")
         began = time.perf_counter()
         began_tick = self.control_tick
+        if capture and (
+            not self.trace.samples
+            or self.trace.samples[-1]["control_tick"] != self.control_tick
+        ):
+            self._record_control()
         try:
             for _ in range(controls):
                 prior, rotation, _ = self.body.pose()
@@ -241,8 +266,14 @@ class BancWalkingSession:
                 drive[self.descending] += self.p.descending_drive
                 if self.navigation:
                     drive += self.navigation.drive(prior, rotation)
-                self.network.advance(drive, self.neural_steps_per_control)
-                self.rate = self.network.readout(self.adapter.motor_ids)
+                if self.fused_readout:
+                    self.rate = self.network.advance_readout(
+                        drive, self.adapter.motor_ids, self.neural_steps_per_control
+                    )
+                else:
+                    # Kept as an explicit reference for exactness benchmarks.
+                    self.network.advance(drive, self.neural_steps_per_control)
+                    self.rate = self.network.readout(self.adapter.motor_ids)
                 target, adhesion = self.adapter.decode(
                     self.rate, motor_cut=self.cuts["motor"]
                 )
@@ -260,6 +291,8 @@ class BancWalkingSession:
                         current,
                         not (self.fault or self.body.nonfoot_contact()),
                     )
+                if capture:
+                    self._record_control()
                 if self.fault:
                     break
             self._clocks()
@@ -280,7 +313,7 @@ class BancWalkingSession:
             or abs(physical_time - self.control_tick * 0.005) > 1e-5
         ):
             raise RuntimeError("BANC neural/body clocks diverged")
-        if digest(self.body.snapshot()["cpg"]) != self.cpg_hash:
+        if self._cpg_digest() != self.cpg_hash:
             raise RuntimeError("BANC walking must not advance the external CPG")
 
     def frame(self):
@@ -301,6 +334,7 @@ class BancWalkingSession:
             "parameters": asdict(self.p),
             "cuts": self.cuts.copy(),
             "wall_s": self.wall_s,
+            "trace_error": self.trace_error,
             "last_speed_ratio": self.last_speed_ratio,
             "graph_hash": self.graph.hash,
             "source_scope": copy.deepcopy(self.source_scope),
@@ -326,7 +360,7 @@ class BancWalkingSession:
             "cuda_implementation": self.network.cuda_implementation,
             "walking_status": "EXPERIMENTAL_RUN_NOT_ASSESSED",
             "biological_validation": False,
-            "cpg_advanced": digest(self.body.snapshot()["cpg"]) != self.cpg_hash,
+            "cpg_advanced": self._cpg_digest() != self.cpg_hash,
             "imposed_gait": False,
             "root_pose_correction": False,
             "motor_model": "Anatomical muscle pooling and bounded position servos; not calibrated muscle forces",

@@ -389,7 +389,6 @@ class FlyGymBody:
         """Measured tip position/velocity and floor contact at this control boundary."""
         motion=self.foot_kinematics(self.d.qpos[self.qpos_ids])
         velocity=motion['velocity_mm_s']
-        floor=self._contact_forces('feet',floor_only=True).reshape(6,5,3).sum(axis=1)
         surfaces=self.surface_contacts()
         normal=surfaces['normal_bw']
         contact=normal>1e-6
@@ -631,6 +630,12 @@ class FlyGymBody:
         if self.tendon_control is not None:physics['tendons']=self.tendon_control.observation()
         physics['attachment']=self.body_options.attachment
         return body,physics
+
+    def cpg_state(self):
+        """Read only the CPG fields needed by the no-external-oscillator guard."""
+        cp = self.controller.cpg_network
+        return {k: np.asarray(getattr(cp, k)).tolist() for k in
+                ('curr_phases', 'curr_magnitudes', 'intrinsic_freqs', 'intrinsic_amps')}
 
     def snapshot(self):
         typ=self.mj.mjtState.mjSTATE_INTEGRATION

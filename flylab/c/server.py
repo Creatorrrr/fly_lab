@@ -167,8 +167,32 @@ class CDispatcher:
         elif isinstance(op,str) and op.startswith('banc_walking_'):
             if self.banc_walking is None and op not in ('banc_walking_restore','banc_walking_checkpoints'):raise ValueError('Create a BANC walking experiment first')
             if op=='banc_walking_advance':
-                if set(payload)-{'steps'}:raise ValueError('Unknown BANC advance field')
-                self.banc_walking.advance(bounded_int(payload.get('steps',10),'steps',1,20))
+                if set(payload)-{'steps','stream'}:raise ValueError('Unknown BANC advance field')
+                stream=payload.get('stream',False)
+                if type(stream) is not bool:raise ValueError('Boolean BANC stream option required')
+                steps=bounded_int(payload.get('steps',10),'steps',1,20)
+                if stream:
+                    start=self.banc_walking.control_tick
+                    observation=self.banc_walking.advance(steps,capture=True)
+                    result=self.banc_walking_result(observation=observation,render=False)
+                    result['trace']=self.banc_walking.trace.page(after=start-1,limit=21)
+                    result['world']=self.banc_walking.world
+                else:
+                    observation=self.banc_walking.advance(steps)
+                    result=self.banc_walking_result(observation=observation)
+            elif op=='banc_walking_trace':
+                from dataclasses import asdict
+                if set(payload)-{'after','limit'}:raise ValueError('Unknown BANC trace field')
+                result=self.banc_walking.trace.page(after=payload.get('after',-1),limit=payload.get('limit',200))
+                result['graph_hash']=self.banc_walking.graph.hash
+                result['model_hash']=self.banc_walking.network.identity
+                result['body_hash']=self.banc_walking.body.model_hash
+                result['adapter_hash']=self.banc_walking.adapter.identity
+                result['parameters']=asdict(self.banc_walking.p)
+                result['world']=self.banc_walking.world
+                result['trace_error']=self.banc_walking.trace_error
+            elif op=='banc_walking_preview':
+                if payload:raise ValueError('BANC preview takes no payload')
                 result=self.banc_walking_result()
             elif op=='banc_walking_cuts':
                 self.banc_walking.set_cuts(payload);result=self.banc_walking_result()
@@ -472,11 +496,13 @@ class CDispatcher:
         except Exception as exc:result['render_error']=str(exc)
         return result
 
-    def banc_walking_result(self):
+    def banc_walking_result(self, *, observation=None, render=True):
         import base64
         import io
         from PIL import Image
-        result=dict(observation=self.banc_walking.frame())
+        result=dict(observation=self.banc_walking.frame() if observation is None else observation)
+        result['trace_epoch']=getattr(getattr(self.banc_walking,'trace',None),'epoch',None)
+        if not render:return result
         try:
             stream=io.BytesIO();Image.fromarray(self.banc_walking.body.preview()).save(stream,format='PNG')
             result['image']=base64.b64encode(stream.getvalue()).decode('ascii')

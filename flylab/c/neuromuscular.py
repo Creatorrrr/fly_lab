@@ -152,7 +152,9 @@ def motor_unit_response(rates, rate_half_Hz):
 
 def typed_receptor_feature(kind, cell_type, angle, velocity, velocity_lowpass, load, touch, spec):
     """Declared v2 receptor hypothesis. Positive tibia q means flexion."""
-    position=float(np.clip(angle/math.pi,0.,1.))
+    position=angle/math.pi
+    # Strict bounds retain NaN payload and signed zero, matching scalar np.clip.
+    position=float(0. if position<0. else 1. if position>1. else position)
     if kind=='claw':
         return (position if cell_type=='SNpp50' else 1-position if cell_type=='SNpp51' else 0.)
     if kind=='hook':

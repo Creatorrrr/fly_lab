@@ -3,10 +3,12 @@
 'use strict';
 class BancTimeline {
  constructor(capacity=6000){this.capacity=capacity;this.reset(null);}
- reset(epoch){this.epoch=epoch;this.samples=[];this.evicted=0;this.gaps=0;}
+ reset(epoch){this.epoch=epoch;this.samples=[];this.evicted=0;this.serverEvicted=0;this.gaps=0;this.gapBeforeFirst=false;}
  ingest(packet){
   if(!packet||packet.schema!=='flylab.banc-trace.v1')throw Error('BANC 기록 형식이 다릅니다.');
   if(packet.epoch!==this.epoch)this.reset(packet.epoch);
+  if(Number.isInteger(packet.evicted_samples)&&packet.evicted_samples>=0)this.serverEvicted=Math.max(this.serverEvicted,packet.evicted_samples);
+  if(!this.samples.length&&packet.gap_before_page===true)this.gapBeforeFirst=true;
   for(const row of packet.samples){
    if(!Number.isInteger(row.control_tick)||!Number.isFinite(row.time_s)||Math.abs(row.time_s-row.control_tick*.005)>1e-10)throw Error('BANC 기록 시각 오류');
    const last=this.samples.at(-1);
@@ -17,33 +19,46 @@ class BancTimeline {
   const excess=Math.max(0,this.samples.length-this.capacity);
   if(excess){this.samples.splice(0,excess);this.evicted+=excess;}
  }
- at(time){
-  if(!this.samples.length)return null;
+ indexAt(time){
   let lo=0,hi=this.samples.length;
   while(lo<hi){const mid=(lo+hi)>>1;if(this.samples[mid].time_s<=time)lo=mid+1;else hi=mid;}
+  return Math.max(0,lo-1);
+ }
+ at(time){
+  if(!this.samples.length)return null;
   // Zero-order hold, not synthetic contact/pose interpolation or extrapolation.
-  return this.samples[Math.max(0,lo-1)];
+  return this.samples[this.indexAt(time)];
+ }
+ gapAt(time){
+  const i=this.indexAt(time),prior=this.samples[i],next=this.samples[i+1];
+  return !!(prior&&next&&next.control_tick>prior.control_tick+1&&time>=prior.time_s+.005-1e-10&&time<next.time_s);
  }
 }
 F.BancTimeline=BancTimeline;
 F.createBancTraceView=function({canvas,overlay,status,diagnostic,slider}){
  const timeline=new BancTimeline(),view=new F.WorldView(canvas,overlay);
  view.distance=10;view.showTrail=false;
- let world=null,mode='live',speed=.25,cursor=0,lastWall=null,lastReceived=null,ratio=.18,lastDrawn=null;
+ let world=null,mode='live',speed=.25,cursor=0,lastWall=null,lastReceived=null,ratio=.18,lastDrawn=null,lastGap=null;
+ let drawWindow=null,drawCount=0,sampleCount=0,drawHz=0,sampleHz=0,lastCountedSample=null;
  function ingest(result){
-  if(result.trace_epoch&&result.trace_epoch!==timeline.epoch){timeline.reset(result.trace_epoch);lastDrawn=null;cursor=0;lastWall=null;lastReceived=null;mode='live';}
+  if(result.trace_epoch&&result.trace&&result.trace_epoch!==result.trace.epoch)throw Error('BANC 응답과 기록의 실험이 다릅니다.');
+  const epoch=result.trace_epoch||result.trace?.epoch;
+  if(epoch&&epoch!==timeline.epoch)reset(epoch);
   if(!result.trace)return;
   const old=timeline.samples.at(-1),now=performance.now();
   timeline.ingest(result.trace);world=result.world||world;
-  if(lastReceived!==null&&old){const delta=timeline.samples.at(-1).time_s-old.time_s;const wall=(now-lastReceived)/1000;if(delta>0&&wall>0)ratio=Math.min(10,Math.max(.001,.7*ratio+.3*delta/wall));}
+  if(lastReceived!==null&&old&&timeline.samples.length){const delta=timeline.samples.at(-1).time_s-old.time_s;const wall=(now-lastReceived)/1000;if(delta>0&&wall>0)ratio=Math.min(10,Math.max(.001,.7*ratio+.3*delta/wall));}
   lastReceived=now;
-  if(!lastDrawn&&timeline.samples.length){cursor=timeline.samples[0].time_s;view.target=[...timeline.samples[0].body.position];}
+  if(!old&&timeline.samples.length){cursor=timeline.samples[0].time_s;view.target=[...timeline.samples[0].body.position];}
  }
  function replay(value=1){lastDrawn=null;if(!timeline.samples.length)return;mode='replay';speed=value;cursor=timeline.samples[0].time_s;lastWall=null;}
  function live(){lastDrawn=null;mode='live';cursor=timeline.samples.at(-1)?.time_s||0;lastWall=null;}
  function seek(fraction){lastDrawn=null;if(!timeline.samples.length)return;mode='paused';const first=timeline.samples[0].time_s,last=timeline.samples.at(-1).time_s;cursor=first+(last-first)*Math.max(0,Math.min(1,fraction));lastWall=null;}
+ function suspend(){if(mode==='replay')mode='paused';lastWall=null;drawWindow=null;drawCount=0;sampleCount=0;}
  function draw(now){
-  const dt=lastWall===null?0:Math.min(.1,(now-lastWall)/1000);lastWall=now;
+  // A slow/occluded browser may draw less often. Playback still follows elapsed
+  // visible time; limiting dt would silently turn 1x playback into slow motion.
+  const dt=lastWall===null?0:Math.max(0,(now-lastWall)/1000);lastWall=now;
   const first=timeline.samples[0],latest=timeline.samples.at(-1);
   if(!first||!world)return;
   if(mode==='live'){
@@ -56,17 +71,28 @@ F.createBancTraceView=function({canvas,overlay,status,diagnostic,slider}){
    if(cursor>=latest.time_s)mode='paused';
   }
   const sample=timeline.at(cursor);
+  const gap=timeline.gapAt(cursor);
   if(sample!==lastDrawn){
+   if(sample!==lastCountedSample){sampleCount++;lastCountedSample=sample;}
    view.setFrame({tick:sample.control_tick,simTime:sample.time_s,body:sample.body,world,config:{mode:'BANC'}});
-   const label=mode==='live'?'지연 표시 · 실제 기록':mode==='replay'?`기록 재생 ${speed}×`:'기록 정지';
-   status.textContent=`${label} | 표시 ${sample.time_s.toFixed(3)} 모델초 / 계산 ${latest.time_s.toFixed(3)} 모델초 | 5ms 측정 자세, 보간 없음 | 기록 ${timeline.samples.length}개${timeline.gaps?' | 누락 '+timeline.gaps+'구간':''}${timeline.evicted?' | 오래된 기록 '+timeline.evicted+'개 제외':''}`;
-   diagnostic.textContent=sample.feet.legs.map((leg,i)=>`${leg.toUpperCase()}: 하중 ${sample.feet.normal_load_bw[i].toFixed(3)} BW · ${sample.feet.load_bearing[i]?'지지':'비지지'} · 접촉점 미끄러짐 ${sample.feet.slip_mm_s[i]===null?'측정 대상 아님':sample.feet.slip_mm_s[i].toFixed(3)+' mm/s'} · 부착 ${sample.adhesion[i]?'켜짐':'꺼짐'}`).join('\n')+'\n하중은 부착 반력을 포함합니다. 5ms 표본의 진단값이며 보행 성공 판정이 아닙니다.';
-   const span=latest.time_s-first.time_s;slider.value=span>0?String((sample.time_s-first.time_s)/span):'0';
-   lastDrawn=sample;
+   view.canvas.style.visibility='';overlay.style.visibility='';
   }
-  if(view.needsDraw())view.draw();
+  const label=mode==='live'?'지연 표시 · 실제 기록':mode==='replay'?`기록 재생 ${speed}×`:'기록 정지';
+  const message=`${label}${gap?' · 기록 공백, 마지막 측정 자세 유지':''} | 표시 ${sample.time_s.toFixed(3)} 모델초 / 계산 ${latest.time_s.toFixed(3)} 모델초 | 5ms 측정 자세, 보간 없음 | 기록 ${timeline.samples.length}개${timeline.gaps?' | 누락 '+timeline.gaps+'표본':''}${timeline.gapBeforeFirst?' | 첫 표본 이전 기록 누락':''}${timeline.serverEvicted?' | 서버 버퍼 '+timeline.serverEvicted+'개 제외':''}${timeline.evicted?' | 화면 버퍼 '+timeline.evicted+'개 제외':''}`;
+  if(status.textContent!==message)status.textContent=message;
+  if(sample!==lastDrawn||gap!==lastGap)diagnostic.textContent=gap?'기록 공백입니다. 이 구간의 접촉 진단은 측정되지 않았습니다.':sample.feet.legs.map((leg,i)=>`${leg.toUpperCase()}: 하중 ${sample.feet.normal_load_bw[i].toFixed(3)} BW · ${sample.feet.load_bearing[i]?'지지':'비지지'} · 접촉점 미끄러짐 ${sample.feet.slip_mm_s[i]===null?'측정 대상 아님':sample.feet.slip_mm_s[i].toFixed(3)+' mm/s'} · 부착 ${sample.adhesion[i]?'켜짐':'꺼짐'}`).join('\n')+'\n하중은 부착 반력을 포함합니다. 5ms 표본의 진단값이며 보행 성공 판정이 아닙니다.';
+  const span=latest.time_s-first.time_s;slider.value=span>0?String((cursor-first.time_s)/span):'0';
+  lastDrawn=sample;lastGap=gap;
+  if(view.needsDraw()){view.draw();drawCount++;}
+  if(drawWindow===null)drawWindow=now;
+  if(now-drawWindow>=1000){
+   const seconds=(now-drawWindow)/1000;drawHz=drawCount/seconds;sampleHz=sampleCount/seconds;
+   drawWindow=now;drawCount=0;sampleCount=0;
+   if(status.dataset){status.dataset.drawHz=String(drawHz);status.dataset.sampleHz=String(sampleHz);}
+  }
  }
- function reset(){timeline.reset(null);mode='live';cursor=0;lastDrawn=null;lastReceived=null;lastWall=null;view.frame=null;status.textContent='새 BANC 상태 기록을 기다립니다.';diagnostic.textContent='접촉 진단 기록이 없습니다.';}
- return {ingest,replay,live,seek,draw,reset,view,timeline};
+ function reset(epoch=null){timeline.reset(epoch);world=null;mode='live';cursor=0;lastDrawn=null;lastGap=null;lastReceived=null;lastWall=null;ratio=.18;drawWindow=null;drawCount=0;sampleCount=0;drawHz=0;sampleHz=0;lastCountedSample=null;if(status.dataset){delete status.dataset.drawHz;delete status.dataset.sampleHz;}view.frame=null;view.lastTick=-1;view.trail?.clear();view.canvas.style.visibility='hidden';overlay.style.visibility='hidden';slider.value='0';status.textContent='새 BANC 상태 기록을 기다립니다.';diagnostic.textContent='접촉 진단 기록이 없습니다.';}
+ reset();
+ return {ingest,replay,live,seek,suspend,draw,reset,view,timeline};
 };
 })(globalThis.Fly);

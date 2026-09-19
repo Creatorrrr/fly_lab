@@ -154,6 +154,8 @@ class CDispatcher:
         elif op == 'frame': result = self.need().frame()
         elif op == 'banc_walking_init':
             from .banc_walking import BancWalkingSession
+            from .banc_presets import resolve_target_preset
+            payload=resolve_target_preset(payload)
             if set(payload)-{'seed','parameters','navigation'}:raise ValueError('Unknown BANC walking field')
             self.load()
             saved=None
@@ -191,6 +193,9 @@ class CDispatcher:
                 result['parameters']=asdict(self.banc_walking.p)
                 result['world']=self.banc_walking.world
                 result['trace_error']=self.banc_walking.trace_error
+                result.update(self.banc_walking.trace.export_metadata(
+                    include_initial=payload.get('after',-1)<0,
+                    trace_error=self.banc_walking.trace_error))
             elif op=='banc_walking_preview':
                 if payload:raise ValueError('BANC preview takes no payload')
                 result=self.banc_walking_result()
@@ -501,6 +506,8 @@ class CDispatcher:
         import io
         from PIL import Image
         result=dict(observation=self.banc_walking.frame() if observation is None else observation)
+        from .banc_presets import observed_target_preset
+        result['preset']=observed_target_preset(result['observation'])
         result['trace_epoch']=getattr(getattr(self.banc_walking,'trace',None),'epoch',None)
         if not render:return result
         try:
@@ -534,12 +541,14 @@ class CServer(BServer):
         return web.FileResponse(ROOT/'FLY_LAB_C.html', headers={'Cache-Control':'no-store'})
 
     async def bootstrap(self, request):
+        from .banc_presets import target_preset_catalog
         d = self.dispatcher
         return web.json_response(dict(protocol=PROTOCOL, token=self.token, dependencies=dependency_report(),
                                       testDouble=self.test_double, backend=d.backend, defaultMode=d.default_mode,
                                       hasExperiment=d.engine is not None,hasBatch=d.batch is not None,hasBancWalking=d.banc_walking is not None,graphAvailable=(d.graph_path/'manifest.json').is_file(),
                                       bindingsAvailable=d.binding_path.is_file(),
-                                      backendAvailability=backend_availability()), headers={'Cache-Control':'no-store'})
+                                      backendAvailability=backend_availability(),
+                                      bancWalkingPresets=target_preset_catalog()), headers={'Cache-Control':'no-store'})
 
     async def send_reply(self, socket, result):
         binary = result.pop('_binary', None)
@@ -567,6 +576,7 @@ def main():
     parser.add_argument('--mode', choices=MODES, default='C_SHADOW')
     parser.add_argument('--doctor', action='store_true')
     parser.add_argument('--restore-checkpoint', help='Restore an artifact checkpoint before accepting browser connections')
+    parser.add_argument('--restore-banc-checkpoint', help='Restore the separate BANC walking session before accepting browser connections')
     args = parser.parse_args()
     requested_backend = args.backend
     args.backend = resolve_backend(args.backend)
@@ -599,12 +609,14 @@ def main():
                      body_factory=select_body(physics_profile))
     print(f'FLY LAB C {VERSION} - http://127.0.0.1:{args.port} [{args.mode}]', flush=True)
     app=server.app()
-    if args.restore_checkpoint:
-        name=checked_name(args.restore_checkpoint)
+    if args.restore_checkpoint or args.restore_banc_checkpoint:
+        restore_requests=[(op,checked_name(name)) for op,name in (
+            ('restore',args.restore_checkpoint),('banc_walking_restore',args.restore_banc_checkpoint)) if name]
         async def restore_before_listen(app):
             import asyncio
-            await asyncio.get_running_loop().run_in_executor(server.executor,server.dispatcher.handle,
-                dict(protocol=PROTOCOL,requestId=1,op='restore',payload=dict(name=name)))
+            for request_id,(op,name) in enumerate(restore_requests,1):
+                await asyncio.get_running_loop().run_in_executor(server.executor,server.dispatcher.handle,
+                    dict(protocol=PROTOCOL,requestId=request_id,op=op,payload=dict(name=name)))
         app.on_startup.append(restore_before_listen)
     web.run_app(app, host='127.0.0.1', port=args.port, access_log=None)
     return 0

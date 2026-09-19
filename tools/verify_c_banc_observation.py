@@ -183,10 +183,18 @@ def run(args):
         session.body.restore(start["body"])
         nq, nv, nu = session.body.m.nq, session.body.m.nv, session.body.m.nu
         for i, sample in enumerate(rows[1:]):
+            request = sample.get('neural_request') or {}
+            external = request.get('external_force_at_start')
+            if external:
+                session.body.push_left = external['push_left_s']
+                session.body.push_force = np.asarray(external['push_force'])
             session.body.step_joint_targets(
                 np.asarray(sample["joint_targets_rad"]),
                 np.asarray(sample["adhesion"], dtype=bool),
                 tendon_inputs=sample["tendon_inputs"],
+                interpolate=not request.get('cuts', {}).get('motor', False),
+                **({'joint_stiffness_scale': sample['joint_stiffness_scale']} if 'joint_stiffness_scale' in sample else {}),
+                **({'adhesion_control': sample['adhesion_control']} if 'adhesion_control' in sample else {}),
             )
             physical = np.concatenate(
                 (session.body.d.qpos, session.body.d.qvel, session.body.d.ctrl)

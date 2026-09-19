@@ -25,6 +25,9 @@ from flylab.c.navigation_tasks import CASES, CRITERIA, evaluate_navigation
 from flylab.c.storage import StateStore
 from flylab.common import to_ui
 from tools.verify_c_banc_rate_walking import sample
+from tools.analyze_c_banc_gait_quality import quality
+from tools.verify_c_banc_source_parity import observe
+from flylab.c.walking_trace import TRACE_SCHEMA, WalkingTrace
 
 
 def physical_state_hash(state):
@@ -188,9 +191,13 @@ def trial(graph, out, name, seed, offset, args):
         graph,
         seed=seed,
         device="cuda",
-        parameters={"coxa_geometry": True, "ltm_tendons": True},
+        parameters={"coxa_geometry": True, "ltm_tendons": True, **getattr(args, "model_parameters", {})},
         navigation={"target_xz_mm": [0.0, 0.0], "forward_drive": 5000.0},
     )
+    if args.record_gait:
+        # Offline trials retain the complete bounded run, including its anchor.
+        # The UI's 30-second rolling history can evict it during a 31.5s trial.
+        session.trace = WalkingTrace(capacity=round(args.seconds / 0.005) + 1)
     try:
         initial = to_ui(session.body.pose()[0])
         target = [float(initial[0] + offset[0]), float(initial[2] + offset[1])]
@@ -209,8 +216,9 @@ def trial(graph, out, name, seed, offset, args):
         if args.checks_only:
             checkpoint_checks(graph, out, session)
             return {"name": name, "checks": "PASS", "navigation": "NOT_TESTED"}
-        StateStore.save(out / "initial", session.snapshot())
+        StateStore.save(out / ("start" if args.record_gait else "initial"), session.snapshot())
         trace = [sample(session.body, 0)]
+        gait_rows, physical, motor = [], [], []
         began, error = time.perf_counter(), None
         with (out / "trace.jsonl").open("wb") as stream:
             stream.write(canonical(trace[0]) + b"\n")
@@ -218,7 +226,16 @@ def trial(graph, out, name, seed, offset, args):
                 if time.perf_counter() - began > args.wall_limit:
                     error = "Declared wall limit reached"
                     break
-                session.advance(1)
+                session.advance(1, capture=args.record_gait)
+                if args.record_gait:
+                    if session.trace_error:
+                        raise RuntimeError(session.trace_error)
+                    if not gait_rows:
+                        gait_rows.append(copy.deepcopy(session.trace.samples[0]))
+                    gait_rows.append(copy.deepcopy(session.trace.samples[-1]))
+                    observed = observe(session)
+                    physical.append(observed['physical'])
+                    motor.append(observed['motor'])
                 row = sample(session.body, session.control_tick)
                 row["navigation"] = session.navigation.view(*session.body.pose()[:2])
                 stream.write(canonical(row) + b"\n")
@@ -252,6 +269,15 @@ def trial(graph, out, name, seed, offset, args):
             final_navigation=session.frame()["navigation"],
         )
         write_json(out / "result.json", verdict)
+        if args.record_gait and gait_rows:
+            payload = dict(schema=TRACE_SCHEMA, epoch=session.trace.epoch, sample_dt_s=.005,
+                           world=session.world, parameters=session.p.state_dict(), graph_hash=graph.hash,
+                           model_hash=session.network.identity, body_hash=session.body.model_hash,
+                           adapter_hash=session.adapter.identity, samples=gait_rows,
+                           **session.trace.export_metadata(include_initial=True, trace_error=session.trace_error))
+            write_json(out / 'trace.json', payload)
+            np.savez_compressed(out / 'recorded-signals.npz', physical=np.asarray(physical), motor=np.asarray(motor))
+            write_json(out / 'quality.json', quality(payload))
         if not session.fault:
             StateStore.save(out / "final", session.snapshot())
         print(json.dumps(verdict), flush=True)
@@ -261,6 +287,7 @@ def trial(graph, out, name, seed, offset, args):
 
 
 def run(args):
+    args.model_parameters = json.loads(args.parameters.read_text(encoding='utf-8')) if args.parameters else {}
     args.out.mkdir(parents=True, exist_ok=False)
     shutil.copyfile(__file__, args.out / "verify_source.py")
     cases = CASES if args.matrix else [("development", args.seed, args.target)]
@@ -270,6 +297,8 @@ def run(args):
             "experiment": args.experiment,
             "cases": cases,
             "seconds": args.seconds,
+            "model_parameters": args.model_parameters,
+            "record_gait": args.record_gait,
             "checks_only": args.checks_only,
             "restart_from": str(args.restart_from) if args.restart_from else None,
             "wall_limit_per_case": args.wall_limit,
@@ -286,18 +315,35 @@ def run(args):
                         for name in (
                             "banc_walking",
                             "rate_body",
+                            "coxa_hair_plate",
+                            "target_activation",
                             "target_sense",
                             "target_neural",
                             "target_navigation",
                             "navigation_tasks",
                             "adaptive_rate",
+                            "banc_mechanics",
+                            "adaptive_fused",
+                            "research_rate",
+                            "neuromuscular",
+                            "walking_trace",
                         )
                     ],
                     Path("flylab/body.py"),
+                    Path("flylab/kinematic_senses.py"),
+                    Path("tools/analyze_c_banc_gait_quality.py"),
+                    Path("tools/analyze_c_banc_substep_quality.py"),
                 ]
             },
         },
     )
+    for source_name, expected_hash in json.loads((args.out / 'spec.json').read_text())['sources'].items():
+        source = Path(source_name).resolve()
+        target = args.out / 'source_snapshot' / source.relative_to(Path.cwd())
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if file_hash(source) != expected_hash:
+            raise RuntimeError('Source changed while preparing experiment')
+        target.write_bytes(source.read_bytes())
     graph = GraphStore.load(args.graph)
     if args.restart_from:
         restart_check(graph, args.out, args.restart_from)
@@ -324,6 +370,8 @@ if __name__ == "__main__":
     parser.add_argument("--checks-only", action="store_true")
     parser.add_argument("--restart-from", type=Path)
     parser.add_argument("--matrix", action="store_true")
+    parser.add_argument("--parameters", type=Path)
+    parser.add_argument("--record-gait", action="store_true")
     arguments = parser.parse_args()
     if not 0 < arguments.seconds <= 31.5 or not 0 < arguments.wall_limit <= 300:
         parser.error("Bounded trial seconds/wall limit required")

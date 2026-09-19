@@ -5,7 +5,10 @@
 F.createPlaybackPump=function({shouldRun,advance,onBusy=()=>{},onError,
  now=()=>performance.now(),schedule=fn=>setTimeout(fn,0),cancel=id=>clearTimeout(id),
  targetMs=40,maxSteps=10}){
- let timer=null,busy=false,msPerStep=null;
+ let timer=null,busy=false,msPerStep=null,idleWaiters=[];
+ // Call after stopping shouldRun and sync(): an issued calculation cannot be
+ // cancelled, so observation-only actions must wait for its response as well.
+ function idle(){return busy?new Promise(resolve=>idleWaiters.push(resolve)):Promise.resolve();}
  function sync(){
   if(!shouldRun()){
    if(timer!==null){cancel(timer);timer=null;}
@@ -24,8 +27,8 @@ F.createPlaybackPump=function({shouldRun,advance,onBusy=()=>{},onError,
    const measured=Math.max(.01,(now()-start)/steps);
    msPerStep=msPerStep===null?measured:.7*msPerStep+.3*measured;
   }catch(error){onError(error);}
-  finally{busy=false;onBusy(false);sync();}
+  finally{busy=false;onBusy(false);const waiters=idleWaiters;idleWaiters=[];for(const resolve of waiters)resolve();sync();}
  }
- return {sync};
+ return {sync,idle};
 };
 })(globalThis.Fly);

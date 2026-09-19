@@ -1,0 +1,9 @@
+{
+  "neural_dt_s": 0.00025,
+  "coxa_geometry": true,
+  "ltm_tendons": true,
+  "adaptation_gain": 8.0,
+  "adaptation_tau_s": 0.3,
+  "joint_activation_tau_s": 0.09,
+  "fast_coxa_activation": true
+}

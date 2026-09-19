@@ -1,0 +1,12 @@
+{
+  "adaptation_gain": 4.0,
+  "adaptation_tau_s": 0.15,
+  "sensory_gain": 18.0,
+  "motor_gain": 0.002,
+  "descending_drive": 0.0,
+  "pooling": "mean",
+  "neural_dt_s": 0.00025,
+  "coxa_geometry": true,
+  "ltm_tendons": true,
+  "coxa_endpoint": false
+}

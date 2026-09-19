@@ -2,8 +2,10 @@
 
 import argparse
 import base64
+import cProfile
 import io
 import json
+import pstats
 import sys
 import time
 from pathlib import Path
@@ -46,6 +48,7 @@ def run(args):
         for obj, name, label in (
             (session.adapter, "encode", "sensory_encoding"),
             (session.network, "advance", "neural_advance"),
+            (session.network, "advance_readout", "neural_and_motor_readout"),
             (session.network, "readout", "motor_readout"),
             (session.adapter, "decode", "motor_decoding"),
             (session.body, "step_joint_targets", "physical_advance"),
@@ -54,10 +57,18 @@ def run(args):
         ):
             wrap(obj, name, label)
         walls = []
+        profile = cProfile.Profile()
+        profile.enable()
         for _ in range(3):
             begin = time.perf_counter()
             session.advance(10)
             walls.append(time.perf_counter() - begin)
+        profile.disable()
+        profile.dump_stats(str(args.out / "functions.prof"))
+        with (args.out / "functions.txt").open("w", encoding="utf-8") as stream:
+            pstats.Stats(profile, stream=stream).sort_stats("cumulative").print_stats(
+                50
+            )
         previews, encodings = [], []
         for _ in range(5):
             begin = time.perf_counter()
@@ -71,7 +82,7 @@ def run(args):
         stages["other"] = sum(walls) - sum(stages.values())
         lengths = np.diff(graph.indptr)
         report = {
-            "scope": "Separate session; three sequential 50ms controls after warmup; excludes setup and browser/network time",
+            "scope": "Instrumented separate session; three sequential 50ms controls after warmup; excludes setup and browser/network time. cProfile timings are diagnostic, not uninstrumented throughput.",
             "checkpoint": str(args.checkpoint),
             "graph_hash": graph.hash,
             "model_hash": session.network.identity,

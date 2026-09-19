@@ -1,0 +1,82 @@
+- generic [active] [ref=e1]:
+  - link "콘텐츠로 건너뛰기" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - generic [ref=e6]:
+    - generic [ref=e8]:
+      - navigation "사이드바":
+        - generic:
+          - generic:
+            - generic:
+              - button "사이드바 열기"
+        - generic:
+          - generic:
+            - link "새 채팅":
+              - /url: /
+          - generic:
+            - link "이미지":
+              - /url: /images
+          - generic:
+            - button "채팅 검색"
+        - generic:
+          - generic:
+            - button "프로필 메뉴 열기"
+      - generic [ref=e9]:
+        - heading "채팅 기록" [level=2] [ref=e10]
+        - navigation "채팅 기록" [ref=e12]:
+          - generic [ref=e15]:
+            - link "홈" [ref=e16] [cursor=pointer]:
+              - /url: /
+            - generic [ref=e19]:
+              - button "채팅 검색" [ref=e20] [cursor=pointer]
+              - button "사이드바 닫기" [expanded] [ref=e23]
+          - list [ref=e27]:
+            - listitem [ref=e28]:
+              - link "새 채팅 Ctrl Shift O" [ref=e29] [cursor=pointer]:
+                - /url: /
+                - generic [ref=e30]: 새 채팅
+                - generic [ref=e38]:
+                  - generic "Ctrl" [ref=e39]: +
+                  - generic "Shift" [ref=e41]: +
+                  - generic [ref=e43]: O
+            - listitem [ref=e45]:
+              - link "이미지 업데이트" [ref=e46] [cursor=pointer]:
+                - /url: /images
+                - generic [ref=e51]:
+                  - generic [ref=e52]: 이미지
+                  - generic [ref=e53]: 업데이트
+            - listitem
+          - generic [ref=e54]:
+            - link "플러그인" [ref=e55] [cursor=pointer]:
+              - /url: /plugins
+            - generic [ref=e62] [cursor=pointer]: 심층 리서치
+          - generic [ref=e69]:
+            - link "플랜 및 가격 보기" [ref=e70] [cursor=pointer]:
+              - /url: https://openai.com/chatgpt/pricing/
+            - generic [ref=e78] [cursor=pointer]: 설정
+            - generic [ref=e82] [cursor=pointer]: 도움말
+          - generic [ref=e92]:
+            - generic [ref=e93]:
+              - paragraph [ref=e94]: 내게 맞춘 응답을 받으세요
+              - paragraph [ref=e95]: 로그인해 저장된 채팅에 기반해 답변을 받고, 이미지 생성 및 파일 업로드도 이용하세요.
+            - button "로그인" [ref=e97] [cursor=pointer]
+    - generic [ref=e101]:
+      - generic [ref=e102]:
+        - banner:
+          - button "모델 선택기" [ref=e104] [cursor=pointer]:
+            - generic [ref=e105]: ChatGPT
+          - generic [ref=e111]:
+            - button "공유하기" [disabled] [ref=e112]
+            - generic [ref=e117]:
+              - button "로그인" [ref=e118] [cursor=pointer]
+              - button "무료로 회원 가입" [ref=e120] [cursor=pointer]
+      - main [ref=e123]:
+        - generic [ref=e125]:
+          - generic:
+            - generic:
+              - generic:
+                - button [aria-hidden]
+            - generic [ref=e127]:
+              - button [aria-hidden] [ref=e128]
+              - button [aria-hidden] [ref=e129]
+  - alert [ref=e130]
+  - status [ref=e131]

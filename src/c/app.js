@@ -5,7 +5,7 @@ const PROTOCOL='flylab.protocol.v3', AUTO='FLYGYM_AUTONOMOUS', $=id=>document.ge
 $('mode').add(new Option('감각 자율 보행 · FlyGym',AUTO));
 const view=new F.WorldView($('world'),$('world-overlay'));
 const state={frame:null,playing:false,busy:false,selected:[],catalog:[],offset:0,total:0,epoch:0,sequence:0,
-  signals:new Map(),traces:new Map(),spikes:0,closed:false,names:new Map(),recording:false,backend:'exp_lif_cpu_reference',dataset:'연결망'};
+  signals:new Map(),traces:new Map(),spikes:0,closed:false,names:new Map(),recording:false,backend:'exp_lif_cpu_reference',dataset:'연결망',bancNamedPresets:false};
 const colors=['#76d9c4','#eac684','#87b4e8','#c9a1ed','#ed9994','#a6d883','#88d9e5','#dba3c6'];
 function setText(node,value){if(node.textContent!==value)node.textContent=value;}
 function tell(message,error=false){$('alert').hidden=!message;$('alert').textContent=message||'';if(error)console.error(message);}
@@ -195,13 +195,20 @@ button('body-command-apply',async()=>{workbench.pause();const [kind,name]=$('bod
 button('body-command-neural',async()=>{workbench.pause();const [kind,name]=$('body-command-name').value.split(':');if(kind!=='tendon')return;applyFrame(await rpc.request('command',{type:'body_actuation',payload:{tendon_modes:{[name]:'neural'}}}));tell('선택한 힘줄을 신경 구동으로 되돌렸습니다.');});
 let sharedCheckpoint=null;
 for(const id of ['play','step','init','autonomy-start','restore','shared-init'])$(id).addEventListener('click',()=>pauseBanc());
-let bancPlaying=false,bancBusy=false;
+let bancPlaying=false,bancBusy=false,bancAction=0;
 const bancTraceView=F.createBancTraceView({canvas:$('banc-world'),overlay:$('banc-overlay'),status:$('banc-display-status'),diagnostic:$('banc-contact-status'),slider:$('banc-replay-seek')});
 const bancPlayback=F.createPlaybackPump({shouldRun:()=>bancPlaying&&!state.closed&&!document.hidden,targetMs:80,maxSteps:10,
  advance:async steps=>showBanc(await rpc.request('banc_walking_advance',{steps,stream:true})),
  onBusy:value=>{bancBusy=value;},onError:error=>{pauseBanc();tell(error.message,true);}});
 
-function pauseBanc(){bancPlaying=false;$('banc-walking-play').textContent='▶ BANC 재생';bancPlayback.sync();}
+function pauseBanc(){bancAction++;bancPlaying=false;$('banc-walking-play').textContent='▶ BANC 재생';bancPlayback.sync();return bancAction;}
+async function pauseBancAndWait(){
+ const action=pauseBanc();
+ // The transport also contains manual steps and queued restore/init requests.
+ // Waiting only for the pump would let those calculations finish during replay.
+ await rpc.tail;await bancPlayback.idle();
+ return action===bancAction&&!state.closed;
+}
 function showBancNavigation(o,syncTarget=false){
  const n=o?.navigation, panel=$('banc-navigation-status'), canvas=$('banc-navigation-map');
  $('banc-target-apply').disabled=!n||!!o?.fault;$('banc-target-cut').disabled=!n||!!o?.fault;$('banc-target-cut').checked=!!n?.cue_cut;
@@ -230,7 +237,7 @@ function showBanc(result,syncTarget=false){
  if(o?.trace_error)tell('상태 기록 오류: '+o.trace_error,true);
  showBancNavigation(o,syncTarget);
  $('banc-walking-status').dataset.time=String(o?.time_s||0);
- $('banc-walking-status').textContent=o?`${o.time_s.toFixed(3)} 모델초 · ${o.neurons.toLocaleString()}개 신경세포 · ${o.edges.toLocaleString()}개 연결\n현재 계산: ${(o.neural_dt_s||0.0001)===0.00025?'빠른 계산':(o.neural_dt_s||0.0001)===0.0001?'기존 기준':'비교 계산'} · 신경 ${((o.neural_dt_s||0.0001)*1000).toFixed(2)}ms · 물리 0.10ms · 감각·운동 5ms\n수평 이동 ${o.horizontal_net_mm.toFixed(3)} mm · 몸 방향 전진 ${o.signed_forward_mm.toFixed(3)} mm\n운동신경 평균 ${o.motor_rate_mean.toFixed(2)} 모델 단위 · ${o.device.toUpperCase()} 신경 계산 · 외부 CPG 사용 안 함\n${o.last_speed_ratio==null?'누적':'최근 진행'} 속도 ${(o.last_speed_ratio??o.time_s/Math.max(o.wall_s,0.001)).toFixed(3)} 모델초/실제초 · 현재 실행의 보행 판정은 별도 검증기에서 확인${o.fault?'\n중단: '+o.fault:''}`:'BANC 보행 실험이 없습니다.';
+  $('banc-walking-status').textContent=o?`현재 모델: ${result.preset?.name||'직접 설정'}\n${o.time_s.toFixed(3)} 모델초 · ${o.neurons.toLocaleString()}개 신경세포 · ${o.edges.toLocaleString()}개 연결\n현재 계산: ${(o.neural_dt_s||0.0001)===0.00025?'빠른 계산':(o.neural_dt_s||0.0001)===0.0001?'기존 기준':'비교 계산'} · 신경 ${((o.neural_dt_s||0.0001)*1000).toFixed(2)}ms · 물리 0.10ms · 감각·운동 5ms\n수평 이동 ${o.horizontal_net_mm.toFixed(3)} mm · 몸 방향 전진 ${o.signed_forward_mm.toFixed(3)} mm\n운동신경 평균 ${o.motor_rate_mean.toFixed(2)} 모델 단위 · ${o.device.toUpperCase()} 신경 계산 · 외부 CPG 사용 안 함\n${o.last_speed_ratio==null?'누적':'최근 진행'} 속도 ${(o.last_speed_ratio??o.time_s/Math.max(o.wall_s,0.001)).toFixed(3)} 모델초/실제초 · 현재 실행의 보행 판정은 별도 검증기에서 확인${o.fault?'\n중단: '+o.fault:''}`:'BANC 보행 실험이 없습니다.';
  if(result.image){$('banc-walking-image').src='data:image/png;base64,'+result.image;$('banc-walking-image').hidden=false;}
  if(result.render_error){$('banc-walking-image').hidden=true;$('banc-walking-status').textContent+='\n영상 오류: '+result.render_error;}
  for(const id of ['banc-walking-play','banc-walking-step','banc-walking-save','banc-walking-close','banc-cut-sensory','banc-cut-descending','banc-cut-circuit','banc-cut-motor'])$(id).disabled=!o||!!o.fault;
@@ -239,19 +246,21 @@ function showBanc(result,syncTarget=false){
  if(o?.fault)pauseBanc();
 }
 function bancPump(){bancPlayback.sync();}
-button('banc-view-live',()=>bancTraceView.live());
-button('banc-replay',()=>{pauseBanc();bancTraceView.replay(1);});
-button('banc-replay-slow',()=>{pauseBanc();bancTraceView.replay(.25);});
-$('banc-replay-seek').addEventListener('input',()=>{pauseBanc();bancTraceView.seek(Number($('banc-replay-seek').value));});
+button('banc-view-live',()=>{bancAction++;bancTraceView.live();});
+button('banc-replay',async()=>{if(await pauseBancAndWait())bancTraceView.replay(1);});
+button('banc-replay-slow',async()=>{if(await pauseBancAndWait())bancTraceView.replay(.25);});
+$('banc-replay-seek').addEventListener('input',async()=>{const fraction=Number($('banc-replay-seek').value);if(await pauseBancAndWait())bancTraceView.seek(fraction);});
 button('banc-view-track',()=>{bancTraceView.view.track();bancTraceView.view.distance=10;});
 button('banc-view-top',()=>{const v=bancTraceView.view;v.top();v.target=v.frame?.body.position||[0,0,0];v.distance=12;});
 button('banc-native-preview',async()=>{pauseBanc();showBanc(await rpc.request('banc_walking_preview'));});
 button('banc-trace-export',async()=>{
- pauseBanc();const samples=[];let after=-1,metadata=null;
+ if(!await pauseBancAndWait())return;
+ const samples=[];let after=-1,metadata=null;
  for(let page=0;page<301;page++){
   const result=await rpc.request('banc_walking_trace',{after,limit:200});
   if(result.trace_error)throw Error('불완전한 상태 기록: '+result.trace_error);
   if(metadata&&metadata.epoch!==result.epoch)throw Error('내보내기 중 실험이 변경됐습니다. 다시 저장하세요.');
+  if(metadata&&(metadata.first_available_tick!==result.first_available_tick||metadata.last_available_tick!==result.last_available_tick))throw Error('내보내기 중 기록 범위가 변경됐습니다. 다시 저장하세요.');
   if(!metadata)metadata={...result,samples:undefined};
   samples.push(...result.samples);if(!result.has_more)break;
   if(result.next_after<=after)throw Error('기록 페이지가 진행되지 않습니다.');after=result.next_after;
@@ -259,17 +268,29 @@ button('banc-trace-export',async()=>{
  if(!samples.length)throw Error('기록이 없습니다. BANC 재생으로 상태를 기록하세요.');
  const blob=new Blob([JSON.stringify({...metadata,samples},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');
  link.href=url;link.download='banc-trace-'+metadata.epoch+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
- tell(`${samples.length}개 측정 상태를 내보냈습니다. 서버 버퍼에서 제외된 이전 표본: ${metadata.evicted_samples}개.`);
+ const replay=metadata.command_replay;
+ tell(`${samples.length}개 측정 상태를 내보냈습니다. 서버 버퍼에서 제외된 이전 표본: ${metadata.evicted_samples}개. `+(replay?.eligible?'초기 물리 상태와 명령을 포함합니다. 재실행의 수치 일치는 별도 검증이 필요합니다.':'명령 재실행에 필요한 기록이 불완전합니다: '+(replay?.reasons?.join(', ')||'초기 상태 없음')));
 });
 async function bancCheckpoints(selected=$('banc-walking-checkpoints').value){const rows=await rpc.request('banc_walking_checkpoints');$('banc-walking-checkpoints').replaceChildren(new Option('BANC 저장 상태 선택',''),...rows.map(r=>new Option(r.name,r.name)));if(rows.some(r=>r.name===selected))$('banc-walking-checkpoints').value=selected;$('banc-walking-restore').disabled=!$('banc-walking-checkpoints').value;}
 button('banc-walking-refresh',()=>bancCheckpoints());
 $('banc-walking-checkpoints').addEventListener('change',()=>{$('banc-walking-restore').disabled=!$('banc-walking-checkpoints').value;});
 button('banc-walking-init',async()=>{workbench.pause();pauseBanc();const r=await rpc.request('banc_walking_init',{seed:Number($('seed').value),parameters:{neural_dt_s:Number($('banc-walking-timestep').value)}});showBanc(r);await bancCheckpoints(r.source_checkpoint||'');});
 function bancTarget(){const target=[$('banc-target-x').value,$('banc-target-z').value].map(v=>v.trim()===''?NaN:Number(v));if(target.some(v=>!Number.isFinite(v)||Math.abs(v)>100))throw Error('목표 X/Z를 -100에서 100 사이의 숫자로 입력하세요.');return target;}
-button('banc-navigation-init',async()=>{const target=bancTarget();workbench.pause();pauseBanc();const r=await rpc.request('banc_walking_init',{seed:Number($('seed').value),parameters:{neural_dt_s:0.00025,coxa_geometry:true,ltm_tendons:true},navigation:{target_xz_mm:target,forward_drive:5000}});showBanc(r);await bancCheckpoints(r.source_checkpoint||'');tell('BANC 목표 실험을 준비했습니다. BANC 재생으로 진행하세요.');});
+button('banc-navigation-init',async()=>{
+ const target=bancTarget(),preset=$('banc-navigation-preset').value;
+ if(!preset)throw Error('목표 실험 설정을 선택하세요.');
+ workbench.pause();pauseBanc();
+ // An already running older server can serve the rebuilt page; retain its original RPC.
+ const payload=state.bancNamedPresets
+  ?{seed:Number($('seed').value),preset,navigation:{target_xz_mm:target}}
+  :{seed:Number($('seed').value),parameters:{neural_dt_s:.00025,coxa_geometry:true,ltm_tendons:true},navigation:{target_xz_mm:target,forward_drive:5000}};
+ const r=await rpc.request('banc_walking_init',payload);
+ showBanc(r);await bancCheckpoints(r.source_checkpoint||'');
+ tell(`${r.preset?.name||'M1 기준'} 목표 실험을 준비했습니다. BANC 재생으로 진행하세요.`);
+});
 button('banc-target-apply',async()=>{const target=bancTarget();pauseBanc();showBanc(await rpc.request('banc_walking_target',{target_xz_mm:target}));});
 $('banc-target-cut').addEventListener('change',async()=>{pauseBanc();try{showBanc(await rpc.request('banc_walking_target_cut',{cut:$('banc-target-cut').checked}));}catch(error){tell(error.message);}});
-button('banc-walking-play',async()=>{if(bancPlaying){pauseBanc();return;}workbench.pause();bancTraceView.live();bancPlaying=true;$('banc-walking-play').textContent='⏸ BANC 일시정지';await bancPump();});
+button('banc-walking-play',async()=>{if(bancPlaying){pauseBanc();return;}workbench.pause();bancAction++;bancTraceView.live();bancPlaying=true;$('banc-walking-play').textContent='⏸ BANC 일시정지';await bancPump();});
 button('banc-walking-step',async()=>{workbench.pause();pauseBanc();showBanc(await rpc.request('banc_walking_advance',{steps:10,stream:true}));});
 button('banc-walking-save',async()=>{pauseBanc();const r=await rpc.request('banc_walking_save',{});await bancCheckpoints(r.name);tell('BANC 신경·감각·몸 상태 저장: '+r.name);});
 button('banc-walking-restore',async()=>{const name=$('banc-walking-checkpoints').value;if(!name)throw Error('복원할 BANC 저장 상태를 선택하세요.');workbench.pause();pauseBanc();showBanc(await rpc.request('banc_walking_restore',{name}),true);});
@@ -396,7 +417,7 @@ button('paired',async()=>{workbench.pause();const kind=$('pair-kind').value,inte
  $('paired').disabled=true;$('experiment-result').textContent='같은 상태의 대조군·개입군을 계산합니다. 현재 실험은 보존됩니다…';
  try{const r=await rpc.request('paired',payload);workbench.showComparison(r);$('experiment-result').textContent=JSON.stringify(r,(key,value)=>key==='preview'?undefined:value,2);tell('대조 비교 원자료를 저장했습니다. 기술 실행과 과제 행동 판정은 결과에서 별도로 표시합니다.');}finally{$('paired').disabled=false;}
 });
-document.addEventListener('visibilitychange',()=>{if(document.hidden){state.playing=false;updatePlay();pauseBanc();}});
+document.addEventListener('visibilitychange',()=>{bancTraceView.suspend();if(document.hidden){state.playing=false;updatePlay();pauseBanc();}});
 document.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.code==='Space'){e.preventDefault();if(document.activeElement?.closest('#banc-walking-panel')){$('banc-walking-play').click();}else{pauseBanc();state.playing=!state.playing;updatePlay();}}if(e.key==='f')view.track();});
 window.addEventListener('resize',drawTrace);
 playback=F.createPlaybackPump({
@@ -409,7 +430,12 @@ let lastDraw=0;
 function animate(now){requestAnimationFrame(animate);if(!document.hidden&&$('banc-walking-panel').open)bancTraceView.draw(now);workbench.animate(now,false);if(!document.hidden&&now-lastDraw>=33&&view.needsDraw()){view.draw();workbench.drawPreview();lastDraw=now;}}
 requestAnimationFrame(animate);
 rpc.connect().then(async(config)=>{
- $('status-dot').className='ready';
+  $('status-dot').className='ready';
+  state.bancNamedPresets=Array.isArray(config.bancWalkingPresets);
+  const presets=state.bancNamedPresets?config.bancWalkingPresets:[{id:'legacy',name:'M1 기준 · 이전 서버'}],presetSelect=$('banc-navigation-preset');
+  presetSelect.replaceChildren(...presets.map(p=>new Option(p.name,p.id)));
+  presetSelect.value=(presets.find(p=>p.recommended)||presets[0])?.id||'';
+  $('banc-navigation-init').disabled=!presets.length;
  for(const option of $('backend').options){const info=config.backendAvailability?.[option.value];option.disabled=info?.available===false;option.title=info?.reason||info?.device||'';}
  await batchCheckpoints();if(config.hasBatch)showBatch(await rpc.request('batch_summary'));
  if(config.hasExperiment){await refreshExperiment(await rpc.request('attach'),'저장된 현재 실험에 연결했습니다. 재생으로 계속 진행하세요.');}else await init();

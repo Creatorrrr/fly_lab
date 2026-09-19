@@ -341,28 +341,35 @@ class FlyGymBody:
         return dict(d_anterior_dq=np.asarray(slopes),
                     model='distal-coxa-forward-jacobian-v1')
 
-    def knee_kinematics(self):
-        """Measured flexion and its physical hinge sign, invariant to root pose."""
+    def knee_kinematics(self, *, include_direction=True):
+        """Measured flexion; the optional hinge derivative is used for calibration."""
         from .kinematic_senses import segment_flexion
+        if not hasattr(self, '_knee_layout'):
+            self._knee_layout=[]
+            for leg in LEGS:
+                ids=[int(self.body_ids[self.body_indices[f'{leg}_{part}']])
+                     for part in ('trochanterfemur','tibia','tarsus1')]
+                matches=[i for i,name in enumerate(self.joint_names)
+                         if name.endswith(f'/{leg}_trochanterfemur-{leg}_tibia-pitch')]
+                if len(matches)!=1:raise ValueError('Unique physical knee required: '+leg)
+                self._knee_layout.append((ids,self.qvel_ids[matches[0]]))
+            self._knee_jacobians=np.zeros((3,3,self.m.nv))
         angles,velocities,derivatives=[],[],[]
-        for leg in LEGS:
-            ids=[int(self.body_ids[self.body_indices[f'{leg}_{part}']])
-                 for part in ('trochanterfemur','tibia','tarsus1')]
-            matches=[i for i,name in enumerate(self.joint_names)
-                     if name.endswith(f'/{leg}_trochanterfemur-{leg}_tibia-pitch')]
-            if len(matches)!=1:raise ValueError('Unique physical knee required: '+leg)
-            column=self.qvel_ids[matches[0]]
-            jacobians=[]
-            for index in ids:
-                jac=np.zeros((3,self.m.nv))
+        for ids,column in self._knee_layout:
+            jacobians=self._knee_jacobians
+            jacobians.fill(0.)
+            for index,jac in zip(ids,jacobians):
                 self.mj.mj_jacBody(self.m,self.d,jac,None,index)
-                jacobians.append(jac)
             points=self.d.xpos[ids]
             angle,speed=segment_flexion(points,np.array([jac@self.d.qvel for jac in jacobians]))
-            _,derivative=segment_flexion(points,np.array([jac[:,column] for jac in jacobians]))
-            angles.append(angle);velocities.append(speed);derivatives.append(derivative)
-        return dict(flexion_rad=np.asarray(angles),velocity_rad_s=np.asarray(velocities),
-                    d_flexion_dq=np.asarray(derivatives),model='physical-segment-origins-and-jacobians-v1')
+            if include_direction:
+                _,derivative=segment_flexion(points,np.array([jac[:,column] for jac in jacobians]))
+                derivatives.append(derivative)
+            angles.append(angle);velocities.append(speed)
+        result=dict(flexion_rad=np.asarray(angles),velocity_rad_s=np.asarray(velocities),
+                    model='physical-segment-origins-and-jacobians-v1')
+        if include_direction:result['d_flexion_dq']=np.asarray(derivatives)
+        return result
 
     def coxa_endpoint_kinematics(self):
         """Observe how all three local hip axes move the distal coxa endpoint."""
@@ -415,26 +422,56 @@ class FlyGymBody:
         np.divide(weighted,lengths[:,None],out=normals,where=lengths[:,None]>1e-12)
         return dict(normal_bw=load/max(self.weight0,1e-30),normals=normals)
 
-    def step_joint_targets(self, targets, adhesion, dt=CONTROL_DT, *, tendon_inputs=None):
+    def step_joint_targets(self, targets, adhesion, dt=CONTROL_DT, *, tendon_inputs=None, interpolate=True, joint_stiffness_scale=None, adhesion_control=None):
         """Direct neural muscle adapter. Does not advance the predefined CPG."""
         targets, adhesion = np.asarray(targets), np.asarray(adhesion)
         if targets.shape != (42,) or not np.isfinite(targets).all() or np.max(np.abs(targets)) > 10:
             raise ValueError('Invalid neural joint targets')
         if adhesion.shape != (6,) or adhesion.dtype != np.dtype(bool):
             raise ValueError('Six boolean adhesion states required')
+        if adhesion_control is None and getattr(self, 'graded_adhesion', False):
+            raise ValueError('Graded adhesion requires its recorded force control')
+        if adhesion_control is not None:
+            adhesion_control = np.asarray(adhesion_control)
+            if (adhesion_control.shape != (6,) or adhesion_control.dtype.kind not in 'fiu'
+                    or not np.isfinite(adhesion_control).all()
+                    or np.any((adhesion_control < 0) | (adhesion_control > 1))
+                    or np.any(adhesion_control[~adhesion] != 0)):
+                raise ValueError('Six finite adhesion controls in [0,1], zero on released feet, required')
+        if type(interpolate) is not bool:
+            raise ValueError('Boolean activation interpolation option required')
         number(dt, 'joint control dt', PHYSICS_DT, .05)
         n = round(dt/PHYSICS_DT)
         if abs(n*PHYSICS_DT-dt) > 1e-10: raise ValueError('Integral physical steps required')
         if self.fault: raise RuntimeError(self.fault)
+        if hasattr(self, 'active_length_scale') or joint_stiffness_scale is not None:
+            from .c.banc_mechanics import set_active_length_scale
+            set_active_length_scale(self, joint_stiffness_scale)
         if tendon_inputs is not None:
             if self.tendon_control is None:raise ValueError('Tendon actuation is not enabled')
             tendon_values=self.tendon_control.command_vector(tendon_inputs)
             self.d.ctrl[self.tendon_control.act_ids]=tendon_values
         expected_time=float(self.d.time)+dt
         self.descending.fill(0.)
+        trajectory = None
+        activation_tau = getattr(self, 'joint_target_activation_tau_s', 0.0)
+        if activation_tau and interpolate:
+            # The neural muscle state still advances once per control. Its
+            # exact exponential trajectory is applied to native physics instead
+            # of jumping immediately to the interval's final activated target.
+            previous = np.asarray(self.last_action.joint_angles)
+            fractions = -np.expm1(-np.arange(1, n+1)*PHYSICS_DT/activation_tau) / -math.expm1(-dt/activation_tau)
+            trajectory = previous + fractions[:, None] * (targets - previous)
+            trajectory[-1] = targets
         self.last_action = self.Action(joint_angles=targets.copy(), adhesion_onoff=adhesion.copy())
-        for _ in range(n):
-            self.apply(self.sim, self.fly.name, self.last_action)
+        # Legacy holds the final command throughout this interval. The explicit
+        # continuous model supplies its trajectory at native physics steps.
+        self.apply(self.sim, self.fly.name, self.last_action)
+        if adhesion_control is not None:
+            self.d.ctrl[self.sim._intern_adhesionactuatorids_by_fly[self.fly.name]] = adhesion_control
+        for index in range(n):
+            if trajectory is not None:
+                self.d.ctrl[self.act_ids] = trajectory[index]
             self.d.xfrc_applied[:] = 0
             if self.push_left > 0:
                 self.d.xfrc_applied[self.thorax, :3] = self.push_force
@@ -641,13 +678,16 @@ class FlyGymBody:
         typ=self.mj.mjtState.mjSTATE_INTEGRATION
         state=np.empty(self.mj.mj_stateSize(self.m,typ)); self.mj.mj_getState(self.m,self.d,state,typ)
         cp=self.controller.cpg_network; rs=cp.random_state.get_state()
-        return dict(backend=self.backend,modelHash=self.model_hash,state=state.tolist(),t0=self.t0,
+        result = dict(backend=self.backend,modelHash=self.model_hash,state=state.tolist(),t0=self.t0,
              cpg={k:np.asarray(getattr(cp,k)).tolist() for k in ('curr_phases','curr_magnitudes','intrinsic_freqs','intrinsic_amps')},
              rng=[rs[0],rs[1].tolist(),int(rs[2]),int(rs[3]),float(rs[4])],
              controller={k:np.asarray(getattr(self.controller,k)).tolist() for k in ('retraction_correction','stumbling_correction','retraction_persistence_counter')},
              action=dict(joint_angles=np.asarray(self.last_action.joint_angles).tolist(),adhesion_onoff=np.asarray(self.last_action.adhesion_onoff,dtype=int).tolist()),
              descending=self.descending.tolist(),travel=self.travel,collisions=self.collisions,prev_contact=self.prev_contact,
              push_left=self.push_left,push_force=self.push_force.tolist(),last_position=self.last_position.tolist(),fault=self.fault,walk_ticks=self.walk_ticks)
+        if hasattr(self, 'active_length_scale'):
+            result['joint_stiffness_scale'] = self.active_length_scale.tolist()
+        return result
 
     def restore(self,s):
         if s['backend']!=self.backend or s['modelHash']!=self.model_hash: raise ValueError('다른 물리 모델의 체크포인트입니다.')
@@ -665,6 +705,9 @@ class FlyGymBody:
         angles=np.asarray(s['action']['joint_angles']); adhesion=np.asarray(s['action']['adhesion_onoff'],dtype=bool)
         if angles.shape!=(42,) or adhesion.shape!=(6,) or not np.isfinite(angles).all(): raise ValueError('Invalid action')
         self.last_action=self.Action(joint_angles=angles,adhesion_onoff=adhesion)
+        if hasattr(self, 'active_length_scale') or 'joint_stiffness_scale' in s:
+            from .c.banc_mechanics import set_active_length_scale
+            set_active_length_scale(self, s.get('joint_stiffness_scale'))
         self.mj.mj_setState(self.m,self.d,a,typ); self.mj.mj_forward(self.m,self.d)
         for k in ('t0','travel','collisions','prev_contact','push_left','fault','walk_ticks'): setattr(self,k,clone(s[k]))
         for k in ('descending','push_force','last_position'): setattr(self,k,np.asarray(s[k],dtype=float))

@@ -19,11 +19,17 @@ from ..common import to_ui
 from ..engine import config_values
 from ..sensors import default_world, validate_world
 from .adaptive_rate import AdaptiveRateNetwork
+from .banc_mechanics import configure_activation_trajectory, configure_active_length, configure_adhesion_units, configure_finite_pad_contact, configure_torque_capacity
 from .integrity import bounded_int, digest
 from .rate_body import RateBodyAdapter
 from .research_annotations import rate_weights
 from .target_navigation import BancTargetNavigation
-from .walking_trace import WalkingTrace, capture_control
+from .walking_trace import (
+    WalkingTrace,
+    capture_control,
+    capture_initial_state,
+    capture_neural_request,
+)
 
 
 def validate_banc_roster(graph):
@@ -65,8 +71,62 @@ class BancWalkingParameters:
     coxa_geometry: bool = False
     ltm_tendons: bool = False
     coxa_endpoint: bool = False
+    adhesion_model: str = "legacy"
+    joint_activation_tau_s: float = 0.03
+    feasible_activation: bool = False
+    servo_profile: str = "tracking_all"
+    joint_gain_multipliers: tuple = (1., 1., 1., 1., 1., 1., 1.)
+    load_gain_multiplier: float = 1.0
+    torque_limit_bw_mm: float = 0.0
+    continuous_joint_activation: bool = False
+    active_length: bool = False
+    muscle_activation_first: bool = False
+    finite_pad_contact: bool = False
+    adhesion_unit_conversion: bool = False
+    fast_coxa_activation: bool = False
+    front_hair_plate: bool = False
+    fast_joint_release: bool = False
+    joint_release_mode: str = "all"
 
     def __post_init__(self):
+        if self.joint_release_mode not in ("all", "reversal_only") or (
+            self.joint_release_mode != "all" and not self.fast_joint_release
+        ):
+            raise ValueError("Explicit fast release required for the selected joint release mode")
+        if type(self.fast_joint_release) is not bool or (self.fast_joint_release and (
+            type(self.joint_activation_tau_s) not in (int, float)
+            or self.joint_activation_tau_s <= .03
+            or self.muscle_activation_first or self.continuous_joint_activation
+        )):
+            raise ValueError("Fast joint target release requires slower post-saturation activation")
+        if type(self.front_hair_plate) is not bool or (self.front_hair_plate and not self.coxa_geometry):
+            raise ValueError("Front hair plate input requires physical coxa direction")
+        if type(self.fast_coxa_activation) is not bool or (self.fast_coxa_activation and (
+            type(self.joint_activation_tau_s) not in (int, float) or self.joint_activation_tau_s <= .03
+            or self.muscle_activation_first or self.continuous_joint_activation
+        )):
+            raise ValueError("Fast coxa activation requires slower joint activation after saturation")
+        if type(self.adhesion_unit_conversion) is not bool:
+            raise ValueError("Boolean adhesion unit conversion required")
+        if type(self.finite_pad_contact) is not bool:
+            raise ValueError("Boolean finite pad contact required")
+        if type(self.muscle_activation_first) is not bool:
+            raise ValueError("Boolean muscle activation order required")
+        if type(self.active_length) is not bool:
+            raise ValueError("Boolean active length required")
+        if type(self.continuous_joint_activation) is not bool:
+            raise ValueError("Boolean continuous joint activation required")
+        if not isinstance(self.joint_gain_multipliers, (list, tuple)) or len(self.joint_gain_multipliers) != 7 or any(type(x) not in (int, float) or not math.isfinite(x) or not .25 <= x <= 4 for x in self.joint_gain_multipliers):
+            raise ValueError("Seven bounded joint gain multipliers required")
+        object.__setattr__(self, 'joint_gain_multipliers', tuple(float(x) for x in self.joint_gain_multipliers))
+        if self.servo_profile not in ("tracking", "tracking_all"):
+            raise ValueError("Unknown BANC servo profile")
+        if type(self.feasible_activation) is not bool:
+            raise ValueError("Boolean feasible activation required")
+        if self.adhesion_model not in ("legacy", "feasible_lift", "activation", "graded", "request_lift"):
+            raise ValueError("Unknown neural adhesion model")
+        if self.adhesion_model == "request_lift" and (self.muscle_activation_first or self.active_length):
+            raise ValueError("Request lift requires the post-saturation joint filter")
         if type(self.coxa_geometry) is not bool:
             raise ValueError("Boolean coxa geometry option required")
         if type(self.ltm_tendons) is not bool:
@@ -84,6 +144,9 @@ class BancWalkingParameters:
         if self.pooling not in ("mean", "unit_response"):
             raise ValueError("Unknown BANC motor pooling")
         for name, lo, hi in (
+            ("torque_limit_bw_mm", 0., 100.),
+            ("load_gain_multiplier", 0., 32.),
+            ("joint_activation_tau_s", .005, .25),
             ("adaptation_gain", 0.0, 100.0),
             ("adaptation_tau_s", 0.01, 10.0),
             ("sensory_gain", 0.0, 400.0),
@@ -98,6 +161,43 @@ class BancWalkingParameters:
                 or not lo <= value <= hi
             ):
                 raise ValueError("Invalid BANC rate parameter: " + name)
+
+    def state_dict(self):
+        result = asdict(self)
+        # Preserve old checkpoint metadata exactly when the new model is off.
+        if self.adhesion_model == "legacy":
+            result.pop("adhesion_model")
+        if self.joint_activation_tau_s == .03:
+            result.pop("joint_activation_tau_s")
+        if not self.feasible_activation:
+            result.pop("feasible_activation")
+        if self.servo_profile == "tracking_all":
+            result.pop("servo_profile")
+        if self.joint_gain_multipliers == (1.,) * 7:
+            result.pop("joint_gain_multipliers")
+        if self.load_gain_multiplier == 1.:
+            result.pop("load_gain_multiplier")
+        if self.torque_limit_bw_mm == 0.:
+            result.pop("torque_limit_bw_mm")
+        if not self.continuous_joint_activation:
+            result.pop("continuous_joint_activation")
+        if not self.active_length:
+            result.pop("active_length")
+        if not self.muscle_activation_first:
+            result.pop("muscle_activation_first")
+        if not self.finite_pad_contact:
+            result.pop("finite_pad_contact")
+        if not self.adhesion_unit_conversion:
+            result.pop("adhesion_unit_conversion")
+        if not self.fast_coxa_activation:
+            result.pop("fast_coxa_activation")
+        if not self.front_hair_plate:
+            result.pop("front_hair_plate")
+        if not self.fast_joint_release:
+            result.pop("fast_joint_release")
+        if self.joint_release_mode == "all":
+            result.pop("joint_release_mode")
+        return result
 
 
 class BancWalkingSession:
@@ -129,13 +229,20 @@ class BancWalkingSession:
         self.options = BodyOptions(
             model="flybody",
             actuation="whole_body",
-            servo_profile="tracking_all",
+            servo_profile=self.p.servo_profile,
             tendons="all",
         )
         self.body = FlyGymBody(
             seed, self.world, config_values(None), body_options=self.options
         )
         try:
+            configure_torque_capacity(self.body, self.p.torque_limit_bw_mm)
+            configure_activation_trajectory(self.body, self.p.joint_activation_tau_s if self.p.continuous_joint_activation else 0.0)
+            configure_active_length(self.body, self.p.active_length)
+            configure_finite_pad_contact(self.body, self.p.finite_pad_contact)
+            configure_adhesion_units(self.body, self.p.adhesion_unit_conversion)
+            if self.p.adhesion_model == "graded":
+                self.body.graded_adhesion = True
             self.adapter = RateBodyAdapter(
                 graph,
                 self.body,
@@ -145,6 +252,17 @@ class BancWalkingSession:
                 coxa_geometry=self.p.coxa_geometry,
                 ltm_tendons=self.p.ltm_tendons,
                 coxa_endpoint=self.p.coxa_endpoint,
+                adhesion_model=self.p.adhesion_model,
+                joint_activation_tau_s=self.p.joint_activation_tau_s,
+                feasible_activation=self.p.feasible_activation,
+                joint_gain_multipliers=self.p.joint_gain_multipliers,
+                load_gain_multiplier=self.p.load_gain_multiplier,
+                active_length=self.p.active_length,
+                muscle_activation_first=self.p.muscle_activation_first,
+                fast_coxa_activation=self.p.fast_coxa_activation,
+                front_hair_plate=self.p.front_hair_plate,
+                fast_joint_release=self.p.fast_joint_release,
+                joint_release_mode=self.p.joint_release_mode,
             )
             weights, _ = rate_weights(graph)
             if self.navigation:
@@ -242,8 +360,18 @@ class BancWalkingSession:
         if self.trace_error:
             return
         try:
+            if self.trace.initial is None:
+                self.trace.start(capture_initial_state(self))
             self.trace.append(capture_control(self))
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - observer errors must not fault the model
+            self.trace_error = str(exc)
+
+    def _record_neural_request(self, drive, position, rotation):
+        if self.trace_error:
+            return
+        try:
+            self._trace_neural_request = capture_neural_request(self, drive, position, rotation)
+        except Exception as exc:  # noqa: BLE001 - observer errors must not fault the model
             self.trace_error = str(exc)
 
     def advance(self, controls=20, *, capture=False):
@@ -266,6 +394,8 @@ class BancWalkingSession:
                 drive[self.descending] += self.p.descending_drive
                 if self.navigation:
                     drive += self.navigation.drive(prior, rotation)
+                if capture:
+                    self._record_neural_request(drive, prior, rotation)
                 if self.fused_readout:
                     self.rate = self.network.advance_readout(
                         drive, self.adapter.motor_ids, self.neural_steps_per_control
@@ -279,7 +409,10 @@ class BancWalkingSession:
                 )
                 self.tendon_inputs.update(self.adapter.tendon_inputs)
                 self.body.step_joint_targets(
-                    target, adhesion, tendon_inputs=self.tendon_inputs
+                    target, adhesion, tendon_inputs=self.tendon_inputs,
+                    **({"interpolate": not self.cuts["motor"]} if self.p.continuous_joint_activation else {}),
+                    **({"joint_stiffness_scale": 1 + self.adapter.total_activation} if self.p.active_length else {}),
+                    **({"adhesion_control": self.adapter.adhesion_control} if self.p.adhesion_model == "graded" else {}),
                 )
                 current = self.body.pose()[0]
                 self.signed_forward_mm += float((current - prior)[:2] @ rotation[:2, 0])
@@ -331,7 +464,7 @@ class BancWalkingSession:
             "signed_forward_mm": self.signed_forward_mm,
             "upright": float(rotation[2, 2]),
             "fault": self.fault or self.body.fault,
-            "parameters": asdict(self.p),
+            "parameters": self.p.state_dict(),
             "cuts": self.cuts.copy(),
             "wall_s": self.wall_s,
             "trace_error": self.trace_error,
@@ -376,7 +509,7 @@ class BancWalkingSession:
         return {
             "schema": self.schema,
             "graph_hash": self.graph.hash,
-            "parameters": asdict(self.p),
+            "parameters": self.p.state_dict(),
             "seed": self.seed,
             "world": copy.deepcopy(self.world),
             "body": self.body.snapshot(),
@@ -431,6 +564,15 @@ class BancWalkingSession:
             session.body.restore(saved["body"])
             session.network.restore(saved["network"])
             session.adapter.restore(saved["adapter"])
+            if session.p.adhesion_model == "graded" and not np.array_equal(
+                session.body.d.ctrl[session.body.sim._intern_adhesionactuatorids_by_fly[session.body.fly.name]],
+                session.adapter.adhesion_control,
+            ):
+                raise ValueError("Saved body adhesion and muscle control disagree")
+            if session.p.active_length and not np.array_equal(
+                session.body.active_length_scale, 1 + session.adapter.total_activation
+            ):
+                raise ValueError("Saved body stiffness and muscle activation disagree")
             session.tendon_inputs.update(session.adapter.tendon_inputs)
             # Validate the saved causal mask before setting any new one.
             expected = np.ones(graph.n, np.float32)

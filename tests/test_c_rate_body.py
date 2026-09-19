@@ -51,7 +51,7 @@ def fixture():
     body = SimpleNamespace(
         model_hash="fixture-body",
         neutral=angles.copy(),
-        knee_kinematics=lambda: {
+        knee_kinematics=lambda **_: {
             "flexion_rad": angles.reshape(6, 7)[:, 5].copy(),
             "velocity_rad_s": np.zeros(6),
             "d_flexion_dq": np.ones(6),
@@ -72,6 +72,127 @@ class RateBodyContracts(unittest.TestCase):
     def setUp(self):
         self.graph, self.body, self.angles = fixture()
         self.adapter = RateBodyAdapter(self.graph, self.body)
+
+    def test_graded_adhesion_keeps_release_decisions_and_restores_activation(self):
+        candidate = RateBodyAdapter(self.graph, self.body, adhesion_model='graded')
+        rates = np.zeros(len(candidate.motor_ids), np.float32)
+        rates[candidate.motor_columns[2]] = 100
+        legacy_target, legacy_on = self.adapter.decode(rates)
+        target, on = candidate.decode(rates)
+        np.testing.assert_array_equal(target, legacy_target)
+        np.testing.assert_array_equal(on, legacy_on)
+        self.assertAlmostEqual(candidate.adhesion_control[0], (1-math.exp(-.005/.03))*math.tanh(1))
+        self.assertTrue(0 < candidate.adhesion_control[0] < 1)
+        saved = candidate.snapshot()
+        candidate.decode(rates)
+        future = candidate.adhesion_control.copy()
+        candidate.restore(saved)
+        candidate.decode(rates)
+        np.testing.assert_array_equal(candidate.adhesion_control, future)
+        self.body.foot_kinematics = lambda _: {'target_lift_mm': np.full(6, .03)}
+        self.assertFalse(candidate.decode(rates)[1].any())
+        self.assertFalse(candidate.adhesion_control.any())
+        candidate.decode(rates, motor_cut=True)
+        self.assertFalse(candidate.adhesion_activation.any())
+        self.assertFalse(candidate.adhesion_control.any())
+
+    def test_fast_coxa_preserves_other_axes_and_saved_future(self):
+        slow = RateBodyAdapter(self.graph, self.body, joint_activation_tau_s=.09)
+        fast = RateBodyAdapter(self.graph, self.body, joint_activation_tau_s=.09, fast_coxa_activation=True)
+        for adapter in (slow, fast):
+            # Fixture agonist spans the coxa rotation and its existing knee DOF.
+            adapter._moment_plan.moments[0, 0] = 1
+        rates = np.zeros(len(fast.motor_ids), np.float32)
+        rates[fast.motor_columns[0]] = 100
+        slow.decode(rates)
+        fast.decode(rates)
+        noncoxa = np.setdiff1d(np.arange(42), fast.joints[:,0])
+        np.testing.assert_array_equal(fast.offset[noncoxa], slow.offset[noncoxa])
+        self.assertGreater(abs(fast.offset[fast.joints[0,0]]), abs(slow.offset[slow.joints[0,0]]))
+        saved = fast.snapshot()
+        future = fast.decode(rates)[0]
+        fast.restore(saved)
+        np.testing.assert_array_equal(fast.decode(rates)[0], future)
+        fast.decode(rates, motor_cut=True)
+        self.assertFalse(fast.offset.any())
+
+    def test_active_length_preserves_drive_adds_resistance_and_cuts_both_states(self):
+        candidate = RateBodyAdapter(self.graph, self.body, active_length=True)
+        rates = np.zeros(len(candidate.motor_ids), np.float32)
+        rates[0] = 100
+        legacy, _ = self.adapter.decode(rates)
+        target, _ = candidate.decode(rates)
+        np.testing.assert_array_equal(candidate.offset, self.adapter.offset)
+        # A single agonist creates active resistance without needing cancellation.
+        self.assertGreater(candidate.total_activation.max(), 0)
+        np.testing.assert_allclose((target - self.body.neutral) * (1 + candidate.total_activation),
+                                   legacy - self.body.neutral, atol=1e-15, rtol=0)
+        saved = candidate.snapshot()
+        future = candidate.decode(rates)[0]
+        candidate.restore(saved)
+        np.testing.assert_array_equal(candidate.decode(rates)[0], future)
+        np.testing.assert_array_equal(candidate.decode(rates, motor_cut=True)[0], self.body.neutral)
+        self.assertEqual(candidate.total_activation.max(), 0)
+        self.assertEqual(candidate.offset.max(), 0)
+
+    def test_muscle_activation_precedes_saturation_without_filtering_adhesion(self):
+        candidate = RateBodyAdapter(self.graph, self.body, muscle_activation_first=True,
+                                    joint_activation_tau_s=.09)
+        rates = np.zeros(len(candidate.motor_ids), np.float32)
+        rates[0] = 100
+        rates[candidate.motor_columns[2]] = 100
+        target, adhesion = candidate.decode(rates)
+        alpha = 1 - math.exp(-.005/.09)
+        expected = .5 * math.tanh(.002 * 100 * alpha / .5)
+        self.assertAlmostEqual(abs(target[5] - self.body.neutral[5]), expected, places=14)
+        np.testing.assert_array_equal(adhesion, self.adapter.decode(rates)[1])
+        saved = candidate.snapshot()
+        future = candidate.decode(rates)[0]
+        candidate.restore(saved)
+        np.testing.assert_array_equal(candidate.decode(rates)[0], future)
+        cut_target, cut_adhesion = candidate.decode(rates, motor_cut=True)
+        np.testing.assert_array_equal(cut_target, self.body.neutral)
+        self.assertFalse(cut_adhesion.any())
+        self.assertEqual(candidate.muscle_activation.max(), 0)
+
+    def test_feasible_lift_changes_only_prediction_and_versions_state(self):
+        seen = []
+        self.body.act_ids = np.arange(42)
+        self.body.m = SimpleNamespace(
+            actuator_ctrllimited=np.ones(42, dtype=bool),
+            actuator_ctrlrange=np.tile([-.05, .05], (42, 1)),
+        )
+        def predict(targets):
+            seen.append(targets.copy())
+            return {'target_lift_mm': np.r_[max(0, targets[5] - .05) * .1, np.zeros(5)]}
+        self.body.foot_kinematics = predict
+        candidate = RateBodyAdapter(self.graph, self.body, adhesion_model='feasible_lift')
+        rates = np.zeros(len(candidate.motor_ids), np.float32)
+        rates[candidate.motor_columns[2]] = 100
+        raw, legacy_adhesion = self.adapter.decode(rates)
+        requested, feasible_adhesion = candidate.decode(rates)
+        np.testing.assert_array_equal(raw, requested)
+        np.testing.assert_array_equal(candidate.offset, self.adapter.offset)
+        self.assertFalse(legacy_adhesion[0])
+        self.assertTrue(feasible_adhesion[0])
+        self.assertEqual(seen[-1][5], .05)
+        self.assertNotEqual(candidate.identity, self.adapter.identity)
+        with self.assertRaises(ValueError):
+            self.adapter.restore(candidate.snapshot())
+        candidate.decode(rates, motor_cut=True)
+        self.assertFalse(candidate.decode(rates, motor_cut=True)[1].any())
+
+    def test_feasible_lift_preserves_unlimited_actuator(self):
+        seen = []
+        self.body.act_ids = np.arange(42)
+        self.body.m = SimpleNamespace(
+            actuator_ctrllimited=np.zeros(42, dtype=bool),
+            actuator_ctrlrange=np.zeros((42, 2)),
+        )
+        self.body.foot_kinematics = lambda targets: seen.append(targets.copy()) or {'target_lift_mm': np.zeros(6)}
+        adapter = RateBodyAdapter(self.graph, self.body, adhesion_model='feasible_lift')
+        requested, _ = adapter.decode(np.ones(len(adapter.motor_ids)) * 100)
+        np.testing.assert_array_equal(seen[-1], requested)
 
     def test_real_angle_drives_correct_typed_sensory_cells_with_latency(self):
         np.testing.assert_array_equal(self.adapter.encode(), np.zeros(self.graph.n))

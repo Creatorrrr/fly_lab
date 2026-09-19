@@ -88,6 +88,29 @@ class BancWorkbenchContracts(unittest.TestCase):
                 self.call("banc_walking_advance",{"stream":value})
         self.assertEqual(calls,[(3,True)])
 
+    def test_trace_export_carries_the_physics_anchor_only_on_the_first_page(self):
+        from flylab.c.walking_trace import WalkingTrace, command_interval
+        trace=WalkingTrace()
+        trace.start({"control_tick":0,"time_s":0.0,"body":{"state":[1.,2.]},"body_hash":"body"})
+        for tick in range(2):
+            trace.append({"control_tick":tick,"time_s":tick*.005,
+                          "command_interval":command_interval(tick),
+                          "joint_targets_rad":[0.0]*42,"adhesion":[False]*6,
+                          "tendon_inputs":{},"neural_request":{"end_tick":tick}})
+        self.dispatcher.banc_walking=SimpleNamespace(
+            trace=trace,graph=SimpleNamespace(hash="graph"),network=SimpleNamespace(identity="network"),
+            body=SimpleNamespace(model_hash="body"),adapter=SimpleNamespace(identity="adapter"),
+            p=BancWalkingParameters(),world={},trace_error=None,close=lambda:None)
+        first=self.call("banc_walking_trace",{"limit":1})["result"]
+        self.assertEqual(first["initial_physics"]["control_tick"],first["samples"][0]["control_tick"])
+        self.assertEqual(first["initial_physics"]["body"]["state"],[1.,2.])
+        self.assertTrue(first["command_replay"]["eligible"])
+        self.assertFalse(first["command_replay"]["verified"])
+        second=self.call("banc_walking_trace",{"after":0,"limit":1})["result"]
+        self.assertNotIn("initial_physics",second)
+        self.assertEqual(second["epoch"],first["epoch"])
+        self.assertEqual(second["samples"][0]["control_tick"],1)
+
     def test_model_parameters_reject_nonfinite_and_wrong_types(self):
         for field, value in (
             ("motor_gain", float("nan")),

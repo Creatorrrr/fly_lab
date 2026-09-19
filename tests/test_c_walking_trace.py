@@ -2,11 +2,21 @@
 
 import importlib.util
 import unittest
+from dataclasses import dataclass
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
 
-from flylab.c.walking_trace import WalkingTrace, contact_diagnostics, summarize_trace
+from flylab.c.walking_trace import (
+    WalkingTrace,
+    capture_control,
+    capture_initial_state,
+    capture_neural_request,
+    command_interval,
+    contact_diagnostics,
+    summarize_trace,
+)
 
 
 def row(tick):
@@ -58,6 +68,132 @@ class TraceContracts(unittest.TestCase):
         result = summarize_trace(rows)
         self.assertEqual(result["legs"][0]["stance_transitions"], 1)
         self.assertEqual(result["legs"][0]["loaded_slip_mean_mm_s"], 2.0)
+
+    def test_export_anchor_is_never_reused_after_eviction_or_a_gap(self):
+        initial = {"control_tick": 10, "time_s": .05, "body": {"state": [1, 2, 3]},
+                   "body_hash": "body", "units": {"time": "model seconds"}}
+        def command_row(tick):
+            return {**row(tick), "command_interval": command_interval(tick),
+                    "joint_targets_rad": [0.0] * 42, "adhesion": [False] * 6,
+                    "tendon_inputs": {}, "neural_request": {"end_tick": tick}}
+        trace = WalkingTrace(3);trace.start(initial)
+        trace.append(command_row(10));trace.append(command_row(11))
+        result = trace.export_metadata(include_initial=True)
+        self.assertTrue(result["command_replay"]["eligible"])
+        self.assertFalse(result["command_replay"]["verified"])
+        self.assertEqual(result["initial_physics"]["control_tick"], 10)
+        result["initial_physics"]["body"]["state"][0] = 999
+        self.assertEqual(trace.initial["body"]["state"][0], 1)
+        self.assertNotIn("initial_physics", trace.export_metadata())
+        trace.append(command_row(12));trace.append(command_row(13))
+        result = trace.export_metadata(include_initial=True)
+        self.assertFalse(result["command_replay"]["eligible"])
+        self.assertIn("INITIAL_SAMPLE_EVICTED_OR_UNAVAILABLE", result["command_replay"]["reasons"])
+        self.assertIsNone(result["initial_physics"])
+        self.assertEqual(result["trace_contract"]["body_hash"], "body")
+        gapped = WalkingTrace();gapped.start(initial)
+        gapped.append(command_row(10));gapped.append(command_row(12))
+        result = gapped.export_metadata(include_initial=True, trace_error="diagnostic failure")
+        self.assertFalse(result["command_replay"]["eligible"])
+        self.assertIn("MISSING_CONTROL_INTERVALS", result["command_replay"]["reasons"])
+        self.assertIn("TRACE_CAPTURE_ERROR", result["command_replay"]["reasons"])
+        with self.assertRaises(ValueError):
+            gapped.start(initial)
+
+    def test_command_interval_and_initial_clock_are_explicit(self):
+        self.assertIsNone(command_interval(0))
+        self.assertEqual(command_interval(8), {"start_tick": 7, "end_tick": 8, "start_s": .035, "end_s": .04})
+        trace = WalkingTrace();trace.start({"control_tick": 8, "time_s": .04})
+        with self.assertRaises(ValueError):
+            trace.append(row(9))
+        trace.append(row(8));trace.append(row(9))
+        self.assertIn("INCOMPLETE_COMMAND_RECORDS", trace.export_metadata()["command_replay"]["reasons"])
+
+
+class TraceRequestContracts(unittest.TestCase):
+    def session(self):
+        @dataclass
+        class Config:
+            neural_dt_s: float = .00025
+        body = SimpleNamespace(
+            d=SimpleNamespace(qpos=np.zeros(42), qvel=np.zeros(42), ctrl=np.zeros(42), xpos=np.zeros((1, 3))),
+            body_ids=np.array([0]), body_indices={"c_thorax": 0}, qpos_ids=np.arange(42),
+            last_action=SimpleNamespace(joint_angles=np.zeros(42), adhesion_onoff=np.zeros(6, bool)),
+            pose=lambda: (np.zeros(3), np.eye(3), np.zeros(6)),
+            snapshot=lambda: {"state": [1.0, 2.0], "push_left": .003, "push_force": [1., 2., 3.]},
+            physics_time=lambda: .01, physics_identity=lambda: {"timestep": .0001},
+            model_hash="body", joint_names=[str(i) for i in range(42)],
+            joint_ids=np.arange(42), act_ids=np.arange(42),
+            m=SimpleNamespace(opt=SimpleNamespace(timestep=.0001),
+                jnt_range=np.tile([-.5, .3], (42, 1)), jnt_limited=np.ones(42),
+                actuator_ctrlrange=np.tile([-.5, .3], (42, 1)), actuator_ctrllimited=np.ones(42)),
+            push_left=.003, push_force=np.array([1., 2., 3.]), fault=None,
+        )
+        return SimpleNamespace(
+            body=body, control_tick=2, trace=WalkingTrace(), trace_error=None,
+            graph=SimpleNamespace(hash="graph", nodes=[
+                {"id": "left", "cell_type": "DNg100", "soma_side": "left", "output_side": "left"},
+                {"id": "right", "cell_type": "DNg100", "soma_side": "right", "output_side": "right"},
+            ]), descending=np.array([0, 1]), network=SimpleNamespace(identity="network"),
+            adapter=SimpleNamespace(identity="adapter"), p=Config(), options=Config(), world={},
+            navigation=None, cuts={"motor": False, "descending": False, "circuit": False, "sensory": False},
+            tendon_inputs={}, rate=np.zeros(2), fault=None,
+        )
+
+    def test_capture_reads_existing_navigation_and_host_request_without_encoding(self):
+        from flylab.c.target_sense import TargetSensor
+        session = self.session()
+        session.navigation = SimpleNamespace(
+            sensor=TargetSensor([6, -3]), cut=False,
+            encoder=SimpleNamespace(turn=1, braking=False, ports=np.array([2, 3])),
+        )
+        drive = np.array([5000., 4999., -5000., 5000.], np.float32)
+        original = drive.copy()
+        request = capture_neural_request(session, drive, np.zeros(3), np.eye(3))
+        self.assertEqual(request["descending_drive"], [5000., 4999.])
+        self.assertEqual(request["steering_port_drive"], [-5000., 5000.])
+        self.assertEqual(request["navigation_at_start"]["turn_request"], 1)
+        self.assertAlmostEqual(request["navigation_at_start"]["distance_mm"], np.sqrt(45))
+        self.assertEqual(request["external_force_at_start"]["push_left_s"], .003)
+        np.testing.assert_array_equal(drive, original)
+        self.assertEqual(session.navigation.encoder.turn, 1)
+        session._trace_neural_request = request;session.control_tick = 3
+        feet={"normal_load_bw": [0.] * 6}
+        with patch("flylab.c.walking_trace.contact_diagnostics", return_value=feet):
+            sample = capture_control(session)
+            self.assertEqual(sample["command_interval"]["start_tick"], 2)
+            self.assertEqual(sample["neural_request"]["start_tick"], 2)
+            self.assertEqual(sample["navigation"]["target_xz_mm"], [6., -3.])
+            session.control_tick = 5
+            self.assertIsNone(capture_control(session)["neural_request"])
+
+    def test_first_record_snapshots_cpu_physics_once_and_never_reads_network_state(self):
+        from flylab.c.banc_walking import BancWalkingSession
+        session = self.session();calls=[]
+        def snapshot():
+            calls.append(session.control_tick)
+            return {"state": [1., 2.], "push_left": .003, "push_force": [1., 2., 3.]}
+        session.body.snapshot=snapshot
+        with patch("flylab.c.walking_trace.contact_diagnostics", return_value={"normal_load_bw": [0.] * 6}):
+            BancWalkingSession._record_control(session)
+            self.assertIsNone(session.trace_error)
+            session.control_tick=3
+            BancWalkingSession._record_control(session)
+        self.assertEqual(calls, [2])
+        self.assertEqual(session.trace.initial["descending_ports"][0]["soma_side"], "left")
+        self.assertEqual(session.trace.initial["body"]["push_left"], .003)
+        self.assertEqual(session.trace.initial["joint_commands"]["joint_range_rad"][0], [-.5, .3])
+        session.body.physics_time=lambda: float("nan")
+        with self.assertRaises(ValueError):
+            capture_initial_state(session)
+
+    def test_observer_failure_stays_separate_from_model_fault(self):
+        from flylab.c.banc_walking import BancWalkingSession
+        session = self.session()
+        with patch("flylab.c.banc_walking.capture_neural_request", side_effect=ValueError("observer only")):
+            BancWalkingSession._record_neural_request(session, np.zeros(2), np.zeros(3), np.eye(3))
+        self.assertEqual(session.trace_error, "observer only")
+        self.assertIsNone(session.fault);self.assertIsNone(session.body.fault)
 
 
 @unittest.skipUnless(importlib.util.find_spec("mujoco"), "Optional MuJoCo runtime")

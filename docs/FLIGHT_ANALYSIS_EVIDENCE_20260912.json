@@ -1,0 +1,344 @@
+{
+  "schema": "flylab.flight-analysis-evidence.v1",
+  "captured_for": "GPT Pro Web architecture analysis",
+  "evidence_origin": "Actual local runs completed in this task on 2026-09-12; no pretrained policy executed",
+  "evidence": [
+    {
+      "original_path": "verification/flight-audit-20260912/model-probe.json",
+      "sha256": "5bd308d89ebb4a36a2e319e9471664b0876b52c570c463a65b237e83ed7cc8ca",
+      "data": {
+        "versions": {
+          "flygym": "2.1.0",
+          "mujoco": "3.9.0",
+          "dm-control": "1.0.39"
+        },
+        "models": [
+          {
+            "label": "neuromechfly",
+            "wing_dofs": [],
+            "wing_actuators": [],
+            "density": 0.0,
+            "viscosity": 0.0,
+            "geom_fluid_active": 0,
+            "fluid_named_geoms": []
+          },
+          {
+            "label": "flybody_legs",
+            "wing_dofs": [],
+            "wing_actuators": [],
+            "density": 0.00128,
+            "viscosity": 0.000185,
+            "geom_fluid_active": 0,
+            "fluid_named_geoms": []
+          },
+          {
+            "label": "flybody_whole",
+            "wing_dofs": [
+              "c_thorax-l_wing-yaw",
+              "c_thorax-l_wing-roll",
+              "c_thorax-l_wing-pitch",
+              "c_thorax-r_wing-yaw",
+              "c_thorax-r_wing-roll",
+              "c_thorax-r_wing-pitch"
+            ],
+            "wing_actuators": [
+              "c_thorax-l_wing-yaw",
+              "c_thorax-l_wing-roll",
+              "c_thorax-l_wing-pitch",
+              "c_thorax-r_wing-yaw",
+              "c_thorax-r_wing-roll",
+              "c_thorax-r_wing-pitch"
+            ],
+            "density": 0.00128,
+            "viscosity": 0.000185,
+            "geom_fluid_active": 0,
+            "fluid_named_geoms": [],
+            "wing_joint_command_probe_50ms": {
+              "c_thorax-l_wing-yaw": {
+                "before_rad": 1.5000166904996306,
+                "target_rad": 1.4000166904996305,
+                "after_rad": 1.4004026405619634,
+                "error_rad": 0.00038595006233288487
+              },
+              "c_thorax-l_wing-roll": {
+                "before_rad": 0.7004696118131984,
+                "target_rad": 0.6004696118131985,
+                "after_rad": 0.6014262857705658,
+                "error_rad": 0.0009566739573673155
+              },
+              "c_thorax-l_wing-pitch": {
+                "before_rad": -0.9997279886873505,
+                "target_rad": -0.8997279886873505,
+                "after_rad": -0.9004525950088335,
+                "error_rad": -0.0007246063214829679
+              },
+              "c_thorax-r_wing-yaw": {
+                "before_rad": 1.5000160411545762,
+                "target_rad": 1.4000160411545761,
+                "after_rad": 1.4004020506913937,
+                "error_rad": 0.00038600953681755534
+              },
+              "c_thorax-r_wing-roll": {
+                "before_rad": 0.7004689851482486,
+                "target_rad": 0.6004689851482486,
+                "after_rad": 0.6014249717814237,
+                "error_rad": 0.0009559866331750877
+              },
+              "c_thorax-r_wing-pitch": {
+                "before_rad": -0.99972819626588,
+                "target_rad": -0.8997281962658801,
+                "after_rad": -0.9004531211121918,
+                "error_rad": -0.0007249248463117031
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "original_path": "verification/flight-audit-20260912/action-compatibility.json",
+      "sha256": "0444abd5ad838d7da4f797d138b9807c6e5cdd640fc3925c40196dec0462ff86",
+      "data": {
+        "flylab_custom_task": {
+          "action_shape": [
+            66
+          ],
+          "wing_indices": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "physics_timestep_s": 5e-05,
+          "control_timestep_s": 0.0002,
+          "ellipsoid_fluid_geoms": 2
+        },
+        "upstream_default_flight_imitation": {
+          "action_shape": [
+            12
+          ],
+          "observation_fields": [
+            "walker/accelerometer",
+            "walker/actuator_activation",
+            "walker/gyro",
+            "walker/joints_pos",
+            "walker/joints_vel",
+            "walker/velocimeter",
+            "walker/world_zaxis",
+            "walker/ref_displacement",
+            "walker/ref_root_quat"
+          ],
+          "physics_timestep_s": 5e-05,
+          "control_timestep_s": 0.0002,
+          "ellipsoid_fluid_geoms": 2
+        }
+      }
+    },
+    {
+      "original_path": "verification/flight-audit-20260912/trace-summary.json",
+      "sha256": "7d3e0911c3718383259bc3312eb1ed1535479cb475a208ca37667fba7cbf8ad4",
+      "data": [
+        {
+          "task": "flight",
+          "steps": 1500,
+          "seconds": 0.2999999999999751,
+          "final_success": false,
+          "ever_success": false,
+          "success_time_span_s": null,
+          "height_range_mm": [
+            -0.05356901712930255,
+            53.840312553245006
+          ],
+          "final_position_mm": [
+            -48.72495795841458,
+            -0.5230699893112648,
+            39.64667974184694
+          ],
+          "final_upright": 0.15038338987027733,
+          "wing_peak_to_peak_rad": [
+            2.545529088017647,
+            0.6625511501355901,
+            2.7547329200123647,
+            2.5424428859905497,
+            0.6676224054350791,
+            2.7648773900673196
+          ]
+        },
+        {
+          "task": "takeoff",
+          "steps": 1500,
+          "seconds": 0.2999999999999751,
+          "final_success": false,
+          "ever_success": true,
+          "success_time_span_s": [
+            0.14719999999999195,
+            0.15559999999999102
+          ],
+          "height_range_mm": [
+            1.2730908310072475,
+            8.501507145882247
+          ],
+          "final_position_mm": [
+            -19.22597918722844,
+            -30.23234336936008,
+            4.590399034289224
+          ],
+          "final_upright": -0.3990059100021901,
+          "wing_peak_to_peak_rad": [
+            2.355554998214218,
+            0.5117264627002424,
+            2.7264988517002497,
+            2.3973855520506757,
+            0.577236926839385,
+            2.7190291686579777
+          ]
+        },
+        {
+          "task": "landing",
+          "steps": 1500,
+          "seconds": 0.2999999999999751,
+          "final_success": false,
+          "ever_success": false,
+          "success_time_span_s": null,
+          "height_range_mm": [
+            -0.05356901712930255,
+            53.840312553245006
+          ],
+          "final_position_mm": [
+            -48.72495795841458,
+            -0.5230699893112648,
+            39.64667974184694
+          ],
+          "final_upright": 0.15038338987027733,
+          "wing_peak_to_peak_rad": [
+            2.545529088017647,
+            0.6625511501355901,
+            2.7547329200123647,
+            2.5424428859905497,
+            0.6676224054350791,
+            2.7648773900673196
+          ]
+        }
+      ]
+    },
+    {
+      "original_path": "verification/flight-audit-20260912/tasks/report.json",
+      "sha256": "260176a04f5010583374af17694889850ce3f3d76779b7231e96bc98bc363308",
+      "data": {
+        "biological_validation": false,
+        "cases": [
+          {
+            "complete": true,
+            "controller": "upstream prototype wingbeat; zero residual policy",
+            "fault": null,
+            "provenance": {
+              "active_legs": true,
+              "biological_validation": false,
+              "control_period_s": 0.0002,
+              "control_steps": 1500,
+              "duration_seconds": 0.3,
+              "ground_contact": true,
+              "measured_wingbeat_supplied": false,
+              "physics": "MuJoCo CPU with official ellipsoid wing forces",
+              "policy_device": "controller supplied by caller; Torch policies may use CUDA",
+              "source_commit": "d015e9bfe441bd90ae431bac24c55cb74bdbce26",
+              "task": "flight",
+              "trained_policy": false,
+              "wing_pattern": "upstream prototype"
+            },
+            "seconds": 0.2999999999999751,
+            "steps": 1500,
+            "task": "flight",
+            "task_success": false,
+            "wall_s": 3.4075821000151336
+          },
+          {
+            "complete": true,
+            "controller": "upstream prototype wingbeat; zero residual policy",
+            "fault": null,
+            "provenance": {
+              "active_legs": true,
+              "biological_validation": false,
+              "control_period_s": 0.0002,
+              "control_steps": 1500,
+              "duration_seconds": 0.3,
+              "ground_contact": true,
+              "measured_wingbeat_supplied": false,
+              "physics": "MuJoCo CPU with official ellipsoid wing forces",
+              "policy_device": "controller supplied by caller; Torch policies may use CUDA",
+              "source_commit": "d015e9bfe441bd90ae431bac24c55cb74bdbce26",
+              "task": "takeoff",
+              "trained_policy": false,
+              "wing_pattern": "upstream prototype"
+            },
+            "seconds": 0.2999999999999751,
+            "steps": 1500,
+            "task": "takeoff",
+            "task_success": false,
+            "wall_s": 3.9281164999993052
+          },
+          {
+            "complete": true,
+            "controller": "upstream prototype wingbeat; zero residual policy",
+            "fault": null,
+            "provenance": {
+              "active_legs": true,
+              "biological_validation": false,
+              "control_period_s": 0.0002,
+              "control_steps": 1500,
+              "duration_seconds": 0.3,
+              "ground_contact": true,
+              "measured_wingbeat_supplied": false,
+              "physics": "MuJoCo CPU with official ellipsoid wing forces",
+              "policy_device": "controller supplied by caller; Torch policies may use CUDA",
+              "source_commit": "d015e9bfe441bd90ae431bac24c55cb74bdbce26",
+              "task": "landing",
+              "trained_policy": false,
+              "wing_pattern": "upstream prototype"
+            },
+            "seconds": 0.2999999999999751,
+            "steps": 1500,
+            "task": "landing",
+            "task_success": false,
+            "wall_s": 4.327496700017946
+          }
+        ]
+      }
+    },
+    {
+      "original_path": "verification/flight-audit-20260912/fluid/report.json",
+      "sha256": "98e954659f5e4b73fbb9f652f3068dc4e0f9898557dafe2ce2e01a622cf3911c",
+      "data": {
+        "checkpoint_restore_equal": true,
+        "fluid_effect_position_difference_mm": 0.281320784470672,
+        "neural_flight": "BLOCKED_UNVALIDATED_MAPPING",
+        "physicalExecuted": true,
+        "relocated_assets_restore_equal": true,
+        "stable_flight": "NOT_VALIDATED",
+        "status": "PASS"
+      }
+    }
+  ],
+  "source_hashes": {
+    "flylab/c/flight.py": "78839746adf3eedd04efe86beced0f3213449d53a755fed03099c7f0dd749bad",
+    "flylab/c/flybody_flight.py": "8a580ec509e287b4f3af7e94896a5bf656add8061dc8608653d271bfcd3d382b",
+    "flylab/body.py": "e1b52719af09a261fb2b7ee30192323aaeaccb7f49123ac992b26f332e53376b",
+    "flylab/body_options.py": "978f8465c2d8dcb8a153ce702710032612a171fc1ce6188739b76bc1592791ac",
+    "flylab/c/engine.py": "38adb76ab8ad5106de5f8a61e9c302393f46ecf0ca79b716697b0186032cd18f",
+    "flylab/c/server.py": "176fa9468820b54c20b3d1e787df4ba79b34c8b37e9a77fbca0b2e7882540766",
+    "flylab/c/banc_walking.py": "521e4d43304ee90a31d1e98faadb0ac65e8afb4fcea8a442d78e299aa89bb127",
+    "src/ui/world-view.js": "3eb7298331d6660871dfdeb4dd107d4a0c59f910c12ad8daed1561c1da9841a6",
+    "src/c/app.js": "c13854a38a8af9a13bbaa502d64f23437086cf8274c52d8477f3e82e5c95dcb6",
+    "src/c/playback.js": "fb39562009673eb1079a0551550d8142ab352bc1ff17e0c52221a6bcc615de87",
+    "tests/test_c_flight_tasks.py": "d0fc42b80d96b83c4c4ed7dc88a33e8d46bb78745ce698ed0dda70f1497afc9e",
+    "tools/run_c_flight_tasks.py": "877b2b01b802f1e129b442223cd32dc4056ade2b633a63bc91a58eb0a45ef886",
+    "tools/verify_c_flight.py": "265bfaa7012318a5438de2fcb2cffb7aef21bc0caf7a0d266fd6d760e313c27c"
+  },
+  "worktree_context": {
+    "branch": "codex/banc-observation-improvement",
+    "head": "56382f7dfc5a7b1e53e2e3f598bfff0fd369432d",
+    "note": "Uncommitted BANC observation/walking work exists and is preserved; uploaded source captures current bytes, not only HEAD."
+  }
+}

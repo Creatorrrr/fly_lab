@@ -9,6 +9,7 @@ import hashlib
 
 import numpy as np
 
+from .adaptive_fused import ExactRKMixin
 from .research_rate import ResearchRateNetwork
 
 _CSR_CURRENT = r"""
@@ -52,7 +53,7 @@ extern "C" __global__ void csr_current(
 """
 
 
-class AdaptiveRateNetwork(ResearchRateNetwork):
+class AdaptiveRateNetwork(ExactRKMixin, ResearchRateNetwork):
     def __init__(
         self,
         weights,
@@ -234,6 +235,13 @@ class AdaptiveRateNetwork(ResearchRateNetwork):
         ) / self.adaptation_tau_s
 
     def _step(self):
+        if (
+            self.device == "cuda"
+            and self.cuda_implementation == "packed"
+            and self.adaptation_gain
+        ):
+            self._step_fused()
+            return
         if not self.adaptation_gain:
             super()._step()
             return

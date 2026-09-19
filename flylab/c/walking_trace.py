@@ -9,6 +9,7 @@ import copy
 import math
 import uuid
 from collections import deque
+from dataclasses import asdict
 
 import numpy as np
 
@@ -17,6 +18,96 @@ from ..common import S, to_ui
 from .integrity import bounded_int
 
 TRACE_SCHEMA = "flylab.banc-trace.v1"
+CONTROL_DT_S = 0.005
+
+
+def command_interval(tick):
+    """The command on row t produced the already-measured state at t."""
+    return None if tick == 0 else {
+        "start_tick": tick - 1, "end_tick": tick,
+        "start_s": (tick - 1) * CONTROL_DT_S, "end_s": tick * CONTROL_DT_S,
+    }
+
+
+def capture_navigation(session, position, rotation):
+    navigation = getattr(session, "navigation", None)
+    if navigation is None:
+        return None
+    # observe() is pure; drive() would change hysteresis and must never be used.
+    cue = navigation.sensor.observe(position, rotation)
+    return {
+        "target_xz_mm": list(navigation.sensor.target_xz),
+        "bearing_rad": cue.bearing_rad, "distance_mm": cue.distance_mm,
+        "cue_cut": navigation.cut,
+        "turn_request": navigation.encoder.turn,
+        "brake_request": navigation.encoder.braking,
+    }
+
+
+def capture_neural_request(session, drive, position, rotation):
+    """Copy the existing host drive after encoding; no GPU readback or encode."""
+    navigation = getattr(session, "navigation", None)
+    return {
+        "start_tick": session.control_tick,
+        "end_tick": session.control_tick + 1,
+        "navigation_at_start": capture_navigation(session, position, rotation),
+        "descending_drive": np.asarray(drive)[session.descending].tolist(),
+        "steering_port_drive": np.asarray(drive)[navigation.encoder.ports].tolist()
+        if navigation else [],
+        "cuts": session.cuts.copy(),
+        "external_force_at_start": {
+            "push_left_s": float(session.body.push_left),
+            "push_force": session.body.push_force.tolist(),
+        },
+    }
+
+
+def capture_initial_state(session):
+    """One CPU physics snapshot at the recording anchor, never a neural snapshot."""
+    body = session.body
+    physical_time = float(body.physics_time())
+    if not math.isfinite(physical_time) or abs(physical_time - session.control_tick * CONTROL_DT_S) > 1e-5:
+        raise ValueError("Trace initial physics clock mismatch")
+    def port(index):
+        node = session.graph.nodes[int(index)]
+        return {key: node.get(key) for key in ("id", "cell_type", "soma_side", "output_side")}
+    navigation = getattr(session, "navigation", None)
+    return {
+        "control_tick": session.control_tick,
+        "time_s": session.control_tick * CONTROL_DT_S,
+        "body": body.snapshot(),
+        "body_hash": body.model_hash,
+        "graph_hash": session.graph.hash,
+        "model_hash": session.network.identity,
+        "adapter_hash": session.adapter.identity,
+        "physics_identity": body.physics_identity(),
+        "body_options": asdict(session.options),
+        "world": copy.deepcopy(session.world),
+        "parameters": session.p.state_dict() if hasattr(session.p, "state_dict") else asdict(session.p),
+        "joint_commands": {
+            "names": list(body.joint_names),
+            "joint_range_rad": body.m.jnt_range[body.joint_ids].tolist(),
+            "joint_limited": body.m.jnt_limited[body.joint_ids].astype(bool).tolist(),
+            "actuator_control_range_rad": body.m.actuator_ctrlrange[body.act_ids].tolist(),
+            "actuator_control_limited": body.m.actuator_ctrllimited[body.act_ids].astype(bool).tolist(),
+            "interpretation": "joint_targets_rad and ctrl retain raw requests; MuJoCo applies configured control limits internally. Tracking error is requested minus measured angle, and can include an unreachable request.",
+        },
+        "descending_ports": [port(i) for i in session.descending],
+        "steering_ports": [port(i) for i in navigation.encoder.ports] if navigation else [],
+        "units": {"time": "model seconds", "position": "mm", "angle": "rad",
+                  "neural_drive": "model units", "force": "MuJoCo model units; not SI calibrated"},
+        "command_contract": {
+            "control_dt_s": CONTROL_DT_S,
+            "physics_dt_s": float(body.m.opt.timestep),
+            "state_timing": "row t is the state after integrating the command in (t-1,t]",
+            "replay": "restore initial.body with FlyGymBody.restore; skip the anchor row; restore each row's neural_request.external_force_at_start push_force/push_left_s, then apply its joint_targets_rad, adhesion and tendon_inputs for one control_dt_s",
+            "neural_input_timing": "neural_request is copied before neural integration; navigation is measured at the row end",
+            "descending_order": "descending_drive follows descending_ports; soma_side is source anatomy, not inferred steering side",
+            "initial_state": "body.snapshot includes mjSTATE_INTEGRATION, held action and pending push force/duration",
+            "external_updates": "subsequent external state edits require their own recorded intervention; external_force_at_start records the held push request",
+            "verification": "complete data is a replay candidate, not a verified numerical PASS",
+        },
+    }
 
 
 def contact_diagnostics(body, *, support_threshold_bw=0.02):
@@ -113,6 +204,7 @@ def capture_control(session):
     sample = {
         "control_tick": session.control_tick,
         "time_s": session.control_tick * 0.005,
+        "command_interval": command_interval(session.control_tick),
         "body": {
             "position": to_ui(p),
             "basis": (S @ rotation).tolist(),
@@ -134,7 +226,14 @@ def capture_control(session):
         "upright": float(rotation[2, 2]),
         "feet": feet,
         "fault": session.fault or body.fault,
+        "navigation": capture_navigation(session, p, rotation),
     }
+    request = getattr(session, "_trace_neural_request", None)
+    if hasattr(body, 'active_length_scale'):
+        sample['joint_stiffness_scale'] = body.active_length_scale.tolist()
+    if getattr(body, 'graded_adhesion', False):
+        sample['adhesion_control'] = body.d.ctrl[body.sim._intern_adhesionactuatorids_by_fly[body.fly.name]].tolist()
+    sample["neural_request"] = copy.deepcopy(request) if request is not None and request["end_tick"] == session.control_tick else None
     if any(not np.isfinite(sample[key]).all() for key in ("qpos", "qvel", "ctrl")):
         raise ValueError("Nonfinite recorded physical state")
     return sample
@@ -148,6 +247,17 @@ class WalkingTrace:
         self.samples = deque(maxlen=capacity)
         self.epoch = uuid.uuid4().hex
         self.evicted = 0
+        self.initial = None
+        self.missing_intervals = 0
+        self.incomplete_commands = 0
+
+    def start(self, initial):
+        if self.initial is not None or self.samples:
+            raise ValueError("Trace initial state is fixed at its first sample")
+        bounded_int(initial.get("control_tick"), "initial trace tick", 0, 10**10)
+        if initial.get("time_s") != initial["control_tick"] * CONTROL_DT_S:
+            raise ValueError("Trace initial clock mismatch")
+        self.initial = copy.deepcopy(initial)
 
     def append(self, sample):
         tick = bounded_int(sample.get("control_tick"), "trace tick", 0, 10**10)
@@ -157,8 +267,44 @@ class WalkingTrace:
             raise ValueError(
                 "Trace samples must advance strictly; restore starts a new epoch"
             )
+        if not self.samples and self.initial is not None and tick != self.initial["control_tick"]:
+            raise ValueError("Initial trace state and first sample disagree")
+        if self.samples:
+            self.missing_intervals += max(0, tick - self.samples[-1]["control_tick"] - 1)
+            if (sample.get("command_interval") != command_interval(tick)
+                    or any(key not in sample for key in ("joint_targets_rad", "adhesion", "tendon_inputs"))
+                    or sample.get("neural_request") is None):
+                self.incomplete_commands += 1
         self.evicted += int(len(self.samples) == self.capacity)
         self.samples.append(copy.deepcopy(sample))
+
+    def export_metadata(self, *, include_initial=False, trace_error=None):
+        first = self.samples[0]["control_tick"] if self.samples else None
+        reasons = []
+        if self.initial is None:
+            reasons.append("INITIAL_PHYSICS_STATE_NOT_CAPTURED")
+        elif first != self.initial["control_tick"]:
+            reasons.append("INITIAL_SAMPLE_EVICTED_OR_UNAVAILABLE")
+        if self.missing_intervals:
+            reasons.append("MISSING_CONTROL_INTERVALS")
+        if trace_error:
+            reasons.append("TRACE_CAPTURE_ERROR")
+        if self.incomplete_commands:
+            reasons.append("INCOMPLETE_COMMAND_RECORDS")
+        aligned = self.initial is not None and first == self.initial["control_tick"]
+        return {
+            "command_replay": {
+                "eligible": not reasons, "verified": False,
+                "status": "DATA_COMPLETE_NOT_VERIFIED" if not reasons else "UNAVAILABLE",
+                "reasons": reasons, "first_available_tick": first,
+                "initial_tick": self.initial["control_tick"] if self.initial else None,
+                "missing_control_intervals": self.missing_intervals,
+            },
+            "trace_contract": copy.deepcopy({key: value for key, value in self.initial.items()
+                                             if key not in ("body", "control_tick", "time_s")}) if self.initial else None,
+            # Never attach an old physical anchor to a later retained first row.
+            **({"initial_physics": copy.deepcopy(self.initial) if aligned else None} if include_initial else {}),
+        }
 
     def page(self, *, after=-1, limit=200):
         bounded_int(after, "trace cursor", -1, 10**10)

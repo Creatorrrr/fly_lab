@@ -63,3 +63,20 @@ test('a failed response releases busy state and stops scheduling',async()=>{
  assert.equal(h.errors[0].message,'physical fault');assert.equal(h.timers.size,0);
  assert.deepEqual(h.busy,[true,false]);
 });
+
+test('idle waits for an issued calculation before observation-only work',async()=>{
+ const h=harness();h.start();const run=h.fire();
+ h.running=false;h.pump.sync();let replayStarted=false;
+ const replay=h.pump.idle().then(()=>{replayStarted=true;assert.equal(h.busy.at(-1),false);});
+ await Promise.resolve();assert.equal(replayStarted,false);
+ h.finish(20);await run;await replay;
+ assert.equal(replayStarted,true);assert.equal(h.timers.size,0);
+ await h.pump.idle();
+});
+
+test('idle releases all waiters when an issued calculation fails',async()=>{
+ const h=harness();h.start();const run=h.fire();h.running=false;h.pump.sync();
+ const first=h.pump.idle(),second=h.pump.idle();
+ h.requests[0].reject(Error('physical fault'));await run;await Promise.all([first,second]);
+ assert.deepEqual(h.busy,[true,false]);assert.equal(h.errors.length,1);assert.equal(h.timers.size,0);
+});

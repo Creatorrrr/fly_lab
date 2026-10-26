@@ -1,0 +1,14 @@
+# S17 ROOT historical reader closure — 2026-10-09
+
+B = verification/banc-natural-gait-m3-20260919. The accepted actual source is S16; canonical actual310/192 is immutable485503/a2c64e3bf50a559ea0f774eaf222523f762ff1e1539c87e87f712ab1ef4db81f. ROOT actual full310 reconstruction and once161.147 settlement are recorded in s16-actual.json. Raw identity is explicit accepted history trust; no semantic replay or scientific result is inferred.
+
+ROOT published and freshly authenticated s17-root-catalog-v1.json79062/636a1238fd2575aa169fbb06cf470d54cd31b28092006172036c12e7f7451cfa:253 ordered reader tuples/229 paths/five exact raw0. All old212 rows are whole typed unchanged. New41 rows cover actual S16 source/review/adoption/proof/ROOT FIRST+SECOND/recovery/actual recovery/actual400/request/trace/cost/outer/full4 .F logs/actual310; exact S17-before11 archives; beforeB5 and beforeT5 JSON operands; previous S16 provenance3; dual JSON/raw targets for full authentication. Before-index4998/eb73c3d1c727136db54f5eaf9814770c341c88e5c796645ad67ce68861a7f736 closes original/archive/executed source11 with caps. Duplicate path tuples have consistent whole pins.
+
+Current S17 Source/c5/current ROOT reflection and Astra provenance stay outside the catalog to avoid cycles; they must be freshly authenticated by the existing runtime paths. Accepted source-before S16 stays historical. Mutable canonical and fresh S17 output paths are also excluded from static historical rows.
+
+Exact named ledger524288 must retain every old named path and add only s16-bootstrap-settled310-HOLD-20261009.json, s16-recovered309-before-bootstrap.json if read through the metadata helper, plus active S17 bootstrap311-before-allocation/qualified315-before-body/body316-before-audit finite paths. No broad .json cap exception is allowed. Source runtimes including archived suffix paths remain65536; ordinary262144, original existing ownership token16384. Empty historical stderr is limited to exact L11/L13R2/S14/S15/S16 five paths with0/empty SHA; no arbitrary empty or new failed output is trusted.
+
+Existing _history_operand / K-HistoryOperand already perform raw-only target identity plus typed kind/cap/namespace/path checks. No historical JSON reparse elimination exists to implement. The catalog keeps these policy semantics and every cold/warm target raw authentication. _HISTORY_BUSY/KPB guards, root/cache-key dependencies and exceptional clearing stay intact.
+
+This is ROOT Source-callsite closure review for the planned finite delta, not implementation verification. Sol must compare final actual reads against this list, verify all253 targets with actual reader caps and kinds, preserve old212, and record any missing concrete callsite before final Source. New catalog count/bytes do not establish execution or gait. No current Source fallback, fabricated future row, Original payload stat/read/hash, helper execution, parser/import or project test occurred.
+

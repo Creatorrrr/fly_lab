@@ -1,0 +1,658 @@
+{
+  "scope": "attachment consistency only; no tests or simulations",
+  "source_zip_sha256": "3bd3fca9b529ea906ac3f517d7e4afc28cf17cff2e89140e4157e074d1e8dbe3",
+  "file_count": 130,
+  "all_matching": true,
+  "checks": [
+    {
+      "path": "README.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "configs/banc-walking/README.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "configs/banc-walking/m2-calibrated-v1.json",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_DEVELOPMENT_WORKFLOW_20261002.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E150_NATIVE_MONOTONE_RESULTS_20260921.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E335_SMOOTH_SECANT_BODY_RESULTS_20261001.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E353_REFERENCE_CADENCE_DESIGN_20261002.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E357_CUDA_VALIDATION_RECOVERY_RESULT_20261003.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E358_CANDIDATE_BODY_HANDOFF_PLAN_20261003.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E358_CANDIDATE_BODY_RESULT_20261003.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E359_BASELINE_RESULT_20261003.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E359_PAIRED_STARTUP_BASELINE_PLAN_20261003.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E360_ORIGINAL_CPU_TIMING_RISK_20261003.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E360_P10_CAPTURE_PREPARATION_DESIGN_20261004.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E360_P10_CAPTURE_PREPARATION_REFLECTED_20261004.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E360_P10_REFLECTED_SCOPE_PROPOSAL_20261004.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E360_P9_REFLECTED_DESIGN_20261004.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E360_P9_RESOURCE_INTEGRATION_DESIGN_20261004.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E360_SOURCE_CLOSURE_RAW_DIAGNOSTIC_PLAN_20261003.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_M3_E360_SUITE_RECOVERY_FINAL_PROPOSAL_20261004.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "docs/BANC_NATURAL_GAIT_M3_GOAL_PLAN_20260919.md",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/__init__.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/body.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/body_options.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/body_warp.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/body_warp_resident.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/brain.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/__init__.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/actuation_map.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/adaptive_fused.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/adaptive_rate.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/backend_selection.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/banc_mechanics.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/banc_presets.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/banc_walking.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/batch.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/behavior.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/body_identity.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/campaign.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/cns.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/contracts.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/coxa_hair_plate.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/cuda_campaign.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/cuda_campaign_state.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/data_identity.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/diagnostics.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/engine.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/evidence.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/experiments.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/flight.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/flybody_flight.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/graph.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/inputs.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/integrity.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/jobs.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/joint_teacher.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/lif.cu",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/lif.metal",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/locking.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/metabolism.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/model_config.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/motor_recruitment.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/muscle_calibration.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/muscle_imitation.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/muscles.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/navigation_tasks.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/neural.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/neural_api.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/neural_batch.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/neural_cuda.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/neural_mps.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/neural_state.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/neuromuscular.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/observation.metal",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/pathways.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/ports.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/protocol.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/rate_body.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/rate_observation.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/receptors.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/research_annotations.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/research_morphology.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/research_neural.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/research_rate.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/sensorimotor_campaign.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/sensors.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/server.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/single_joint.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/storage.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/target_activation.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/target_navigation.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/target_neural.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/target_sense.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/tasks.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/tendon_neural.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/walking_trace.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/c/workbench.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/common.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/dependencies.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/engine.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/legacy.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/sensors.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "flylab/warp_batch.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "requirements-c.txt",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "requirements-cuda.txt",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "requirements-research.txt",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "requirements-test.txt",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "requirements-warp.txt",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "requirements.txt",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "tests/test_c_banc_candidate_body_handoff.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "tests/test_c_banc_common_descent_body.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "tests/test_c_banc_common_descent_direction.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "tests/test_c_banc_reference_parameter_direction.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "tests/test_c_banc_startup_baseline.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "tools/analyze_c_banc_biological_gait.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "tools/verify_c_banc_m3_candidate_body_handoff.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "tools/verify_c_banc_m3_common_descent_body.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "tools/verify_c_banc_m3_common_descent_direction.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "tools/verify_c_banc_m3_coordination_parameter_direction.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "tools/verify_c_banc_m3_reference_parameter_direction.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "tools/verify_c_banc_m3_startup_baseline.py",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "verification/banc-natural-gait-m3-20260919/parent-e150-final-review.json",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "verification/banc-natural-gait-m3-20260919/parent-e335-final-decision.json",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "verification/banc-natural-gait-m3-20260919/parent-e353-final-decision.json",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "verification/banc-natural-gait-m3-20260919/parent-e357-final-stage-decision.json",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "verification/banc-natural-gait-m3-20260919/parent-e358-root-results-before-e359.json",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "verification/banc-natural-gait-m3-20260919/parent-e359-root-closed-result.json",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "verification/banc-natural-gait-m3-20260919/parent-e360-p10-human-authorization.json",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "verification/banc-natural-gait-m3-20260919/parent-e360-p8-closed-decision.json",
+      "size_matches": true,
+      "sha256_matches": true
+    },
+    {
+      "path": "verification/banc-natural-gait-m3-20260919/parent-e360-p9-closed-decision.json",
+      "size_matches": true,
+      "sha256_matches": true
+    }
+  ]
+}

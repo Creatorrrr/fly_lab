@@ -1,0 +1,19 @@
+# E305 실제 SSP 신경 첫 control 자격
+
+Root 설계,2026-09-28. E302는 원래 RK4 intermediate-negative를확인했다. E303은같은ODE의SSPRK3solver, E304는새wholewrapper이다. 여기서는 body생성없이 **원래첫held drive를20neural ticks 동안** 새solver neutral(u0)과E296active보호roster에적용하여범위위반이없는지검사한다. 아직원본을예약하지않는다. 원본누적8144.108421799498/8210초·잔여65.89157820050241초·예약0이다.
+
+새 `tools/verify_c_banc_m3_ssp_first_control.py`, `tests/test_c_banc_ssp_first_control.py`만 실제gpt-6-sol/high가구현한다. RootFIRST→필요시동일SolR1→rootSECOND→root잔여수정이다. E303/E304/모든과거source·raw는수정하지않는다. 기본API gate/load_inputs/execute/dependencies/writer를읽기전용검사와generatedfake실행으로분리한다. moduleglobals변경금지다.
+
+E302 freeze/review/result/ledger/source/output manifest/root audit를pin하고실제run_valid=true/firstfault.tick10/stage3/source96198/flags4/기존39factor all1/9완료+1partial/body0을확인한다. E301 실패의원자료/새source입력chain도보존한다. E302 result는독립receipt로pin한다. E303 exact2source SHA와root source approval, 실제tinyCPU/CUDA자격/root독립oracle/디스크미래복원 영수증이있어야원본CLI gate를통과한다. 자격영수증구조는root와사전에합의하고명확한schema/key를쓰며파일존재만으로합격시키지않는다. Design/version/packages/preservation과literalfresh output `verification/banc-natural-gait-m3-20260919/e305-ssp-first-control`을동결한다.
+
+입력은E302의검증된9개alias(원래actual/baselineCSR,nativeconfiguration,calibration,original_start,candidate_start,neutral_start,neutral_final,protected_roster)를그대로읽는다. E302.load_inputs를재사용할수있지만oldidentity검사를새identity로속이지않는다: oldfrozen E302입력 검증에oldfreeze를사용한뒤별도newcandidate/newneutral metadata를계산한다. Source originaltimescale hash, CSR배열/packeddecode,membrane/adaptationtau,gain,dt.00025/capture20,a1/threshold7.5/cap200/adaptation8/.3를그대로검증한다. Drive는E301 neutral/final 실제fullfloat32이며candidatefailed직접측정이아닌동등성추론이라는기존문구를유지한다. GraphStore/body/adapter/session 생성0이다.
+
+한번의원본실행에서두network를 **순차** 생성한다. Neutral은같은protectedselection에서u전부0, candidate는고정E296utilization이다. 두arm모두새 SSPRecoveryResourceNetwork를사용한다. 같은originaltick0 snapshot import 후R1/새identity/소스·상수·CSR초기검사를한다. `.advance(drive,steps=20)`을arm당딱1회실행한다. 원래productionCUDAgraph를유지하고E302의hoststageobserver를붙이지않는다. 실제engine종료snapshot과20tick의finite/r>=0/z>=0/R[0,1]/u0R1/mask1/drive exact/flags0을검사한다. `advance`실패시그대로중단하고같은arm재시도/다음조건실행0;firsterror·실제tick/부분상태가능성·비용을보존한다. Neutral오류면candidate를시작하지않는다.
+
+각arm은초기및최종 **neural-only snapshot**을StateStore에저장한다. Wholebodycheckpoint로표기하지않는다. 실제중간단계는device stickyflag가검사했고fullraw중간arrays를측정했다고주장하지않는다. g는finalsource R/r로유도한endpointdiagnostic으로저장하며실제stagefactor/g1history라고부르지않는다. Candidate과neutralrate/z/drive/mask/endpointfactor 차이, 새neutral과E301nativeRK4 neutralendpoint rate/z 차이(maxabs/RMS/negative count)를계산한다. Metadata 차이는숫자차이에서제외하되identitydiff를명시한다. **원래RK4 neutral bitexact는승인조건이아니다**:새방법이동일ODE의다른이산화임을보고하고숫자차이를기록한다. Startup/short/F1–F8의원래행동기준은조금도변경하지않는다. 이번검사가그행동기준을평가했다고주장하지않는다.
+
+Gate/preflight이후실제원본한번/재시도0,supervisor60초/internal55초/science45초(마감전새arm시작거부),host4GiB/추가GPU2GiB/output128MiB/디스크4GiB/CPU1이다. 직접neuralconstructor최대2,science각arm≤20/총≤40,body/physics/solver/fit0이다. 원본예산60초는현재잔여안에서root가E303자격과runner검토후사전예약한다. Frozenprofiled_construction으로실제setup/capture/미완료를별도계측한다. advance요청/반환/실제tick과partialunknown을명시한다. 자원은modelowned기간에도읽되성공control에서추가neuralfaultpacket을생성하지않는다. 원래advance가mergedpacket으로guard를판정하고snapshot은끝점기록이다. Torchhighwater+CuPysample과globaldelta를continuousGPUpeak라하지않는다.
+
+모든arm에서snapshot/finalize/publication오류를secondary로남기고원래neural오류를유지한다. on_return ownership으로생성자return후receipt실패도해제하고,예외traceback이GPUobject를붙잡지않도록한다. Generatedfake는저장실패/cleanup/timeout/partialtick/constructorcapture실패/neutralabort/newidentity/mismatchedsource/oldRK4reference차이허용후기록을검증한다. Source/output manifests와별도resultsha가필요하다. 성공도run_valid(neuralprefix)만true이고candidate_adopted/F1_F8_complete/F2_complete/F6_exposed/biological_claim은모두false이다. 같은후보body검사는rootrawaudit뒤별도설계한다.
+
+Agent생성검사 fakeonly45초누적/1GiB/CPU1,actualengine/neural/CUDA/body/original/solver/fit0이다. 실제저장입력수동로더읽기는필요한경우root와공유하고생성CPU한도와분리한passive비용을기록한다. FIRST제출후2SHA/전체실패·검사·비용/API/원본0을보고하고편집을멈춘다.

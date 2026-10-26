@@ -1,0 +1,1680 @@
+"""Finite contact-learning sibling; existing J lease and actual closed215 history."""
+from __future__ import annotations
+
+import hashlib
+import math
+import os
+import time
+from pathlib import Path
+
+from tools import banc_m3_conserved_resource as conserved
+from tools.banc_m3_saved_original_admission import (
+    closed_cost,
+    exact_value,
+    json_load,
+    leaf,
+    path,
+    require,
+    spec_for,
+)
+
+ROOT = Path(__file__).resolve().parents[1]
+BASE = "verification/banc-natural-gait-m3-20260919"
+LEDGER, SHARED_LOCK = BASE + "/parent-e358-execution-ledger.json", BASE + "/parent-e358-original-active.lock"
+SCHEMA = "flylab.m3.contact-learning"
+STAGE_SPEC = BASE + "/parent-contact-learning-stage-20261007-a.json"
+ROLES = ("contact_direction", "contact_candidate_audit", "contact_candidate_body", "contact_body_audit")
+GRANT = {"path": BASE + "/parent-startup-ray-original-grant-20261007-j.json", "bytes": 2227,
+         "sha256": "7245e218f5c9abae27a849f880f37bc6013df87ae5e514947887183b4a2dba2f"}
+INPUTS = {"path": BASE + "/parent-startup-ray-original-inputs.json", "bytes": 210093,
+          "sha256": "4bdd075fc9980a275319fc0a26210c15335050ff7e96bc2fd29eb0ec5aeda151"}
+ROSTER = {"path": BASE + "/parent-contact-conditioned-input-roster-20261007-a.json", "bytes": 5959,
+          "sha256": "97864818bde831cecb707b054a84f8218c52410326683ed0d7af7cc4a671d783"}
+REQUIRED_SOURCES = (STAGE_SPEC, "tools/banc_m3_contact_learning_admission.py", "tools/banc_m3_contact_learning.py",
+                    "tools/verify_c_banc_m3_contact_learning.py", "tools/analyze_c_banc_m3_contact_learning.py",
+                    "tools/banc_m3_startup_ray_supervisor.py", "tests/test_c_banc_contact_learning.py", "tests/test_c_banc_startup_ray_execution.py",
+                    BASE + "/parent-direct-science-account.ps1", BASE + "/parent-contact-learning-contract-native.ps1",
+                    BASE + "/parent-contact-learning-prepare-native.ps1", BASE + "/parent-direct-science-genuine-collector.js")
+
+
+
+RETRY_PATH = BASE + "/parent-contact-body-retry-20261007-b.json"
+RETRY_CALLS = ("contact-learning-20261007-b-body", "contact-learning-20261007-b-body-audit")
+L_CALLS = tuple("direct-science-20261007-contact-" + v for v in ("lint45", "math46", "gate47"))
+RECOVERY_BASE = {"path": BASE + "/parent-contact-body-retry-closed241-20261007-n.json",
+                   "bytes": 417464, "sha256": "aa78ef0d58f162f5c793c4019001b25958ef9a24a92eb4af7f297e17895a3311"}
+RECOVERY_PREVIOUS = {"path": BASE + "/parent-contact-body-retry-closed245-20261007-o.json",
+                   "bytes": 421165, "sha256": "37f74bd78cf2b3a3ca93ae2e749de03c86e0444daad7dcaf1da739441f6177fa"}
+RECOVERY_MEASURED = {"path": BASE + "/parent-contact-body-retry-closed249-20261007-p.json",
+                   "bytes": 424613, "sha256": "e7c37967ce4b27da049c7c9662987817580057e94aefda0c9a5ecba5565e146a"}
+RECOVERY_PATCHED = {"path": BASE + "/parent-contact-body-retry-closed252-20261007-q.json",
+                   "bytes": 427437, "sha256": "09b7336bd938d24884f8add1aa041b10abee3365b21a08c61250d56129692416"}
+RECOVERY_BOUNDARY = {"path": BASE + "/parent-contact-body-retry-closed255-20261007-r.json",
+                   "bytes": 430004, "sha256": "4a0facd1669e945f130fbb8bb205e2520870d9e5da6c8fe47492048739709413"}
+RECOVERY_CLOSED = {"path": BASE + "/parent-contact-body-retry-closed258-20261007-s.json",
+                   "bytes": 432565, "sha256": "16705abadbe4a1a9fd364f2a9f2da6956d16e48cc711686d7a89287df9c011bd"}
+FAILED_LINT = {"path": BASE + "/parent-direct-science-20261007-contact-lint24-full-return.json",
+               "bytes": 1281, "sha256": "e08e5bcff41e1561111d1b3f55f43f9f592fed9bfa1c07fadeb0ff0e131577c2"}
+FAILED_L_SOURCE = {"path": BASE + "/parent-contact-learning-source-freeze-20261007-l.json",
+                   "bytes": 69669, "sha256": "80aeff2f35b4d0127f2e09e6e444e92a194c0ff65aa818756e6ff34aa9b573b2"}
+FAILED_M_SOURCE = {"path": BASE + "/parent-contact-learning-source-freeze-20261007-m.json",
+                   "bytes": 75477, "sha256": "4b6be30a7366e4bb3d34d80f6e1bd70e2c9e5f5e01090022cf9bbc8eff0c4ac5"}
+FAILED_N_SOURCE = {"path": BASE + "/parent-contact-learning-source-freeze-20261007-n.json",
+                   "bytes": 83907, "sha256": "ff4ba689c5e5a3bc38552bcdd59b23aacf5237e48c4db0e7407ede444ba1d6e3"}
+FAILED_O_SOURCE = {"path": BASE + "/parent-contact-learning-source-freeze-20261007-o.json",
+                   "bytes": 90776, "sha256": "14e4874f364e496261eaed45fdb7584ab7616b271051b6a0be9d2e6f0e3d9c93"}
+FAILED_P_SOURCE = {"path": BASE + "/parent-contact-learning-source-freeze-20261007-p.json",
+                   "bytes": 99955, "sha256": "bfc58bdfe05177c5a3d086fe22754245a63d0c98ca77a295bc511397931d1937"}
+FAILED_Q_SOURCE = {"path": BASE + "/parent-contact-learning-source-freeze-20261007-q.json",
+                   "bytes": 106685, "sha256": "1f041a15013012ef121274530276ea5fe90c6640d3d7958b007d1780127bfabf"}
+FAILED_R_SOURCE = {"path": BASE + "/parent-contact-learning-source-freeze-20261007-r.json",
+                   "bytes": 113416, "sha256": "2dee05ff0902f571a6f96319d1d8f470e5366695c0ddb651ab7c0d7a78f52ba9"}
+RECOVERY_COSTS = (FAILED_LINT,
+                  {"path": BASE + "/parent-direct-science-20261007-contact-lint27-full-return.json", "bytes": 1281,
+                   "sha256": "e9cb0fe5b73304866b76e47b16febfb9b69f3f068c9fce3006d277f76aae57b8"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-math25-full-return.json", "bytes": 1281,
+                   "sha256": "29ed43f608d98f8e68c31cb0ec405005ae23cb3879971efb63466aebe5325fa2"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-gate26-full-return.json", "bytes": 1282,
+                   "sha256": "7440637cf0ab0c2d620ea860020e17451f88d4436a65658d07cb12456b4130ad"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-lint28-full-return.json", "bytes": 1280,
+                   "sha256": "4a1e34a978891c554de23b9f7a63e3e15fadd9e460505e84d438127633ddd6e8"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-math29-full-return.json", "bytes": 1281,
+                   "sha256": "5f4b0f34db7aed0dfeae3513f2b85b1525d31a271277733f783c8746d160b323"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-gate30-full-return.json", "bytes": 1283,
+                   "sha256": "421dc6638fdaadb825984957d8ea23cc5d0381480c83028134306ee586f49838"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-retry-debug31-full-return.json", "bytes": 1309,
+                   "sha256": "bd17a49cebca89e394f9fa33c86c0e6b3aa1190de84256cb3fa57f29acda8091"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-lint32-full-return.json", "bytes": 1279,
+                   "sha256": "653c5294cea355428ace7952cdf3f3a413688c4e1eccbae97d6ed24e30e3f415"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-math33-full-return.json", "bytes": 1281,
+                   "sha256": "5a4071b80dead05a867a53cd4373439fe0cc82de1570875559dabf5b33f0ecca"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-gate34-full-return.json", "bytes": 1283,
+                   "sha256": "96d2580f1218d1157d8529f271d12f58e6a0b31be04d9bd3793754e85522c725"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-retry-debug35-full-return.json", "bytes": 1310,
+                   "sha256": "917cc8b5f4da0b9c0189bccb3874910bed81f8192c0ef9fa84e35fab70065953"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-lint36-full-return.json", "bytes": 1281,
+                   "sha256": "951321c6890b1c94867d959e279dfc2d09bb8f366d8090503f29d48e6e4be3ea"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-math37-full-return.json", "bytes": 1281,
+                   "sha256": "1374f1eb5b02b61aa291981a011414c9575db03687ed1e0ed854da0f486a0478"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-gate38-full-return.json", "bytes": 1281,
+                   "sha256": "6fdd278b3d6c0d0365df22fb83224ead9908a42e96198b8007cb13f6c984887b"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-lint39-full-return.json", "bytes": 1282,
+                   "sha256": "8029b4eb02b64d5678990a7c9127953986bee40d0fdf4d86c383a286fef54439"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-math40-full-return.json", "bytes": 1282,
+                   "sha256": "19ff058bafd4415f167f187c9751cf85076addab0fa9591b6356fd1e4f0cb268"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-gate41-full-return.json", "bytes": 1282,
+                   "sha256": "3a92c97e70b9112663f55e7311fe88e146f19461f4f0451deab5d8991cb7530a"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-lint42-full-return.json", "bytes": 1282,
+                   "sha256": "38ab9c4cb6273700633accaee4432bbb50defb63391a374ab9bcb5433ac08e87"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-math43-full-return.json", "bytes": 1282,
+                   "sha256": "9b6393d7952cd3683c90cb7c11b21fb7741d43c9ff5c1cde0bbe4de961a7a3f3"},
+                  {"path": BASE + "/parent-direct-science-20261007-contact-gate44-full-return.json", "bytes": 1283,
+                   "sha256": "87537d688d1b44834d74540f76d33875fa6a690028839da2e71d59c4325558d0"})
+RETRY_PINS = json_load(b'''{"historical_manifests":[{"sha256":"d7cae9f840cbbd1fb01dc76de2f9cfa8e9be682eda31851ebc87040185190e46","bytes":1691,"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-a-direction/result/contact-manifest.json"},{"sha256":"a6a437e45ea30e58cbb42d960d303d65d0861920408f95a2c79bde051d27ccfb","bytes":1257,"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-a-candidate-audit/result/contact-manifest.json"},{"sha256":"f6deec3e6b424bd934348daed8a45ea3f7f1a01f296c0bb13a94a2c9d8dfd251","bytes":995,"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-a-body/result/contact-manifest.json"}],"historical_costs":[{"sha256":"8177b5cd53ff8609103eb4ed68816322f112f2dbfb424caf5e7bc56af803d6cc","bytes":2701,"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-a-direction-full-return.json"},{"sha256":"f873ff405497fc22d79acea89ed19b227c52d6b15c97a4df86f56d5591e0c31f","bytes":2734,"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-a-candidate-audit-full-return.json"},{"sha256":"34ab9609126372737fba5676e342c53045058f42958fb6151452c4a959cd0fc4","bytes":2679,"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-a-body-full-return.json"}],"archive_k":{"sha256":"8e472eb51d6d6ccb25fd8ebb4abd4abdabc983046e5d3c1d4b04ff00326b965e","bytes":4197,"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-as-executed-k/index.json"},"closed_237":{"sha256":"383f879f0c88f0cfbb39e027c3736fa4e2a0390a4e0fc846f371a94c1e0ee781","bytes":414061,"path":"verification/banc-natural-gait-m3-20260919/parent-contact-body-retry-closed237-20261007-b.json"},"candidate_arrays":{"bytes":2972334,"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-a-candidate-audit/result/candidate.npz","sha256":"aac1915e915b2baa73d81398e8b69ae8326467059a60f12fc9bd298e26e8adb3"},"candidate":{"alpha":0.0001,"contract":{"bytes":3437,"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-stage-20261007-a.json","sha256":"bd032867ca24323f7b876e4a6934f641752dd170179bcb0cac6c54777a4f05d9"},"exact_native_VJP_correctness":"UNVERIFIED","geometry":{"bytes":150618,"path":"verification/banc-natural-gait-m3-20260919/parent-local-foot-geometry-20261007-b-capture/result/geometry.npz","sha256":"768f47ce97b908c1ea95055805222f983d27ef2cbd79e2ccf2a283ac1e681594"},"index":4,"loss":{"NL":12,"NU":12,"clip_derivative":"strict interior 1; boundary/outside 0; disabled 1","first_seed_only":true,"keep_weight":0.25,"load_threshold_bw":0.02,"neutral_projection":"fixed corresponding nominal replay first q; measured saved projection separately checked","s_mm":0.02,"unloaded_RMS_max_mm":0.005},"palette":{"full_data_c_order_sha256":"fee914e128a1b2da93f4e1d936a816c82bef940bfca1bc3a0f54ce445c7f8fbd","full_native_palette_count":8352,"native_deployable":true,"selected_c_order_sha256":"8f15d2b3a52ce3ad98f486504b79b555da345208f81f49fdf240a53b170c862e"},"roster":{"bytes":5959,"path":"verification/banc-natural-gait-m3-20260919/parent-contact-conditioned-input-roster-20261007-a.json","sha256":"97864818bde831cecb707b054a84f8218c52410326683ed0d7af7cc4a671d783"},"schema":"flylab.m3.contact-learning.candidate.v1","selected_sha256":"8f15d2b3a52ce3ad98f486504b79b555da345208f81f49fdf240a53b170c862e","source_freeze":{"bytes":64277,"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-source-freeze-20261007-k.json","sha256":"6e4f22bbeb28bcd16ab324882c6b3f035f878ad40f2787f98310446d0e812c4c"},"stage_id":"contact-learning-20261007-a","theta_sha256":"4e4b24c74f13346d04d96d0b3f6d5b167fc2ee4e5b3c08d830cfa8a2f9e95e9f"},"source_k":{"sha256":"6e4f22bbeb28bcd16ab324882c6b3f035f878ad40f2787f98310446d0e812c4c","bytes":64277,"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-source-freeze-20261007-k.json"}}''')
+
+C_SOURCE_PATH = BASE + "/parent-contact-learning-source-freeze-20261007-x.json"
+C_UNREGISTERED_W_QUAL = {"path": BASE + "/parent-contact-learning-qualified-20261007-w.json", "bytes": 4999,
+                         "sha256": "a0ebb8ba10c2e87df5439649fc46bb197ce34f4dd80f98e20960d4df0fad6cca"}
+C_PASSED_W_CLOSED = {"path": BASE + "/parent-contact-body-retry-closed272-20261007-x.json", "bytes": 444786,
+                     "sha256": "4c471a2186146d956739e30a07935b49a986064790a6c56756b1d3bd9718275f"}
+C_PASSED_W_SOURCE = {"path": BASE + "/parent-contact-learning-source-freeze-20261007-w.json", "bytes": 159301,
+                     "sha256": "4588add5ea76ccf1fc5d7ac1344a624765e4238f54fd8fb8ffee650088d953dc"}
+C_PASSED_W_COSTS = (
+    {"path": BASE + "/parent-direct-science-20261007-contact-lint57-full-return.json", "bytes": 1282, "sha256": "d72bd5ad62a8d0ea6a7d8478fae16872aed35263faf8de234c953152824e5112"},
+    {"path": BASE + "/parent-direct-science-20261007-contact-math58-full-return.json", "bytes": 1282, "sha256": "9850a8880698217fed851ad68331645061ff9c36c73779ba39dafaaebf414625"},
+    {"path": BASE + "/parent-direct-science-20261007-contact-gate59-full-return.json", "bytes": 1283, "sha256": "55ce6df66e8880fc9c040453b619ce1c537e88eaa81208850d3d9a1f42dd6aa4"})
+C_FAILED_V_CLOSED = {"path": BASE + "/parent-contact-body-retry-closed269-20261007-w.json", "bytes": 442231,
+                     "sha256": "c2213ccc38d7d8d5e6acf14d066e889aedb10e51e80b81eaec116879b47fca2d"}
+C_FAILED_V_SOURCE = {"path": BASE + "/parent-contact-learning-source-freeze-20261007-v.json", "bytes": 149981,
+                     "sha256": "e4bafbaf04aa289f04e08082247d43589c211968cc15d8953d1d13507e5ed37b"}
+C_FAILED_V_COSTS = (
+    {"path": BASE + "/parent-direct-science-20261007-contact-lint54-full-return.json", "bytes": 1282, "sha256": "2d263335146fc0ba4c4d54cdd3dd58b6e3fd8626ddf12f2711b4a96fc2f86c18"},
+    {"path": BASE + "/parent-direct-science-20261007-contact-math55-full-return.json", "bytes": 1282, "sha256": "66e530df58fbabb84e066339a5f2da8d1f1cce9fdffdd4e000a1c2e861dcac87"},
+    {"path": BASE + "/parent-direct-science-20261007-contact-gate56-full-return.json", "bytes": 1283, "sha256": "56e47f3dea05275c661af3947f356a9fa61a52caf28ad6096c8b6edf004844cb"})
+C_FAILED_U_CLOSED = {"path": BASE + "/parent-contact-body-retry-closed266-20261007-v.json", "bytes": 439671,
+                     "sha256": "300a2cf503ef36acb8bee93e11fff217cab27fa48be5fc97de231056bf3835d6"}
+C_FAILED_U_SOURCE = {"path": BASE + "/parent-contact-learning-source-freeze-20261007-u.json", "bytes": 140661,
+                     "sha256": "367d6046a4e072f39c5544612b279ae772f374fcf67caa2c1548ff267c24600b"}
+C_FAILED_U_COSTS = (
+    {"path": BASE + "/parent-direct-science-20261007-contact-lint51-full-return.json", "bytes": 1282, "sha256": "868371638877c1653a768d830a0e0ef4721343d2f9614b020b67bbf54f0d8611"},
+    {"path": BASE + "/parent-direct-science-20261007-contact-math52-full-return.json", "bytes": 1282, "sha256": "b96a7bfed0041a2c16995c09671d9a371f0f9801bad3ed18e5f354e4a05b33d5"},
+    {"path": BASE + "/parent-direct-science-20261007-contact-gate53-full-return.json", "bytes": 1283, "sha256": "a68b2dd2f4dabaf57a8d421b09869ac552c928732e08fec0c17feb507bed5215"})
+C_FAILED_T_CLOSED = {"path": BASE + "/parent-contact-body-retry-closed263-20261007-u.json", "bytes": 437114,
+                     "sha256": "03dd0a2c3afc09e3c3d7fb63bc012cd5ac3b348308a765311888dadc9f54a983"}
+C_FAILED_T_COST = {"path": BASE + "/parent-direct-science-20261007-contact-lint48-full-return.json", "bytes": 1282,
+                   "sha256": "9be409735c75eaf12b56e6fe848b6f59fed1864f71a3ecda8aa63d66d02a89cc"}
+C_FAILED_T_SOURCE = {"path": BASE + "/parent-contact-learning-source-freeze-20261007-t.json", "bytes": 133821,
+                     "sha256": "3a85a029a77df7771429ed446c43e8ebaf875f4ae44970caeaecd69140a6a547"}
+C_RETRY_PATH = BASE + "/parent-contact-body-retry-20261007-c.json"
+C_RETRY_CALLS = ("contact-learning-20261007-c-body", "contact-learning-20261007-c-body-audit")
+C_L_CALLS = tuple("direct-science-20261007-contact-" + v for v in ("lint60", "math61", "gate62"))
+C_RECOVERY_PINS = json_load(b'''{"prior_retry_b":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-body-retry-20261007-b.json","bytes":5055,"sha256":"b5184a231bc99fadfa87c5acf77f8cd2bd7e0966120ab627557ec8574b72ca08"},"source_s":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-source-freeze-20261007-s.json","bytes":122306,"sha256":"d301dcca02617bc53f243e274b41bf3a8739929734f505426ec585506a0e881d"},"archive_s":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-as-executed-s/index.json","bytes":4159,"sha256":"588e9542bc82b20accbc749678a516fa2ca3e4acd57078176fb04ce3c6f7ab8d"},"qualification_s":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-qualified-20261007-s.json","bytes":4982,"sha256":"c8cc15ed3c7e4099a52a7e1083993835720bfbdab5f9bd2f185e261b582160e2"},"closed262":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-body-retry-closed262-20261007-t.json","bytes":436252,"sha256":"422a6544b33cf59c5bebc8f07fdd0ded668a64588b3b01fd5c7db1f6fda0ac2c"},"cost_b":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-b-body-full-return.json","bytes":2908,"sha256":"909e0fff5f9495ae358c10dbb86c85b538e8de7af32d322c5002d13a334bdb3a"},"manifest_b":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-b-body/result/contact-manifest.json","bytes":996,"sha256":"e0d2546c8d28ccd104dcd23a10c90bae681e1022a64b3f6817faff9b4589ef31"},"report_b":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-b-body/result/contact-body-report.json","bytes":1164,"sha256":"dbbb508bd607f96491ad23dadba9280e9485cc9e0ef874f719f2bc2a854eb8af"},"before_b":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-b-body-before-ledger-c.json","bytes":435412,"sha256":"d963db1a698314882b1e9e738b7921223837b5a4077b7cf7fd60cdb23789fba0"}}''')
+
+E_RUNTIME_PATH = conserved.E_PATH
+E_RUNTIME_CALLS = conserved.E_CALLS
+D_RUNTIME_PATH = BASE + "/parent-contact-body-runtime-20261007-d.json"
+D_SOURCE_PATH = BASE + "/parent-contact-learning-source-freeze-20261007-z.json"
+D_RUNTIME_CALLS = ("contact-learning-20261007-d-body", "contact-learning-20261007-d-body-audit")
+D_L_CALLS = tuple("direct-science-20261007-contact-" + v for v in ("lint66", "math67", "gate68"))
+D_HISTORY_PINS = json_load(b'''{"prior_retry_c":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-body-retry-20261007-c.json","bytes":6990,"sha256":"ca67f386971144a03ca3c5735eebca91e16c81a0321ddca7717c059f195cd2ed"},"source_x":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-source-freeze-20261007-x.json","bytes":169449,"sha256":"0ea95b308496add5983cc0570bd545b818b4bd28ae9fb734aaba342eb3bec083"},"qualification_x":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-qualified-20261007-x.json","bytes":4999,"sha256":"268f6efe3f4e230106c1d6dc156a2f63c8f02c397adcc93dba70c188734cd41e"},"before_c":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-c-body-before-ledger-c.json","bytes":447333,"sha256":"ffa0fdcf2b369bf8f2234b8884698bfbbf3a1dbe0ad6b8e41575e97ce7f2b7b4"},"request_c":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-c-body-request-c.json","bytes":3375,"sha256":"7fa3d94b5a94c1e670dd7b08c864ee8c754ee3b3ee973ada045914c109604671"},"cost_c":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-c-body-full-return.json","bytes":2909,"sha256":"fd9fb439a051f4dcb86bd0893f48630a30e3b1477d180943238830c0723357f5"},"trace_c":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-c-body-genuine-trace.json","bytes":4177,"sha256":"05bd48c206cfe86213f78bf14a427027395258db5204b07c19b719af5d4bd962"},"outer_c":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-c-body/result-supervision/outer.json","bytes":1442,"sha256":"f40d3f7b5b9eafa680056ec716ccb26410e20385cf2645c7127d7d9431b21795"},"stderr_c":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-20261007-c-body/result-supervision/stderr.bin","bytes":1930,"sha256":"15cbb7ad97c41ff81259625494ff57563ce5b1ef1510d10792bc551fa0d45314"},"actual_c":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-ROOT-actual-result-20261007-c.json","bytes":3069,"sha256":"a1b1a8f894c086f0db0ac784cc54d933d174de80eb212d3f81d79c909ec522d2"},"closed276":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-body-fence-closed276-20261007-a.json","bytes":448154,"sha256":"1ddc9e0c8065914918e9bcbdd0617932359bc5ae1b313ead35ed888df025e351"},"archive_x":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-as-executed-x/index.json","bytes":4745,"sha256":"6d719bb76579b183d3f7c4859aa24898e14f614988214f9ba58fb8c9e9704de2"},"runtime_transfer":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-body-runtime-generated-transfer-20261007-a.json","bytes":2010,"sha256":"a7157f48361b0332f73354dbd6d3ce7720d5d3e1ddd72d31137ee1a4e7252e1a"}}''')
+
+
+RUNTIME_RECOVERY_PINS = json_load(b'''{"source_y":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-source-freeze-20261007-y.json","bytes":186215,"sha256":"afccd31f8c2c1102c2a39e32f446f5c69633f762490972f3d3ac1ee7e5babe93"},"archive_y":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-learning-as-executed-y/index.json","sha256":"bc4709aec9da0aef5935f8657f53d0e23dca6a7b9c4bf18c1c5221f11d93e949","bytes":5343},"closed277":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-runtime-closed277-20261007-z.json","sha256":"7d9e2dfd343726091133ed5754639b2d3367521ddab8639257941a170aa368e5","bytes":449285},"cost_lint63":{"path":"verification/banc-natural-gait-m3-20260919/parent-direct-science-20261007-contact-lint63-full-return.json","bytes":1282,"sha256":"df678671c59e1fd5eedce344d9a518bf7bd2029f41ef3e3c5ae87003b2b8ba36"},"residual_transfer":{"path":"verification/banc-natural-gait-m3-20260919/parent-contact-body-runtime-generated-residual-transfer-20261007-z.json","bytes":2278,"sha256":"53b5376567bffb6c62d8e433a57693a5074b142945eac391575967c5b4fad81b"}}''')
+
+
+def limits_for(role, *, root=ROOT, contract=None):
+    require(role in ROLES, "one finite contact-learning role")
+    contract = json_load(leaf(spec_for(STAGE_SPEC, root), root)) if contract is None else contract
+    return contract["limits"][role]
+
+
+def stage_contract(root=ROOT):
+    return json_load(leaf(spec_for(STAGE_SPEC, root), root))
+
+
+def finite(value, label):
+    require(type(value) is float and math.isfinite(value) and value >= 0, "finite double " + label)
+    return value
+
+
+def current_sources(freeze, root, check):
+    from tools import banc_m3_checkpoint_harness_runtime as harness
+    from tools import banc_m3_checkpoint_runtime as checkpoint
+    if freeze.get('qualification_epoch') == harness.EPOCH:
+        checkpoint = harness
+    if freeze.get('qualification_epoch') == checkpoint.EPOCH:
+        checkpoint.source_fence(conserved.text_spec(checkpoint.SOURCE_PATH, root, 262144), root, check)
+        return
+    require(freeze["schema"] == SCHEMA + ".source-freeze.v1" and freeze["ROOT_review_cycle_complete"] is True
+            and all(k in freeze["sources"] for k in REQUIRED_SOURCES), "reviewed complete contact Source closure")
+    from tools import banc_m3_local_foot_geometry_admission as geometry
+    if freeze.get("body_retry", {}).get("path") == conserved.J_PATH:
+        from tools.banc_m3_startup_ray_supervisor import generated_budget_limit
+        check()
+        pointer = freeze["qualification_lint_cleanup"]
+        cleanup, _anchor, _policy, _grant = conserved.j_lint_cleanup(pointer, root, generated_budget_limit)
+        bound = conserved.j_freeze(conserved.text_spec(conserved.J_SOURCE_PATH, root, 262144), cleanup, pointer, root)
+        conserved.exact(freeze, bound, "whole current J727 Source before every cold boundary")
+        require(all(k in freeze["sources"] for k in geometry.REQUIRED_SOURCES), "inherited finite J owner closure")
+        check()
+        return
+    if freeze.get("body_retry", {}).get("path") == conserved.I_PATH:
+        from tools.banc_m3_startup_ray_supervisor import generated_budget_limit
+        check()
+        pointer = freeze["preflight_recovery"]
+        recovery, _anchor, _policy, _grant = conserved.i_preflight_recovery(pointer, root, generated_budget_limit)
+        bound = conserved.i_freeze(conserved.text_spec(conserved.I_SOURCE_PATH, root, 262144), recovery, pointer, root)
+        exact_value(freeze, bound, "whole current I726 and all immutable pointers")
+        require(all(k in freeze["sources"] for k in geometry.REQUIRED_SOURCES), "inherited finite I owner closure")
+        check()
+        return
+    if freeze.get("body_retry", {}).get("path") == conserved.H_PATH:
+        from tools.banc_m3_startup_ray_supervisor import generated_budget_limit
+        check()
+        repair_spec = freeze["qualification_lint_repair"]
+        repair, _anchor, _policy, _grant = conserved.h_lint_repair(repair_spec, root, generated_budget_limit)
+        bound = conserved.h_freeze(conserved.text_spec(conserved.H_SOURCE_PATH, root, 262144), repair, repair_spec, root)
+        exact_value(freeze, bound, "complete current H725 with both immutable pointers")
+        require(all(k in freeze["sources"] for k in geometry.REQUIRED_SOURCES), "inherited finite H owner closure")
+        check()
+        return
+    if freeze.get("body_retry", {}).get("path") == conserved.G_PATH:
+        from tools.banc_m3_startup_ray_supervisor import generated_budget_limit
+        check()
+        amendment_spec = freeze["qualification_amendment"]
+        amendment, _anchor, _policy, _grant = conserved.g_amendment(amendment_spec, root, generated_budget_limit)
+        bound = conserved.g_freeze(conserved.text_spec(conserved.G_SOURCE_PATH, root, 1048576), amendment, amendment_spec, root)
+        exact_value(freeze, bound, "complete current G Source, never historical F bytes")
+        require(all(k in freeze["sources"] for k in geometry.REQUIRED_SOURCES), "inherited finite G owner closure")
+        check()
+        return
+    # Reuse the current text-leaf checker without interpreting historic e as current.
+    adapted = dict(freeze, schema=geometry.SCHEMA + ".source-freeze.v1")
+    # Exact historic XML metadata is checked separately from generic Source code.
+    xml_names = tuple(BASE + "/parent-contact-learning-" + name + "-junit.xml" for name in ("math46", "gate47", "math58", "gate59", "math61", "gate62"))
+    if any(name in adapted["sources"] for name in xml_names):
+        qualified = json_load(leaf(C_RECOVERY_PINS["qualification_s"], root))
+        expected = {test["file"]["path"]: test["file"] for test in qualified["tests"]}
+        if any(name in adapted["sources"] for name in xml_names[2:4]):
+            unregistered = json_load(leaf(C_UNREGISTERED_W_QUAL, root))
+            expected.update({test["file"]["path"]: test["file"] for test in unregistered["tests"]})
+        if any(name in adapted["sources"] for name in xml_names[4:]):
+            historical_x = json_load(leaf(D_HISTORY_PINS["qualification_x"], root))
+            expected.update({test["file"]["path"]: test["file"] for test in historical_x["tests"]})
+        for name in xml_names:
+            if name not in adapted["sources"]:
+                continue
+            exact_value(adapted["sources"][name], expected[name], "exact historical XML metadata pin")
+            leaf(expected[name], root, 1 << 20).decode("utf8", errors="strict")
+        adapted["sources"] = {name: spec for name, spec in adapted["sources"].items() if name not in xml_names}
+    if freeze.get("body_retry", {}).get("path") in (D_RUNTIME_PATH, E_RUNTIME_PATH, conserved.F_PATH):
+        require(all(name in adapted["sources"] for name in ("tools/banc_m3_contact_runtime_journal.py",
+                    "tests/test_c_banc_contact_runtime_journal.py", "tools/verify_c_banc_m3_startup_ray.py")),
+                "full current runtime source/test closure")
+    if freeze.get("body_retry", {}).get("path") == E_RUNTIME_PATH:
+        for name in (conserved.HELPER_SOURCE, "tools/banc_m3_conserved_resource_native_core.ps1",
+                     "tools/banc_m3_conserved_resource_native_epoch.ps1", conserved.ROSTER_PIN["path"], conserved.E_PATH):
+            require(name in adapted["sources"], "complete new common helper/Native/roster/E Source closure")
+        exact_value(adapted["sources"][conserved.ROSTER_PIN["path"]], conserved.ROSTER_PIN, "fixed complete roster")
+        exact_value(adapted["sources"][conserved.E_PATH], conserved.E_DESCRIPTOR_PIN, "fixed E scope, no invented future pins")
+    if freeze.get("body_retry", {}).get("path") == conserved.F_PATH:
+        check()
+        event_spec = freeze["prequalification_event"]
+        event = conserved.read_pin(event_spec, root)
+        conserved.f_freeze(conserved.text_spec(conserved.F_SOURCE_PATH, root, 1048576), event, event_spec, root)
+        exact_value(freeze["sources"][conserved.F_PATH], conserved.F_DESCRIPTOR_PIN, "one static F same-candidate scope")
+        check()
+    require(all(k in adapted["sources"] for k in geometry.REQUIRED_SOURCES), "inherited finite owner closure")
+    if freeze.get("body_retry", {}).get("path") == conserved.F_PATH:
+        for pin in adapted["sources"].values():
+            check()
+            conserved.source_text(pin, root)
+        check()
+    else:
+        geometry.current_sources(adapted, root, check)
+
+
+def _retry_binding_b(q, contract, read):
+    """The single fixed b pair, without requalifying a refused current Source."""
+    spec = q.get("body_retry")
+    if spec is None:
+        require(q["call_id"] not in RETRY_CALLS, "b requires pinned technical retry descriptor")
+        exact_value(q["call_id"], contract["calls"][ROLES.index(q["role"])], "one predetermined role call")
+        return None
+    require(q["role"] in ROLES[2:] and q["call_id"] == RETRY_CALLS[ROLES[2:].index(q["role"])], "sole mapped technical retry role/call; no suffix")
+    exact_value(q["source_freeze"]["path"], BASE + "/parent-contact-learning-source-freeze-20261007-s.json", "fixed current execution s path")
+    exact_value(spec["path"], RETRY_PATH, "one fixed retry descriptor path")
+    r = read(spec)
+    expected = dict(RETRY_PINS, schema=SCHEMA + ".technical-body-retry.v1", retry_id="contact-learning-20261007-b",
+                    allowed_roles=list(ROLES[2:]), calls=list(RETRY_CALLS), maximum_retries=1, automatic_repeats=0,
+                    resource_increment_s=0, contract=q["contract"], grant=GRANT, inputs=INPUTS, roster=ROSTER)
+    exact_value(r, expected, "fixed immutable technical retry descriptor; no current Source backreference")
+    exact_value(q["limits"], contract["limits"][q["role"]], "unchanged technical retry bounds")
+    return r
+
+
+def cost_proof(cost, debit, read, *, generated=False, expected_timeout=False):
+    """Actual clock, closed owner and admitted request pins, not exit-only evidence."""
+    exact_value(cost["cost_id"], debit["cost_id"], "retry actual cost/debit")
+    exact_value(cost["actual_outer_full_return_s"], debit["actual_outer_full_return_s"], "retry actual seconds")
+    finite(cost["actual_outer_full_return_s"], "retry full return")
+    require(cost["actual_outer_full_return_s"] > 0, "positive retry actual cost")
+    exact_value(cost["exit_code"], debit["actual_returned_exit_code"], "retry actual returned exit")
+    require(type(cost["exit_code"]) is int, "retry typed exit")
+    for key in ("charged_once", "all_owned_ended", "reservation_released"):
+        exact_value(cost[key], True, "retry closed actual " + key)
+    outer, trace = read(cost["outer"]), read(cost["trace"])
+    for key in ("all_owned_ended", "reservation_released", "stdout_eof", "stderr_eof"):
+        exact_value(outer[key], True, "retry actual owner " + key)
+    exact_value(outer["unknown_owned_identities"], {}, "retry owner known")
+    exact_value(outer["timeout"], expected_timeout, "exact observed historical timeout state")
+    exact_value(outer["exit_code"], cost["exit_code"], "retry owner exit")
+    require(trace["schema"] == "flylab.m3.direct-science.genuine-return.v1" and trace["phase"] == "FINAL"
+            and trace["first_error"] is None and type(trace["dispatch_ms"]) is int
+            and type(trace["first_final_ms"]) is int and trace["first_final_ms"] > trace["dispatch_ms"], "retry genuine first FINAL")
+    exact_value((trace["first_final_ms"] - trace["dispatch_ms"]) / 1000., cost["actual_outer_full_return_s"], "retry actual clock")
+    exact_value(trace["full_return_s"], cost["actual_outer_full_return_s"], "retry full clock")
+    exact_value(trace["exit_code"], cost["exit_code"], "retry trace exit")
+    exact_value(trace["source_freeze"], cost["source_freeze"], "retry trace Source")
+    owner_spec = cost["request"] if generated else cost["supervisor_request"]
+    exact_value(trace["request"], owner_spec, "retry trace owner request")
+    exact_value(outer["request"], owner_spec, "retry outer owner request")
+    owner = read(owner_spec)
+    exact_value(owner["call_id"], cost["cost_id"], "retry same admitted call")
+    exact_value(owner["source_freeze"], cost["source_freeze"], "retry admitted Source")
+    exact_value(cost["cap_exceeded"], False, "retry prior cost within cap")
+    require(cost["actual_outer_full_return_s"] <= owner["limits"]["outer_s"], "retry actual owner cap")
+    if generated:
+        require(owner["mode"] == "generated" and owner["role"] in ("lint", "numerical", "execution"), "retry paid generated role")
+        return owner
+    exact_value(owner["science_request"], cost["request"], "retry admitted science request")
+    request = read(cost["request"])
+    for key in ("role", "source_freeze", "grant", "inputs", "roster", "contract", "local_debit_offset", "resource_increment_s"):
+        exact_value(cost[key], request[key], "retry cost/request " + key)
+    exact_value(request["call_id"], cost["cost_id"], "retry science call")
+    exact_value(owner["role"], request["role"], "retry owner role")
+    exact_value(owner["grant"], request["grant"], "retry owner J")
+    exact_value(owner["output"], request["output"] + "-supervision", "retry owner output")
+    for key in ("outer_s", "child_s", "cleanup_s", "host_bytes", "output_cap_bytes"):
+        exact_value(owner["limits"][key], request["limits"][key], "retry actual owner bounds")
+    return request
+
+
+def _retry_candidate_identity_b(q, report, read):
+    """Production audit boundary: complete candidate k identity, execution l."""
+    contract = read(q["contract"])
+    r = _retry_binding_b(q, contract, read)
+    if r is None:
+        require(report["candidate"]["schema"] == contract["candidate_schema"]
+                and report["candidate"]["source_freeze"] == q["source_freeze"], "same frozen new physical candidate")
+        return
+    historic = read(r["historical_manifests"][1])
+    audit = read(historic["artifacts"]["report"])
+    exact_value(audit["candidate"], r["candidate"], "complete frozen candidate from historical k audit")
+    exact_value(report["candidate"], audit["candidate"], "complete physical candidate k identity")
+    exact_value(historic["artifacts"]["candidate_arrays"], r["candidate_arrays"], "same audited candidate array descriptor")
+    require(q["source_freeze"]["path"] == BASE + "/parent-contact-learning-source-freeze-20261007-s.json"
+            and q["source_freeze"] != r["source_k"], "current execution s; candidate never relabelled")
+    manifest = read(q["artifacts"]["manifest"])
+    expected_source = r["source_k"] if q["role"] == ROLES[2] else q["source_freeze"]
+    exact_value(manifest["source_freeze"], expected_source, "immediate predecessor execution provenance")
+    exact_value(manifest["role"], ROLES[1] if q["role"] == ROLES[2] else ROLES[2], "retry immediate predecessor role")
+    exact_value(manifest["run_valid"], True, "retry technically valid predecessor; startup99 allowed")
+    exact_value(q["artifacts"], dict(manifest["artifacts"], manifest=q["artifacts"]["manifest"]), "all exact predecessor artifact pins")
+
+
+def _validate_retry_history_b(before, grant, roster, q, read, closed, archive_read):
+    contract = read(q["contract"])
+    r = _retry_binding_b(q, contract, read)
+    anchor = read(r["closed_237"], 524288)
+    require(len(anchor["debits"]) == 237 and len(anchor["direct_science_calls"]) == 119, "immutable closed237/119 anchor")
+    exact_value(before["debits"][:237], anchor["debits"], "entire immutable closed237 debit prefix")
+    for call, value in anchor["direct_science_calls"].items():
+        exact_value(before["direct_science_calls"][call], value, "entire immutable closed119 calls")
+    base = read(RECOVERY_BASE, 524288)
+    previous = read(RECOVERY_PREVIOUS, 524288)
+    measured = read(RECOVERY_MEASURED, 524288)
+    patched = read(RECOVERY_PATCHED, 524288)
+    boundary = read(RECOVERY_BOUNDARY, 524288)
+    recovery = read(RECOVERY_CLOSED, 524288)
+    require(len(base["debits"]) == 241 and len(base["direct_science_calls"]) == 123, "immutable earlier closed241/123")
+    require(len(previous["debits"]) == 245 and len(previous["direct_science_calls"]) == 127, "immutable earlier closed245/127")
+    require(len(measured["debits"]) == 249 and len(measured["direct_science_calls"]) == 131, "immutable earlier closed249/131")
+    require(len(patched["debits"]) == 252 and len(patched["direct_science_calls"]) == 134, "immutable earlier closed252/134")
+    require(len(boundary["debits"]) == 255 and len(boundary["direct_science_calls"]) == 137, "immutable earlier closed255/137")
+    require(len(recovery["debits"]) == 258 and len(recovery["direct_science_calls"]) == 140, "immutable closed258/140 recovery")
+    exact_value(recovery["debits"][:255], boundary["debits"], "recovery preserves earlier closed255")
+    for call, value in boundary["direct_science_calls"].items():
+        exact_value(recovery["direct_science_calls"][call], value, "recovery preserves earlier137 calls")
+    exact_value(recovery["debits"][:252], patched["debits"], "recovery preserves earlier closed252")
+    for call, value in patched["direct_science_calls"].items():
+        exact_value(recovery["direct_science_calls"][call], value, "recovery preserves earlier134 calls")
+    exact_value(recovery["debits"][:249], measured["debits"], "recovery preserves earlier closed249")
+    for call, value in measured["direct_science_calls"].items():
+        exact_value(recovery["direct_science_calls"][call], value, "recovery preserves earlier131 calls")
+    exact_value(recovery["debits"][:245], previous["debits"], "recovery preserves earlier closed245")
+    for call, value in previous["direct_science_calls"].items():
+        exact_value(recovery["direct_science_calls"][call], value, "recovery preserves earlier127 calls")
+    exact_value(recovery["debits"][:241], base["debits"], "recovery preserves earlier closed241")
+    for call, value in base["direct_science_calls"].items():
+        exact_value(recovery["direct_science_calls"][call], value, "recovery preserves earlier123 calls")
+    exact_value(recovery["debits"][:237], anchor["debits"], "recovery retains entire closed237 prefix")
+    for call, value in anchor["direct_science_calls"].items():
+        exact_value(recovery["direct_science_calls"][call], value, "recovery retains entire closed119 calls")
+    exact_value(before["debits"][:258], recovery["debits"], "entire actual closed258 prefix")
+    for call, value in recovery["direct_science_calls"].items():
+        exact_value(before["direct_science_calls"][call], value, "entire actual closed140 calls")
+    for i, debit in enumerate(recovery["debits"][237:]):
+        exact_value(debit["descriptor"], RECOVERY_COSTS[i], "exact actual l/m cost descriptor")
+        cost = read(RECOVERY_COSTS[i])
+        request = cost_proof(cost, debit, read, generated=True, expected_timeout=i in (6, 10))
+        call = ("lint24", "lint27", "math25", "gate26", "lint28", "math29", "gate30", "retry-debug31",
+                "lint32", "math33", "gate34", "retry-debug35", "lint36", "math37", "gate38", "lint39", "math40", "gate41", "lint42", "math43", "gate44")[i]
+        exact_value((debit["mode"], cost["cost_id"], cost["exit_code"], request["role"]),
+                    ("generated", "direct-science-20261007-contact-" + call, (1, 0, 0, 1, 0, 0, 124, 1, 0, 0, 124, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1)[i],
+                     ("lint", "lint", "numerical", "execution", "lint", "numerical", "execution", "execution",
+                      "lint", "numerical", "execution", "execution", "lint", "numerical", "execution", "lint", "numerical", "execution",
+                      "lint", "numerical", "execution")[i]), "twenty-one exact paid l/m/n/o/p/q/r outcomes")
+        source = FAILED_L_SOURCE if i == 0 else FAILED_M_SOURCE if i < 4 else FAILED_N_SOURCE if i < 8 else FAILED_O_SOURCE if i < 12 else FAILED_P_SOURCE if i < 15 else FAILED_Q_SOURCE if i < 18 else FAILED_R_SOURCE
+        exact_value(cost["source_freeze"], source, "preserved executed l/m Source")
+        read(source)
+        for key, value in zip(("outer_s", "child_s", "cleanup_s"), ((8, 4, 4), (8, 4, 4), (12, 8, 4), (32, 24, 8), (8, 4, 4), (12, 8, 4), (32, 24, 8), (32, 24, 8),
+                                                                 (8, 4, 4), (12, 8, 4), (32, 24, 8), (32, 24, 8), (8, 4, 4), (12, 8, 4), (48, 40, 8),
+                                                                 (8, 4, 4), (12, 8, 4), (48, 40, 8), (8, 4, 4), (12, 8, 4), (48, 40, 8))[i], strict=True):
+            exact_value(request["limits"][key], value, "actual l/m role bounds")
+        event = recovery["direct_science_calls"][cost["cost_id"]]
+        exact_value(event["request"], cost["request"], "actual l/m admitted request")
+        exact_value(event["state"], "charged", "actual l/m once charged")
+    audit = q["role"] == ROLES[3]
+    tail = before["debits"][258:]
+    require(len(tail) == 3 + int(audit) and len(before["direct_science_calls"]) == 143 + int(audit), "only fresh s qualification and fixed retry prefix")
+    require(len({d["cost_id"] for d in before["debits"]}) == len(before["debits"]), "retry no duplicate debit")
+    for i, debit in enumerate(tail[:3]):
+        require(debit["mode"] == "generated" and debit["cost_id"] == L_CALLS[i], "only exact paid l generated prefix")
+        cost = read(debit["descriptor"])
+        request = cost_proof(cost, debit, read, generated=True)
+        exact_value(cost["exit_code"], 0, "successful fresh l qualification")
+        exact_value(request["role"], ("lint", "numerical", "execution")[i], "fresh l role")
+        exact_value(request["source_freeze"], q["source_freeze"], "same l actual generated Source")
+        for key, value in zip(("outer_s", "child_s", "cleanup_s"), ((8, 4, 4), (12, 8, 4), (64, 56, 8))[i], strict=True):
+            exact_value(request["limits"][key], value, "fixed l paid caps")
+        event = before["direct_science_calls"][cost["cost_id"]]
+        exact_value(event["request"], cost["request"], "charged l generated request")
+        exact_value(event["state"], "charged", "fresh qualification once charged")
+    originals = [d for d in before["debits"][165:] if d["mode"] == "original"]
+    require(len(originals) == 21 + int(audit), "exact Original21 body /22 audit")
+    total = 0.
+    for i, debit in enumerate(originals):
+        cost = closed(read(debit["descriptor"]), debit)
+        exact_value(cost["grant"], GRANT, "retry every Original same J")
+        total += finite(cost["actual_outer_full_return_s"], "retry ordered actual return")
+        if i < 18:
+            continue  # exact anchor pins retain all old18 proof through closed().
+        n = i - 18
+        if n < 3:
+            exact_value(debit["descriptor"], r["historical_costs"][n], "exact actual historical k cost")
+            exact_value(cost["source_freeze"], r["source_k"], "historical executed k")
+            expected_call, expected_role, expected_exit = contract["calls"][n], ROLES[n], (0, 0, 1)[n]
+            manifest_spec = r["historical_manifests"][n]
+        else:
+            expected_call, expected_role, expected_exit = RETRY_CALLS[0], ROLES[2], 0
+            exact_value(cost["source_freeze"], q["source_freeze"], "immediate actual retry execution l")
+            exact_value(cost["body_retry"], q["body_retry"], "request-bound retry cost provenance")
+            manifest_spec = q["artifacts"]["manifest"]
+        exact_value(cost["cost_id"], expected_call, "retry exact ordered role call")
+        exact_value(cost["role"], expected_role, "retry ordered role")
+        exact_value(cost["exit_code"], expected_exit, "exact historical technical failure exception only")
+        request = cost_proof(cost, debit, read)
+        for key, value in (("grant", GRANT), ("inputs", INPUTS), ("roster", ROSTER), ("contract", q["contract"]),
+                           ("limits", contract["limits"][expected_role]), ("local_debit_offset", 165), ("resource_increment_s", 0)):
+            exact_value(request[key], value, "actual same immutable scope " + key)
+        exact_value(request["output"], BASE + "/parent-" + expected_call + "/result", "actual fixed output")
+        event = before["direct_science_calls"][cost["cost_id"]]
+        exact_value(event["request"], cost["supervisor_request"], "actual once admitted owner")
+        exact_value(event["state"], "charged", "actual once charged predecessor")
+        manifest = read(manifest_spec)
+        for key, value in (("schema", SCHEMA + ".manifest.v1"), ("role", expected_role), ("source_freeze", cost["source_freeze"]),
+                           ("request", cost["request"]), ("contract", q["contract"]), ("run_valid", n != 2)):
+            exact_value(manifest[key], value, "actual historical/retry manifest " + key)
+        report = read(manifest["artifacts"]["report"])
+        if n == 2:
+            for key, value in (("schema", SCHEMA + ".body-failure.v1"), ("run_valid", False), ("secondary_errors", []), ("classification", "technical_invalid")):
+                exact_value(report[key], value, "sole input failure " + key)
+            exact_value(report["first_error"], {"stage": "new-candidate-input", "type": "ValueError", "message": "selected member64MiB", "notes": []}, "exact sole technical failure tuple")
+            exact_value(report["contact_stage"], q["contract"], "failed body immutable Stage-a")
+            continue
+        require(report["run_valid"] is True and report["first_error"] is None and report["secondary_errors"] == [], "technically valid actual historical/retry report")
+        if n == 1:
+            require(report["arithmetic_valid"] is True and report["candidate_present"] is True, "actual k candidate independently audited")
+            exact_value(report["candidate"], r["candidate"], "entire candidate frozen k identity")
+            exact_value(manifest["artifacts"]["candidate_arrays"], r["candidate_arrays"], "actual audited arrays descriptor")
+            prior_manifest = read(r["historical_manifests"][0])
+            exact_value(request["artifacts"], dict(prior_manifest["artifacts"], manifest=r["historical_manifests"][0]), "actual audit used historical direction artifacts")
+        if n == 3:
+            exact_value(request["body_retry"], q["body_retry"], "immediate retry request")
+            exact_value(request["artifacts"], dict(read(r["historical_manifests"][1])["artifacts"], manifest=r["historical_manifests"][1]), "body deployed same historical audited inputs")
+            _retry_candidate_identity_b(q, report, read)
+    for key, start in (("original_cumulative_used_s", "original_cumulative_before_s"), ("original_stage_used_s", "original_stage_before_s"),
+                       ("startup_ray_original_local_used_s", "science_local_used_before_s")):
+        exact_value(before[key], grant[start] + total, "retry actual ordered costs and carry")
+    exact_value(before["original_remaining_s"], 16200. - grant["original_cumulative_before_s"] - total, "retry exact remaining order")
+    old, archive = read(r["source_k"]), read(r["archive_k"])
+    require(len(old["sources"]) == 278 and len(archive["sources"]) == 11, "entire historic k278 and archived11")
+    exact_value(archive["source_freeze"], r["source_k"], "archive executed k freeze")
+    names = [item["canonical"] for item in archive["sources"]]
+    require(len(set(names)) == 11, "eleven unique k archived Sources")
+    for item in archive["sources"]:
+        spec = item["as_executed"]
+        exact_value(spec["path"], BASE + "/parent-contact-learning-as-executed-k/" + item["canonical"], "contained exact k archive path")
+        original = old["sources"][item["canonical"]]
+        exact_value({k: spec[k] for k in ("bytes", "sha256")}, {k: original[k] for k in ("bytes", "sha256")}, "k archive/freeze identity")
+        raw = archive_read({"archive_path": str(ROOT / spec["path"]), "bytes": spec["bytes"], "sha256": spec["sha256"]})
+        require(len(raw) == spec["bytes"] <= 1 << 20 and hashlib.sha256(raw).hexdigest() == spec["sha256"], "bounded actual k archived text")
+    # Reuse unchanged old18 geometry lineage checks under their historical freeze.
+    validate_history(read(roster["closed_215"], 524288), grant, roster,
+                     {"role": ROLES[0], "contract": q["contract"], "artifacts": {}}, read, closed, archive_read)
+    if not audit:
+        _retry_candidate_identity_b(q, read(read(r["historical_manifests"][1])["artifacts"]["report"]), read)
+        exact_value(q["artifacts"]["manifest"], r["historical_manifests"][1], "body predecessor exact k audit")
+    return total
+
+def retry_binding(q, contract, read):
+    from tools import banc_m3_checkpoint_harness_runtime as harness
+    from tools import banc_m3_checkpoint_runtime as checkpoint
+    if q.get('call_id') in harness.CALLS or q.get('body_retry', {}).get('path') == harness.BODY_PATH:
+        checkpoint = harness
+    if q.get('call_id') in checkpoint.CALLS or q.get('body_retry', {}).get('path') == checkpoint.BODY_PATH:
+        return checkpoint.body_binding(q, contract, read)
+    if q.get("call_id") in J_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == conserved.J_PATH:
+        return runtime_j_binding(q, contract, read)
+    if q.get("call_id") in I_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == conserved.I_PATH:
+        return runtime_i_binding(q, contract, read)
+    if q.get("call_id") in H_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == conserved.H_PATH:
+        return runtime_h_binding(q, contract, read)
+    if q.get("call_id") in G_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == conserved.G_PATH:
+        return runtime_g_binding(q, contract, read)
+    """Finite d dispatch is separate; exact c and private b remain historical."""
+    if q.get("call_id") in F_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == F_RUNTIME_PATH:
+        return runtime_f_binding(q, contract, read)
+    if q.get("call_id") in E_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == E_RUNTIME_PATH:
+        return runtime_e_binding(q, contract, read)
+    if q.get("call_id") in D_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == D_RUNTIME_PATH:
+        return runtime_binding(q, contract, read)
+    if q.get("body_retry") is None:
+        require(q["call_id"] not in C_RETRY_CALLS, "c requires pinned descriptor recovery")
+        return _retry_binding_b(q, contract, read)
+    require(q["role"] in ROLES[2:] and q["call_id"] == C_RETRY_CALLS[ROLES[2:].index(q["role"])], "sole mapped c role/call; no b replay or suffix")
+    exact_value(q["source_freeze"]["path"], C_SOURCE_PATH, "fixed current execution t path")
+    exact_value(q["body_retry"]["path"], C_RETRY_PATH, "one immutable c descriptor path")
+    r = read(q["body_retry"])
+    expected = dict(RETRY_PINS, schema=SCHEMA + ".technical-body-retry.v1", retry_id="contact-learning-20261007-c",
+                    allowed_roles=list(ROLES[2:]), calls=list(C_RETRY_CALLS), maximum_retries=1, automatic_repeats=0,
+                    resource_increment_s=0, contract=q["contract"], grant=GRANT, inputs=INPUTS, roster=ROSTER,
+                    descriptor_recovery=C_RECOVERY_PINS)
+    exact_value(r, expected, "fixed c descriptor; exhausted b preserved")
+    exact_value(q["limits"], contract["limits"][q["role"]], "unchanged c bounds")
+    return r
+
+
+def retry_candidate_identity(q, report, read):
+    from tools import banc_m3_checkpoint_harness_runtime as harness
+    from tools import banc_m3_checkpoint_runtime as checkpoint
+    if q.get('call_id') in harness.CALLS or q.get('body_retry', {}).get('path') == harness.BODY_PATH:
+        checkpoint = harness
+    if q.get('call_id') in checkpoint.CALLS:
+        return checkpoint.candidate(q, report, read)
+    if q.get("call_id") in J_RUNTIME_CALLS:
+        return runtime_j_candidate_identity(q, report, read)
+    if q.get("call_id") in I_RUNTIME_CALLS:
+        return runtime_i_candidate_identity(q, report, read)
+    if q.get("call_id") in H_RUNTIME_CALLS:
+        return runtime_h_candidate_identity(q, report, read)
+    if q.get("call_id") in G_RUNTIME_CALLS:
+        return runtime_g_candidate_identity(q, report, read)
+    if q.get("call_id") in F_RUNTIME_CALLS:
+        return runtime_f_candidate_identity(q, report, read)
+    if q.get("call_id") in E_RUNTIME_CALLS:
+        return runtime_e_candidate_identity(q, report, read)
+    if q.get("call_id") in D_RUNTIME_CALLS:
+        return runtime_candidate_identity(q, report, read)
+    r = retry_binding(q, read(q["contract"]), read)
+    if r is None:
+        return _retry_candidate_identity_b(q, report, read)
+    historic = read(r["historical_manifests"][1])
+    audit = read(historic["artifacts"]["report"])
+    exact_value(audit["candidate"], r["candidate"], "complete historical k candidate")
+    exact_value(report["candidate"], audit["candidate"], "complete physical k candidate; never relabel t")
+    exact_value(historic["artifacts"]["candidate_arrays"], r["candidate_arrays"], "same audited array descriptor")
+    require(q["source_freeze"] != r["source_k"], "current t differs from candidate k")
+    manifest = read(q["artifacts"]["manifest"])
+    exact_value(manifest["source_freeze"], r["source_k"] if q["role"] == ROLES[2] else q["source_freeze"], "exact immediate provenance")
+    exact_value(manifest["role"], ROLES[1] if q["role"] == ROLES[2] else ROLES[2], "exact immediate role")
+    exact_value(manifest["run_valid"], True, "technically valid predecessor; healthy99 allowed")
+    exact_value(q["artifacts"], dict(manifest["artifacts"], manifest=q["artifacts"]["manifest"]), "all exact predecessor artifacts")
+
+
+def _retry_prefix(new, old, label):
+    exact_value(new["debits"][:len(old["debits"])], old["debits"], label + " ordered debits")
+    for call, event in old["direct_science_calls"].items():
+        exact_value(new["direct_science_calls"][call], event, label + " complete calls")
+
+
+def validate_retry_history(before, grant, roster, q, read, closed, archive_read):
+    """Actual b snapshot through preserved b guards, then exact current c tail."""
+    import xml.etree.ElementTree as ET
+
+    contract = read(q["contract"])
+    r = retry_binding(q, contract, read)
+    p = r["descriptor_recovery"]
+    anchor, previous = read(p["closed262"], 524288), read(p["before_b"], 524288)
+    require(len(anchor["debits"]) == 262 and len(anchor["direct_science_calls"]) == 144
+            and len(previous["debits"]) == 261 and len(previous["direct_science_calls"]) == 143, "actual262/144 and b261/143")
+    _retry_prefix(anchor, previous, "b adds one actual return")
+    _retry_prefix(before, anchor, "entire closed262")
+    exact_value(anchor["debits"][261]["descriptor"], p["cost_b"], "one actual b cost")
+    cost = read(p["cost_b"])
+    bq = cost_proof(cost, anchor["debits"][261], read)
+    for key, expected in (("cost_id", RETRY_CALLS[0]), ("mode", "original"), ("role", ROLES[2]), ("exit_code", 1), ("cap_exceeded", False)):
+        exact_value(cost[key], expected, "exact observed b " + key)
+    for key, expected in (("before_ledger", p["before_b"]), ("source_freeze", p["source_s"]), ("body_retry", p["prior_retry_b"]),
+                          ("qualification", p["qualification_s"]), ("role", ROLES[2]), ("call_id", RETRY_CALLS[0])):
+        exact_value(bq[key], expected, "exact historical b request " + key)
+    exact_value(previous["direct_science_qualification"], p["qualification_s"], "registered s before b")
+    exact_value(anchor["direct_science_qualification"], p["qualification_s"], "registered s preserved")
+    total = _validate_retry_history_b(previous, grant, roster, bq, read, closed, archive_read)
+    exact_value(anchor["direct_science_calls"][cost["cost_id"]],
+                {"mode": "original", "request": cost["supervisor_request"], "reserved_s": 300, "state": "charged"}, "one charged actual b")
+    manifest, report = read(p["manifest_b"]), read(p["report_b"])
+    for key, expected in (("schema", SCHEMA + ".manifest.v1"), ("role", ROLES[2]), ("source_freeze", p["source_s"]),
+                          ("request", cost["request"]), ("contract", q["contract"]), ("run_valid", False), ("artifacts", {"report": p["report_b"]})):
+        exact_value(manifest[key], expected, "actual b manifest " + key)
+    for key, expected in (("schema", SCHEMA + ".body-failure.v1"), ("run_valid", False), ("classification", "technical_invalid"),
+                          ("secondary_errors", []), ("candidate", None), ("contact_stage", q["contract"]),
+                          ("first_error", {"stage": "new-candidate-input", "type": "ValueError", "message": "descriptor fields", "notes": []})):
+        exact_value(report[key], expected, "exact b failure " + key)
+    audited = read(r["historical_manifests"][1])
+    exact_value(bq["artifacts"], dict(audited["artifacts"], manifest=r["historical_manifests"][1]), "b used same actual k audit")
+    total += finite(cost["actual_outer_full_return_s"], "actual b cost")
+    for key, carry in (("original_cumulative_used_s", "original_cumulative_before_s"), ("original_stage_used_s", "original_stage_before_s"),
+                       ("startup_ray_original_local_used_s", "science_local_used_before_s")):
+        exact_value(anchor[key], grant[carry] + total, "closed262 ordered carry")
+
+    source, archive, qualified = read(p["source_s"]), read(p["archive_s"]), read(p["qualification_s"])
+    require(len(source["sources"]) == 438 and len(archive["sources"]) == 12, "actual s438/archive12")
+    exact_value(archive["source_freeze"], p["source_s"], "executed s archive")
+    require(len({item["canonical"] for item in archive["sources"]}) == 12, "unique s archived names")
+    for item in archive["sources"]:
+        spec, original = item["as_executed"], source["sources"][item["canonical"]]
+        exact_value(spec["path"], BASE + "/parent-contact-learning-as-executed-s/" + item["canonical"], "exact contained s archive")
+        exact_value({k: spec[k] for k in ("bytes", "sha256")}, {k: original[k] for k in ("bytes", "sha256")}, "actual s archive bytes")
+        raw = archive_read({"archive_path": str(ROOT / spec["path"]), "bytes": spec["bytes"], "sha256": spec["sha256"]})
+        require(len(raw) == spec["bytes"] <= 1 << 20 and hashlib.sha256(raw).hexdigest() == spec["sha256"], "bounded s archive text")
+    exact_value(qualified["source_freeze"], p["source_s"], "historic s qualification")
+    exact_value(qualified["actual_costs"], [d["descriptor"] for d in previous["debits"][258:261]], "exact three paid s costs")
+    require(len(qualified["tests"]) == 2, "two full historical s suites")
+    for test, count, name in zip(qualified["tests"], (11, 24), ("math46", "gate47"), strict=True):
+        spec = test["file"]
+        exact_value(spec["path"], BASE + "/parent-contact-learning-" + name + "-junit.xml", "exact s XML")
+        raw = archive_read({"archive_path": str(ROOT / spec["path"]), "bytes": spec["bytes"], "sha256": spec["sha256"]})
+        require(len(raw) == spec["bytes"] <= 1 << 20 and hashlib.sha256(raw).hexdigest() == spec["sha256"], "actual s XML bytes")
+        suite = ET.fromstring(raw).find("testsuite")
+        require(suite is not None and all(suite.get(k) == "0" for k in ("failures", "errors", "skipped")) and suite.get("tests") == str(count), "full successful s XML")
+        exact_value(test["count"], count, "historical suite count")
+        exact_value([case.get("name") for case in suite.findall("testcase")], test["names"], "all actual s test names")
+
+    recovery = read(C_FAILED_T_CLOSED, 524288)
+    require(len(recovery["debits"]) == 263 and len(recovery["direct_science_calls"]) == 145, "actual closed263/145")
+    _retry_prefix(recovery, anchor, "failed t retains closed262")
+    _retry_prefix(before, recovery, "entire closed263")
+    debit = recovery["debits"][262]
+    exact_value(debit["descriptor"], C_FAILED_T_COST, "exact actual failed t lint")
+    failed_t = read(C_FAILED_T_COST)
+    failed_request = cost_proof(failed_t, debit, read, generated=True)
+    exact_value((debit["mode"], failed_t["cost_id"], failed_t["exit_code"], failed_t["cap_exceeded"], failed_request["role"]),
+                ("generated", "direct-science-20261007-contact-lint48", 1, False, "lint"), "exact failed t outcome")
+    exact_value(failed_request["source_freeze"], C_FAILED_T_SOURCE, "executed failed t preserved")
+    for key, value in zip(("outer_s", "child_s", "cleanup_s"), (8, 4, 4), strict=True):
+        exact_value(failed_request["limits"][key], value, "actual failed t caps")
+    exact_value(recovery["direct_science_calls"][failed_t["cost_id"]]["request"], failed_t["request"], "actual failed t admission")
+    exact_value(recovery["direct_science_calls"][failed_t["cost_id"]]["state"], "charged", "failed t once charged")
+    patched = read(C_FAILED_U_CLOSED, 524288)
+    require(len(patched["debits"]) == 266 and len(patched["direct_science_calls"]) == 148, "actual closed266/148")
+    _retry_prefix(patched, recovery, "u preserves closed263")
+    _retry_prefix(before, patched, "entire closed266")
+    for i, debit in enumerate(patched["debits"][263:266]):
+        exact_value(debit["descriptor"], C_FAILED_U_COSTS[i], "exact actual u cost")
+        paid = read(C_FAILED_U_COSTS[i])
+        request = cost_proof(paid, debit, read, generated=True)
+        exact_value((debit["mode"], paid["cost_id"], paid["exit_code"], request["role"]),
+                    ("generated", "direct-science-20261007-contact-" + ("lint51", "math52", "gate53")[i], (0, 0, 1)[i], ("lint", "numerical", "execution")[i]), "actual u outcomes; full gate rejected")
+        exact_value(request["source_freeze"], C_FAILED_U_SOURCE, "executed u preserved")
+        for key, value in zip(("outer_s", "child_s", "cleanup_s"), ((8, 4, 4), (12, 8, 4), (64, 56, 8))[i], strict=True):
+            exact_value(request["limits"][key], value, "actual u caps")
+        exact_value(patched["direct_science_calls"][paid["cost_id"]]["request"], paid["request"], "actual u admission")
+        exact_value(patched["direct_science_calls"][paid["cost_id"]]["state"], "charged", "actual u once charged")
+    recovered = read(C_FAILED_V_CLOSED, 524288)
+    require(len(recovered["debits"]) == 269 and len(recovered["direct_science_calls"]) == 151, "actual269/151")
+    _retry_prefix(recovered, patched, "v retains closed266")
+    _retry_prefix(before, recovered, "entire closed269")
+    for i, debit in enumerate(recovered["debits"][266:269]):
+        exact_value(debit["descriptor"], C_FAILED_V_COSTS[i], "exact actual v cost")
+        paid = read(C_FAILED_V_COSTS[i])
+        request = cost_proof(paid, debit, read, generated=True)
+        exact_value((debit["mode"], paid["cost_id"], paid["exit_code"], request["role"]),
+                    ("generated", "direct-science-20261007-contact-" + ("lint54", "math55", "gate56")[i], (0, 0, 1)[i], ("lint", "numerical", "execution")[i]), "actual v outcomes; Native12 timeout retained")
+        exact_value(request["source_freeze"], C_FAILED_V_SOURCE, "executed v preserved")
+        for key, value in zip(("outer_s", "child_s", "cleanup_s"), ((8, 4, 4), (12, 8, 4), (64, 56, 8))[i], strict=True):
+            exact_value(request["limits"][key], value, "actual v caps")
+        exact_value(recovered["direct_science_calls"][paid["cost_id"]]["request"], paid["request"], "actual v admission")
+        exact_value(recovered["direct_science_calls"][paid["cost_id"]]["state"], "charged", "actual v once charged")
+    passed = read(C_PASSED_W_CLOSED, 524288)
+    require(len(passed["debits"]) == 272 and len(passed["direct_science_calls"]) == 154, "actual272/154")
+    _retry_prefix(passed, recovered, "w retains closed269")
+    _retry_prefix(before, passed, "entire closed272")
+    for i, debit in enumerate(passed["debits"][269:272]):
+        exact_value(debit["descriptor"], C_PASSED_W_COSTS[i], "exact actual w cost")
+        paid = read(C_PASSED_W_COSTS[i])
+        request = cost_proof(paid, debit, read, generated=True)
+        exact_value((debit["mode"], paid["cost_id"], paid["exit_code"], request["role"]),
+                    ("generated", "direct-science-20261007-contact-" + ("lint57", "math58", "gate59")[i], 0, ("lint", "numerical", "execution")[i]), "w full tests PASS; registration remains rejected")
+        exact_value(request["source_freeze"], C_PASSED_W_SOURCE, "executed w preserved")
+        for key, value in zip(("outer_s", "child_s", "cleanup_s"), ((8, 4, 4), (12, 8, 4), (80, 72, 8))[i], strict=True):
+            exact_value(request["limits"][key], value, "actual w caps")
+        exact_value(passed["direct_science_calls"][paid["cost_id"]]["request"], paid["request"], "actual w admission")
+        exact_value(passed["direct_science_calls"][paid["cost_id"]]["state"], "charged", "actual w once charged")
+    audit = q["role"] == ROLES[3]
+    tail = before["debits"][272:]
+    require(len(tail) == 3 + int(audit) and len(before["direct_science_calls"]) == 157 + int(audit), "only fresh x and sole c body")
+    require(len({d["cost_id"] for d in before["debits"]}) == len(before["debits"]), "no duplicate c costs")
+    for i, debit in enumerate(tail[:3]):
+        exact_value((debit["mode"], debit["cost_id"]), ("generated", C_L_CALLS[i]), "exact fresh t calls")
+        paid = read(debit["descriptor"])
+        request = cost_proof(paid, debit, read, generated=True)
+        exact_value(paid["exit_code"], 0, "actual successful t role")
+        exact_value(request["role"], ("lint", "numerical", "execution")[i], "full t role")
+        exact_value(request["source_freeze"], q["source_freeze"], "full same t")
+        for key, expected in zip(("outer_s", "child_s", "cleanup_s"), ((8, 4, 4), (12, 8, 4), (80, 72, 8))[i], strict=True):
+            exact_value(request["limits"][key], expected, "fixed fresh t caps")
+        exact_value(before["direct_science_calls"][paid["cost_id"]]["request"], paid["request"], "actual t request")
+        exact_value(before["direct_science_calls"][paid["cost_id"]]["state"], "charged", "actual t once charged")
+    if audit:
+        debit = tail[3]
+        exact_value((debit["mode"], debit["cost_id"]), ("original", C_RETRY_CALLS[0]), "sole c predecessor")
+        paid = closed(read(debit["descriptor"]), debit)
+        request = cost_proof(paid, debit, read)
+        exact_value(paid["exit_code"], 0, "technically valid c body")
+        exact_value(paid["cap_exceeded"], False, "c body within limits")
+        for key in ("source_freeze", "body_retry", "contract", "grant", "inputs", "roster", "local_debit_offset", "resource_increment_s"):
+            exact_value(request[key], q[key], "same current c scope " + key)
+        exact_value(request["role"], ROLES[2], "actual c physical role")
+        exact_value(request["limits"], contract["limits"][ROLES[2]], "actual c body limits")
+        exact_value(request["output"], BASE + "/parent-" + C_RETRY_CALLS[0] + "/result", "fixed c body output")
+        exact_value(request["artifacts"], dict(audited["artifacts"], manifest=r["historical_manifests"][1]), "c deployed unchanged k inputs")
+        immediate = read(q["artifacts"]["manifest"])
+        for key, expected in (("schema", SCHEMA + ".manifest.v1"), ("run_valid", True), ("role", ROLES[2]),
+                              ("source_freeze", q["source_freeze"]), ("request", paid["request"]), ("contract", q["contract"])):
+            exact_value(immediate[key], expected, "actual c manifest " + key)
+        report = read(immediate["artifacts"]["report"])
+        require(report["run_valid"] is True and report["first_error"] is None and report["secondary_errors"] == [], "healthy actual c body; startup99 allowed")
+        retry_candidate_identity(q, report, read)
+        exact_value(before["direct_science_calls"][paid["cost_id"]]["request"], paid["supervisor_request"], "actual c owner")
+        exact_value(before["direct_science_calls"][paid["cost_id"]]["state"], "charged", "actual c once charged")
+        total += finite(paid["actual_outer_full_return_s"], "actual c cost")
+    else:
+        retry_candidate_identity(q, read(audited["artifacts"]["report"]), read)
+    require(len([d for d in before["debits"][165:] if d["mode"] == "original"]) == 22 + int(audit), "exact Original22 body/23 audit")
+    for key, carry in (("original_cumulative_used_s", "original_cumulative_before_s"), ("original_stage_used_s", "original_stage_before_s"),
+                       ("startup_ray_original_local_used_s", "science_local_used_before_s")):
+        exact_value(before[key], grant[carry] + total, "ordered actual c costs and carry")
+    exact_value(before["original_remaining_s"], 16200. - grant["original_cumulative_before_s"] - total, "exact c remaining order")
+    return total
+
+
+def runtime_descriptor(contract_spec):
+    """Prospective d only; no Source-y backreference or new resource authority."""
+    return dict(RETRY_PINS, schema=SCHEMA + ".body-runtime.v1", retry_id="contact-learning-20261007-d",
+                allowed_roles=list(ROLES[2:]), calls=list(D_RUNTIME_CALLS),
+                maximum_retries=1, maximum_body_calls=1, maximum_audit_calls=1,
+                audit_condition="genuine_exit0_and_run_valid_true", automatic_repeats=0,
+                resource_increment_s=0, contract=contract_spec, grant=GRANT, inputs=INPUTS, roster=ROSTER,
+                descriptor_recovery=C_RECOVERY_PINS, runtime_history=D_HISTORY_PINS)
+
+
+def runtime_binding(q, contract, read):
+    require(q["role"] in ROLES[2:] and q["call_id"] == D_RUNTIME_CALLS[ROLES[2:].index(q["role"])],
+            "single mapped d role/call; no b/c replay or suffix")
+    exact_value(q["source_freeze"]["path"], D_SOURCE_PATH, "fixed execution z, historical candidate k")
+    exact_value(q["body_retry"]["path"], D_RUNTIME_PATH, "one prospective immutable d descriptor")
+    r = read(q["body_retry"])
+    exact_value(r, runtime_descriptor(q["contract"]), "exact d scope and preserved b/c runtime history")
+    exact_value(q["limits"], contract["limits"][q["role"]], "unchanged d physical/audit bounds")
+    return r
+
+
+def runtime_candidate_identity(q, report, read):
+    r = runtime_binding(q, read(q["contract"]), read)
+    historic = read(r["historical_manifests"][1])
+    audit = read(historic["artifacts"]["report"])
+    exact_value(audit["candidate"], r["candidate"], "entire historical audited k candidate")
+    exact_value(report["candidate"], audit["candidate"], "same full physical candidate k; y is execution only")
+    exact_value(historic["artifacts"]["candidate_arrays"], r["candidate_arrays"], "same audited k array descriptor")
+    require(q["source_freeze"] != r["source_k"], "no candidate relabel to y")
+    manifest = read(q["artifacts"]["manifest"])
+    exact_value(manifest["source_freeze"], r["source_k"] if q["role"] == ROLES[2] else q["source_freeze"], "exact d immediate provenance")
+    exact_value(manifest["role"], ROLES[1] if q["role"] == ROLES[2] else ROLES[2], "exact d immediate predecessor")
+    exact_value(manifest["run_valid"], True, "technically valid d predecessor")
+    exact_value(q["artifacts"], dict(manifest["artifacts"], manifest=q["artifacts"]["manifest"]), "all exact d artifact pins")
+
+
+def runtime_test_names(historical_x):
+    old = {kind: list(item["names"]) for kind, item in zip(("math", "gate"), historical_x["tests"], strict=True)}
+    old["math"].extend(("test_math_runtime_journal_caps_first_error_and_scalar_projection",
+                        "test_math_runtime_journal_phase_and_cold_fence_elapsed",
+                        "test_math_runtime_journal_snapshot_replacement_and_reserved_terminal"))
+    old["gate"].extend(("test_gate_runtime_d_history_single_call_and_strict_negatives",
+                        "test_gate_runtime_fault_phases_preserve_first_error",
+                        "test_gate_runtime_deadline270_285_flush_once_and_no_late_science",
+                        "test_gate_runtime_body_worker_failure_acquired_journal",
+                        "test_gate_runtime_owner_drift_refuses_diagnostic_validity",
+                        "test_gate_runtime_fifth_transfer_python_native_catalog_and_negatives"))
+    return old
+
+
+def _runtime_suites(qualified, suffixes, counts, archive_read, *, expected_names=None):
+    import xml.etree.ElementTree as ET
+
+    require(len(qualified["tests"]) == 2, "two full explicit runtime suites")
+    for i, (suffix, count) in enumerate(zip(suffixes, counts, strict=True)):
+        item, spec = qualified["tests"][i], qualified["tests"][i]["file"]
+        exact_value(spec["path"], BASE + "/parent-contact-learning-" + suffix + "-junit.xml", "fixed runtime XML path")
+        raw = archive_read({"archive_path": str(ROOT / spec["path"]), "bytes": spec["bytes"], "sha256": spec["sha256"]})
+        require(len(raw) == spec["bytes"] <= 1 << 20 and hashlib.sha256(raw).hexdigest() == spec["sha256"], "exact bounded runtime XML")
+        root = ET.fromstring(raw)
+        suites = root.findall("testsuite")
+        require(root.tag == "testsuites" and len(suites) == 1, "one actual JUnit suite")
+        suite = suites[0]
+        require(all(suite.get(k) == "0" for k in ("failures", "errors", "skipped"))
+                and suite.get("tests") == str(count), "full successful runtime JUnit")
+        cases = suite.findall("testcase")
+        names = [case.get("name") for case in cases]
+        exact_value(item["count"], count, "full exact suite count")
+        exact_value(names, item["names"], "all structured actual JUnit names")
+        if expected_names is not None:
+            kind = ("math", "gate")[i]
+            exact_value(names, expected_names[kind], "old full suites and every new runtime case")
+            classes = {"tests.test_c_banc_contact_learning": 9,
+                       "tests.test_c_banc_contact_body_retry": 2 if i == 0 else 4,
+                       "tests.test_c_banc_contact_runtime_journal": 3 if i == 0 else 5}
+            if i:
+                classes.update({"tests.test_c_banc_startup_ray_execution": 9, "tests.test_c_banc_contact_metadata": 3})
+            exact_value({name: sum(case.get("classname") == name for case in cases) for name in classes},
+                        classes, "all exact classes including owner9 and metadata3")
+            require(all(case.get("classname") in classes for case in cases), "no substituted fixture class")
+
+
+def validate_runtime_history(before, grant, roster, q, read, closed, archive_read):
+    """Historical c guards run on its exact275 request; d owns only its new tail."""
+    from tools.banc_m3_startup_ray_supervisor import generated_budget_limit
+
+    r = runtime_binding(q, read(q["contract"]), read)
+    p = r["runtime_history"]
+    anchor, previous = read(p["closed276"], 524288), read(p["before_c"], 524288)
+    require(len(anchor["debits"]) == 276 and len(anchor["direct_science_calls"]) == 158
+            and len(previous["debits"]) == 275 and len(previous["direct_science_calls"]) == 157, "exact closed276/158 and c275/157")
+    _retry_prefix(anchor, previous, "c one actual failed return")
+    _retry_prefix(before, anchor, "entire closed276 retained")
+    c_cost = read(p["cost_c"])
+    exact_value(anchor["debits"][275]["descriptor"], p["cost_c"], "sole exact failed c cost")
+    c_request = cost_proof(c_cost, anchor["debits"][275], read)
+    exact_value(c_cost["request"], p["request_c"], "exact c request bytes")
+    for key, expected in (("call_id", C_RETRY_CALLS[0]), ("role", ROLES[2]), ("before_ledger", p["before_c"]),
+                          ("source_freeze", p["source_x"]), ("qualification", p["qualification_x"]),
+                          ("body_retry", p["prior_retry_c"])):
+        exact_value(c_request[key], expected, "exact historical c " + key)
+    exact_value(read(p["request_c"]), c_request, "actual immutable c request")
+    for key in ("trace", "outer"):
+        exact_value(c_cost[key], p[key + "_c"], "fixed actual c " + key)
+    exact_value((c_cost["cost_id"], c_cost["exit_code"], c_cost["actual_outer_full_return_s"]),
+                (C_RETRY_CALLS[0], 1, 268.84), "actual c failure/cost preserved")
+    exact_value(anchor["direct_science_calls"][C_RETRY_CALLS[0]],
+                {"mode": "original", "request": c_cost["supervisor_request"], "reserved_s": 300, "state": "charged"},
+                "one once charged c call")
+    exact_value(previous["direct_science_qualification"], p["qualification_x"], "actually registered x before c")
+    exact_value(anchor["direct_science_qualification"], p["qualification_x"], "closed276 preserves x qualification")
+    # Do not project d's counts or Source onto c's historical validator.
+    total = validate_retry_history(previous, grant, roster, c_request, read, closed, archive_read)
+    total += finite(c_cost["actual_outer_full_return_s"], "actual c ordered cost")
+
+    outer, actual = read(p["outer_c"]), read(p["actual_c"])
+    exact_value(outer["observed_supervisor_interval_s"], 270.0479967999272, "distinct owner observed c interval")
+    exact_value(outer["stderr"], p["stderr_c"], "actual captured c stderr")
+    stderr = archive_read({"archive_path": str(ROOT / p["stderr_c"]["path"]),
+                           "bytes": p["stderr_c"]["bytes"], "sha256": p["stderr_c"]["sha256"]})
+    require(len(stderr) == 1930 and hashlib.sha256(stderr).hexdigest() == p["stderr_c"]["sha256"], "bounded exact c terminal bytes")
+    exact_value(actual["terminal_failure"]["first_error"],
+                {"stage": "existing-continuous-candidate-body", "type": "TimeoutError",
+                 "message": "contact same owner ENTRY internal deadline", "notes": []}, "actual c first error retained")
+    exact_value([item["stage"] for item in actual["terminal_failure"]["secondary_errors"]],
+                ["body-worker-posthash", "contact-body-publication", "terminal-failure-publication"], "actual c subsequent errors")
+    for key, expected in (("run_valid", False), ("durable_result_bytes", 0), ("body_audit_executed", False),
+                          ("candidate_adopted", False), ("F1_F8", "INCOMPLETE"), ("biology", "UNPROVEN"),
+                          ("exact_native_VJP", "UNVERIFIED")):
+        exact_value(actual[key], expected, "actual c unproven boundary " + key)
+    exact_value(actual["terminal_failure"]["work"], None, "c work unknown, never zero")
+    for key, field in (("source_freeze", "source_x"), ("registered_qualification", "qualification_x"),
+                       ("closed_ledger", "closed276"), ("cost", "cost_c"), ("trace", "trace_c"), ("outer", "outer_c"), ("stderr", "stderr_c")):
+        exact_value(actual[key], p[field], "actual c fixed provenance " + key)
+
+    source, archive, qualified_x = read(p["source_x"]), read(p["archive_x"]), read(p["qualification_x"])
+    require(len(source["sources"]) == 581 and len(archive["sources"]) == 14
+            and len({item["canonical"] for item in archive["sources"]}) == 14, "full actual x581/archive14")
+    exact_value(archive["source_freeze"], p["source_x"], "archive exact executed x")
+    for item in archive["sources"]:
+        spec, old = item["as_executed"], source["sources"][item["canonical"]]
+        exact_value(spec["path"], BASE + "/parent-contact-learning-as-executed-x/" + item["canonical"], "contained exact x archive")
+        exact_value({k: spec[k] for k in ("bytes", "sha256")}, {k: old[k] for k in ("bytes", "sha256")}, "x archive/freeze bytes")
+        raw = archive_read({"archive_path": str(ROOT / spec["path"]), "bytes": spec["bytes"], "sha256": spec["sha256"]})
+        require(len(raw) == spec["bytes"] <= 1 << 20 and hashlib.sha256(raw).hexdigest() == spec["sha256"], "bounded actual x archive text")
+    exact_value(qualified_x["source_freeze"], p["source_x"], "actual x qualification")
+    exact_value(qualified_x["actual_costs"], [d["descriptor"] for d in previous["debits"][272:275]], "actual structured60/61/62 costs")
+    _runtime_suites(qualified_x, ("math61", "gate62"), (11, 24), archive_read)
+
+    recovery = RUNTIME_RECOVERY_PINS
+    recovered = read(recovery["closed277"], 524288)
+    _retry_prefix(recovered, anchor, "one actual failed y lint retained")
+    _retry_prefix(before, recovered, "entire actual closed277 retained")
+    require(len(recovered["debits"]) == 277 and len(recovered["direct_science_calls"]) == 159,
+            "exact failed-y closed277/159")
+    failed_debit = recovered["debits"][276]
+    exact_value(failed_debit["descriptor"], recovery["cost_lint63"], "actual failed-y cost")
+    failed_cost = read(recovery["cost_lint63"])
+    failed_request = cost_proof(failed_cost, failed_debit, read, generated=True)
+    exact_value((failed_cost["cost_id"], failed_cost["exit_code"], failed_cost["actual_outer_full_return_s"]),
+                ("direct-science-20261007-contact-lint63", 1, 1.929), "actual failed y lint, no replay")
+    exact_value(failed_request["source_freeze"], recovery["source_y"], "actual failed-y Source")
+    exact_value(failed_request["role"], "lint", "only failed generated qualifier")
+    exact_value(recovered["direct_science_calls"][failed_cost["cost_id"]],
+                {"mode": "generated", "request": failed_cost["request"], "reserved_s": 8, "state": "charged"},
+                "failed y once closed")
+    frozen_y, archived_y = read(recovery["source_y"]), read(recovery["archive_y"])
+    exact_value(archived_y["source_freeze"], recovery["source_y"], "exact failed executed y archive")
+    require(len(archived_y["sources"]) == 16 and len({v["canonical"] for v in archived_y["sources"]}) == 16,
+            "all immutable executed y16")
+    for item in archived_y["sources"]:
+        spec, old = item["as_executed"], frozen_y["sources"][item["canonical"]]
+        exact_value(spec["path"], BASE + "/parent-contact-learning-as-executed-y/" + item["canonical"], "contained y archive")
+        exact_value({k: spec[k] for k in ("bytes", "sha256")}, {k: old[k] for k in ("bytes", "sha256")}, "exact y archive/freeze")
+        raw = archive_read({"archive_path": str(ROOT / spec["path"]), "bytes": spec["bytes"], "sha256": spec["sha256"]})
+        require(len(raw) == spec["bytes"] <= 1 << 20 and hashlib.sha256(raw).hexdigest() == spec["sha256"], "actual bounded y Source")
+
+    audit = q["role"] == ROLES[3]
+    require(len(before["debits"]) == 280 + int(audit) and len(before["direct_science_calls"]) == 162 + int(audit),
+            "d before280/162 body or281/163 audit; no extra returns")
+    require(len({d["cost_id"] for d in before["debits"]}) == len(before["debits"]), "unique d cost IDs")
+    for i, debit in enumerate(before["debits"][277:280]):
+        exact_value((debit["mode"], debit["cost_id"]), ("generated", D_L_CALLS[i]), "only fresh66/67/68")
+        cost = read(debit["descriptor"])
+        request = cost_proof(cost, debit, read, generated=True)
+        exact_value(cost["exit_code"], 0, "genuine fresh runtime qualification")
+        exact_value(request["source_freeze"], q["source_freeze"], "same current execution y")
+        exact_value(request["role"], ("lint", "numerical", "execution")[i], "exact fresh role")
+        for key, expected in zip(("outer_s", "child_s", "cleanup_s"), ((8, 4, 4), (12, 8, 4), (96, 88, 8))[i], strict=True):
+            exact_value(request["limits"][key], expected, "unchanged full runtime qualification caps")
+        exact_value(before["direct_science_calls"][cost["cost_id"]]["request"], cost["request"], "actual fresh request")
+        exact_value(before["direct_science_calls"][cost["cost_id"]]["state"], "charged", "actual fresh once charged")
+    qualified = read(q["qualification"])
+    exact_value(qualified["source_freeze"], q["source_freeze"], "fresh actually qualified z")
+    exact_value(qualified["actual_costs"], [d["descriptor"] for d in before["debits"][277:280]], "only three fresh paid costs")
+    _runtime_suites(qualified, ("math67", "gate68"), (14, 30), archive_read, expected_names=runtime_test_names(qualified_x))
+    exact_value(before["direct_science_generated_runtime_transfer"], p["runtime_transfer"], "registered fifth event retained")
+    exact_value(before["direct_science_generated_runtime_residual_transfer"], recovery["residual_transfer"], "actual conserved4 retained")
+    require(generated_budget_limit(before, ROOT) == 964, "exact conserved residual budget")
+
+    if audit:
+        debit = before["debits"][280]
+        exact_value((debit["mode"], debit["cost_id"]), ("original", D_RUNTIME_CALLS[0]), "sole d body predecessor")
+        cost = closed(read(debit["descriptor"]), debit)
+        request = cost_proof(cost, debit, read)
+        exact_value(cost["exit_code"], 0, "only genuine exit0 admits d audit")
+        for key in ("source_freeze", "body_retry", "contract", "grant", "inputs", "roster", "qualification", "local_debit_offset", "resource_increment_s"):
+            exact_value(request[key], q[key], "same d execution scope " + key)
+        exact_value(request["role"], ROLES[2], "sole physical d")
+        exact_value(request["limits"], read(q["contract"])["limits"][ROLES[2]], "same physical d caps")
+        exact_value(request["output"], BASE + "/parent-" + D_RUNTIME_CALLS[0] + "/result", "fixed d output")
+        manifest = read(q["artifacts"]["manifest"])
+        for key, expected in (("schema", SCHEMA + ".manifest.v1"), ("run_valid", True), ("role", ROLES[2]),
+                              ("source_freeze", q["source_freeze"]), ("request", cost["request"]), ("contract", q["contract"])):
+            exact_value(manifest[key], expected, "actual d manifest " + key)
+        report = read(manifest["artifacts"]["report"])
+        require(report["run_valid"] is True and report["first_error"] is None and report["secondary_errors"] == [], "genuine valid d report; journal never sufficient")
+        runtime_candidate_identity(q, report, read)
+        audited = read(r["historical_manifests"][1])
+        exact_value(request["artifacts"], dict(audited["artifacts"], manifest=r["historical_manifests"][1]), "d deployed same audited k")
+        exact_value(before["direct_science_calls"][cost["cost_id"]]["request"], cost["supervisor_request"], "actual d owner")
+        exact_value(before["direct_science_calls"][cost["cost_id"]]["state"], "charged", "actual d once closed")
+        total += finite(cost["actual_outer_full_return_s"], "actual d body cost")
+    else:
+        historic = read(r["historical_manifests"][1])
+        runtime_candidate_identity(q, read(historic["artifacts"]["report"]), read)
+    require(len([d for d in before["debits"][165:] if d["mode"] == "original"]) == 23 + int(audit), "Original23 body /24 audit")
+    for key, carry in (("original_cumulative_used_s", "original_cumulative_before_s"),
+                       ("original_stage_used_s", "original_stage_before_s"), ("startup_ray_original_local_used_s", "science_local_used_before_s")):
+        exact_value(before[key], grant[carry] + total, "entire ordered d Original carry")
+    exact_value(before["original_remaining_s"], 16200. - grant["original_cumulative_before_s"] - total, "unchanged d Float64 expression order")
+    return total
+
+
+
+def validate_history(before, grant, roster, q, read, closed, archive_read, *, root=ROOT):
+    from tools import banc_m3_checkpoint_harness_runtime as harness
+    from tools import banc_m3_checkpoint_runtime as checkpoint
+    if q.get('call_id') in harness.CALLS or q.get('body_retry', {}).get('path') == harness.BODY_PATH:
+        checkpoint = harness
+    if q.get('call_id') in checkpoint.CALLS:
+        checkpoint.validate(before, root)
+        return before['original_cumulative_used_s'] - grant['original_cumulative_before_s']
+    if q.get("call_id") in J_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == conserved.J_PATH:
+        return validate_j_history(before, grant, roster, q, read, closed, archive_read, root=root)
+    if q.get("call_id") in I_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == conserved.I_PATH:
+        return validate_i_history(before, grant, roster, q, read, closed, archive_read, root=root)
+    if q.get("call_id") in H_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == conserved.H_PATH:
+        return validate_h_history(before, grant, roster, q, read, closed, archive_read, root=root)
+    if q.get("call_id") in G_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == conserved.G_PATH:
+        return validate_g_history(before, grant, roster, q, read, closed, archive_read, root=root)
+    if q.get("call_id") in F_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == F_RUNTIME_PATH:
+        return validate_f_history(before, grant, roster, q, read, closed, archive_read, root=root)
+    if q.get("call_id") in E_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == E_RUNTIME_PATH:
+        return validate_e_history(before, grant, roster, q, read, closed, archive_read)
+    if q.get("call_id") in D_RUNTIME_CALLS or q.get("body_retry", {}).get("path") == D_RUNTIME_PATH:
+        return validate_runtime_history(before, grant, roster, q, read, closed, archive_read)
+    if q.get("body_retry") is not None:
+        return validate_retry_history(before, grant, roster, q, read, closed, archive_read)
+    contract = read(q["contract"])
+    historic = read(roster["closed_215"], 524288)
+    require(len(historic["debits"]) == contract["base_debits"] and len(historic["direct_science_calls"]) == contract["base_calls"], "immutable closed215 contract counts")
+    exact_value(before["debits"][:contract["base_debits"]], historic["debits"], "every old failed/success/generated debit unchanged")
+    require(len({d["cost_id"] for d in before["debits"]}) == len(before["debits"]), "no duplicate debit")
+    for call, value in historic["direct_science_calls"].items():
+        exact_value(before["direct_science_calls"][call], value, "immutable old direct call")
+    originals = [d for d in before["debits"][contract["local_debit_offset"]:] if d["mode"] == "original"]
+    prior = ROLES.index(q["role"])
+    require(len(originals) == contract["base_original_returns"] + prior, "single exact new role prefix after Original18")
+    total = 0.
+    for i, debit in enumerate(originals):
+        cost = closed(read(debit["descriptor"]), debit)
+        exact_value(cost["grant"], GRANT, "every actual Original same J")
+        total += finite(cost["actual_outer_full_return_s"], "actual ordered return")
+        if i >= contract["base_original_returns"]:
+            n = i - contract["base_original_returns"]
+            require(cost["role"] == ROLES[n] and cost["cost_id"] == contract["calls"][n]
+                    and cost["exit_code"] == 0 and cost["cap_exceeded"] is False, "known completed sole role predecessor")
+            exact_value(cost["source_freeze"], q["source_freeze"], "same new Source predecessor")
+    for key, start in (("original_cumulative_used_s", "original_cumulative_before_s"), ("original_stage_used_s", "original_stage_before_s"),
+                       ("startup_ray_original_local_used_s", "science_local_used_before_s")):
+        exact_value(before[key], grant[start] + total, "all actual ordered costs and carry")
+    exact_value(before["original_remaining_s"], 16200. - grant["original_cumulative_before_s"] - total, "exact remaining order")
+    # Qualified physical geometry is historical; never compare its freeze to current Source.
+    analysis, actual = read(roster["geometry_analysis"]), read(roster["actual_geometry_result"])
+    require(analysis["run_valid"] is True and analysis["qualified"] is True and analysis["common_values_exact"] is True
+            and actual["candidate_adopted"] is False, "qualified unchanged neutral geometry input")
+    freeze, archive = read(roster["geometry_source_freeze"]), read(roster["geometry_source_archive"])
+    require(len(archive["sources"]) == 8, "historical executed e eight Sources")
+    exact_value(archive["source_freeze"], roster["geometry_source_freeze"], "historical e freeze/archive")
+    for item in archive["sources"]:
+        spec = freeze["sources"][item["original_path"]]
+        require(spec["bytes"] == item["bytes"] and spec["sha256"] == item["sha256"], "e archived identity")
+        raw = archive_read(item)
+        require(len(raw) == item["bytes"] and hashlib.sha256(raw).hexdigest() == item["sha256"], "actual archived e bytes")
+    if prior:
+        manifest = read(q["artifacts"]["manifest"])
+        require(manifest["role"] == ROLES[prior - 1] and manifest["run_valid"] is True, "actual complete predecessor artifact")
+        exact_value(manifest["source_freeze"], q["source_freeze"], "same predecessor Source")
+        for key, spec in q["artifacts"].items():
+            if key != "manifest":
+                exact_value(spec, manifest["artifacts"][key], "actual admitted saved artifact")
+        if prior >= 2:
+            require(read(manifest["artifacts"]["report"])["candidate_present"] is True, "no-candidate body roles explicitly skipped")
+    else:
+        exact_value(q["artifacts"], {}, "direction has no synthetic predecessor")
+    return total
+
+
+
+def runtime_e_binding(q, contract, read):
+    require(q["role"] in ROLES[2:] and q["call_id"] == E_RUNTIME_CALLS[ROLES[2:].index(q["role"])],
+            "single mapped E role/call; no historical D/J replay or suffix")
+    exact_value(q["source_freeze"]["path"], conserved.E_SOURCE_PATH, "fixed current E full Source")
+    exact_value(q["body_retry"], conserved.E_DESCRIPTOR_PIN, "one reviewed static E descriptor; no future cost pins")
+    r = read(q["body_retry"])
+    exact_value(r["calls"], list(E_RUNTIME_CALLS), "same static E routing")
+    exact_value(r["historical_closed282"], conserved.HISTORICAL_PIN, "all actual failures retained")
+    exact_value(r["candidate"], RETRY_PINS["candidate"], "same complete audited candidate-k")
+    for key, value in (("contract", q["contract"]), ("grant", GRANT), ("inputs", INPUTS), ("roster", ROSTER),
+                       ("descriptor_recovery", C_RECOVERY_PINS), ("runtime_history", D_HISTORY_PINS),
+                       ("qualification_epoch", conserved.EPOCH), ("allocation_event_path", conserved.ALLOCATION_PATH)):
+        exact_value(r[key], value, "same E contract " + key)
+    exact_value(q["limits"], contract["limits"][q["role"]], "unchanged Stage-A E body/audit caps")
+    return r
+
+
+def runtime_e_candidate_identity(q, report, read):
+    r = runtime_e_binding(q, read(q["contract"]), read)
+    historic = read(r["historical_manifests"][1])
+    audit = read(historic["artifacts"]["report"])
+    exact_value(audit["candidate"], r["candidate"], "entire independently audited k")
+    exact_value(report["candidate"], audit["candidate"], "same whole physical candidate k")
+    exact_value(historic["artifacts"]["candidate_arrays"], r["candidate_arrays"], "same actual audited candidate arrays pin")
+    require(q["source_freeze"] != r["source_k"], "execution E never relabels candidate-k")
+    manifest = read(q["artifacts"]["manifest"])
+    exact_value(manifest["source_freeze"], r["source_k"] if q["role"] == ROLES[2] else q["source_freeze"], "exact E immediate provenance")
+    exact_value(manifest["role"], ROLES[1] if q["role"] == ROLES[2] else ROLES[2], "exact E predecessor")
+    exact_value(manifest["run_valid"], True, "technically valid actual predecessor")
+    exact_value(q["artifacts"], dict(manifest["artifacts"], manifest=q["artifacts"]["manifest"]), "all complete E predecessor artifact pins")
+
+
+def validate_e_history(before, grant, roster, q, read, closed, archive_read):
+    from tools.banc_m3_startup_ray_supervisor import generated_budget_limit
+    r = runtime_e_binding(q, read(q["contract"]), read)
+    historical = read(conserved.HISTORICAL_PIN, 524288)
+    conserved.prefix(before, historical)  # includes lint63, gate68 and both actual failed Native calls
+    conserved.known_closed(before)
+    exact_value(conserved.current_caps(before, ROOT, generated_budget_limit), conserved.NEW_CAPS, "same paired live cap epoch")
+    qualification = read(q["qualification"])
+    end = conserved.validate_qualification(qualification, before, ROOT, generated_budget_limit)
+    audit = q["role"] == ROLES[3]
+    require(len(before["debits"]) == end + int(audit), "fresh E before only after all four real costs; optional sole actual body")
+    event = read(before[conserved.ALLOCATION_KEY])
+    bootstrap = read(event["bootstrap"])
+    exact_value(qualification["source_freeze"], bootstrap["source_freeze"], "same bootstrap-tested writer Source and full qualification")
+    total = 0.0
+    originals = [d for d in before["debits"][165:] if d["mode"] == "original"]
+    require(len(originals) == 23 + int(audit), "all historical J Original23 plus sole E body for audit")
+    for debit in originals:
+        cost = closed(read(debit["descriptor"]), debit)
+        exact_value(cost["grant"], GRANT, "same unchanged J lineage")
+        total += finite(cost["actual_outer_full_return_s"], "actual ordered J fee")
+    if audit:
+        debit = before["debits"][end]
+        exact_value((debit["cost_id"], debit["mode"]), (E_RUNTIME_CALLS[0], "original"), "sole E body precedes conditional audit")
+        cost = read(debit["descriptor"])
+        body = cost_proof(cost, debit, read)
+        exact_value(cost["exit_code"], 0, "genuine body exit0 required")
+        for key in ("source_freeze", "body_retry", "contract", "grant", "inputs", "roster", "qualification", "local_debit_offset", "resource_increment_s"):
+            exact_value(body[key], q[key], "same actual E body/audit " + key)
+        exact_value(body["limits"], read(q["contract"])["limits"][ROLES[2]], "body300/285/270/15")
+        manifest = read(q["artifacts"]["manifest"])
+        for key, value in (("schema", SCHEMA + ".manifest.v1"), ("run_valid", True), ("role", ROLES[2]),
+                           ("source_freeze", q["source_freeze"]), ("request", cost["request"]), ("contract", q["contract"])):
+            exact_value(manifest[key], value, "actual E body manifest")
+        report = read(manifest["artifacts"]["report"])
+        require(report["run_valid"] is True and report["first_error"] is None and report["secondary_errors"] == [],
+                "actual scientific report; journal or Source tests never qualify body")
+        runtime_e_candidate_identity(q, report, read)
+        audited = read(r["historical_manifests"][1])
+        exact_value(body["artifacts"], dict(audited["artifacts"], manifest=r["historical_manifests"][1]), "same audited k deployed by E")
+    else:
+        historic = read(r["historical_manifests"][1])
+        runtime_e_candidate_identity(q, read(historic["artifacts"]["report"]), read)
+    for key, start in (("original_cumulative_used_s", "original_cumulative_before_s"),
+                       ("original_stage_used_s", "original_stage_before_s"), ("startup_ray_original_local_used_s", "science_local_used_before_s")):
+        exact_value(before[key], grant[start] + total, "entire ordered historical J carry")
+    exact_value(before["original_remaining_s"], 15600.0 - grant["original_cumulative_before_s"] - total, "paired current ordered Original remaining")
+    return total
+
+
+F_RUNTIME_PATH = conserved.F_PATH
+F_RUNTIME_CALLS = conserved.F_CALLS
+
+def runtime_f_binding(q, contract, read):
+    require(q["role"] in ROLES[2:] and q["call_id"] == F_RUNTIME_CALLS[ROLES[2:].index(q["role"])],
+            "single mapped F role/call; no E/D/J replay or suffix")
+    exact_value(q["source_freeze"]["path"], conserved.F_SOURCE_PATH, "fixed current F full Source")
+    exact_value(q["body_retry"], conserved.F_DESCRIPTOR_PIN, "one reviewed static F descriptor; no future cost pins")
+    r = read(q["body_retry"])
+    exact_value(r["calls"], list(F_RUNTIME_CALLS), "same static F routing")
+    exact_value(r["historical_closed282"], conserved.HISTORICAL_PIN, "all actual failures retained")
+    exact_value(r["historical_closed283"], conserved.F_CLOSED_PIN, "sole actual failed bootstrap9.208/124 retained")
+    exact_value(r["qualification_roster"], conserved.ROSTER_PIN, "F metadata epoch binds unchanged complete E roster")
+    exact_value(r["source_review_path"], conserved.F_REVIEW_PATH, "fresh actual ROOT reviewed vector")
+    exact_value(r["source_freeze_path"], conserved.F_SOURCE_PATH, "acyclic current F Source")
+    exact_value(r["static_status"], "PREQUALIFICATION_ONLY", "scope derived from actual costs, not this label")
+    exact_value(r["candidate"], RETRY_PINS["candidate"], "same complete audited candidate-k")
+    for key, value in (("contract", q["contract"]), ("grant", GRANT), ("inputs", INPUTS), ("roster", ROSTER),
+                       ("descriptor_recovery", C_RECOVERY_PINS), ("runtime_history", D_HISTORY_PINS),
+                       ("qualification_epoch", conserved.F_EPOCH), ("allocation_event_path", conserved.F_EVENT_PATH)):
+        exact_value(r[key], value, "same F contract " + key)
+    exact_value(q["limits"], contract["limits"][q["role"]], "unchanged Stage-A F body/audit caps")
+    return r
+
+
+def runtime_f_candidate_identity(q, report, read):
+    r = runtime_f_binding(q, read(q["contract"]), read)
+    historic = read(r["historical_manifests"][1])
+    audit = read(historic["artifacts"]["report"])
+    exact_value(audit["candidate"], r["candidate"], "entire independently audited k")
+    exact_value(report["candidate"], audit["candidate"], "same whole physical candidate k")
+    exact_value(historic["artifacts"]["candidate_arrays"], r["candidate_arrays"], "same actual audited candidate arrays pin")
+    require(q["source_freeze"] != r["source_k"], "execution F never relabels candidate-k")
+    manifest = read(q["artifacts"]["manifest"])
+    exact_value(manifest["source_freeze"], r["source_k"] if q["role"] == ROLES[2] else q["source_freeze"], "exact F immediate provenance")
+    exact_value(manifest["role"], ROLES[1] if q["role"] == ROLES[2] else ROLES[2], "exact F predecessor")
+    exact_value(manifest["run_valid"], True, "technically valid actual predecessor")
+    exact_value(q["artifacts"], dict(manifest["artifacts"], manifest=q["artifacts"]["manifest"]), "all complete F predecessor artifact pins")
+
+
+def validate_f_history(before, grant, roster, q, read, closed, archive_read, *, root=ROOT):
+    from tools.banc_m3_startup_ray_supervisor import generated_budget_limit
+    r = runtime_f_binding(q, read(q["contract"]), read)
+    historical = read(conserved.F_CLOSED_PIN, 524288)
+    conserved.prefix(before, historical)  # includes lint63, gate68 and both actual failed Native calls
+    conserved.known_closed(before)
+    exact_value(conserved.current_caps(before, root, generated_budget_limit), conserved.NEW_CAPS, "same paired live cap epoch")
+    qualification = read(q["qualification"])
+    end = conserved.validate_f_qualification(qualification, before, root, generated_budget_limit)
+    audit = q["role"] == ROLES[3]
+    require(len(before["debits"]) == end + int(audit), "fresh F before only after all four real costs; optional sole actual body")
+    event = read(before[conserved.ALLOCATION_KEY])
+    exact_value(event["schema"], conserved.F_SCHEMA, "separate strict PREQUALIFICATION_ONLY event")
+    conserved.f_freeze(qualification["source_freeze"], event, before[conserved.ALLOCATION_KEY], root)
+    exact_value(qualification["reviewed_source"], event["reviewed_source"], "same currently reviewed F Source, never old successful bootstrap")
+    total = 0.0
+    originals = [d for d in before["debits"][165:] if d["mode"] == "original"]
+    require(len(originals) == 23 + int(audit), "all historical J Original23 plus sole F body for audit")
+    for debit in originals:
+        cost = closed(read(debit["descriptor"]), debit)
+        exact_value(cost["grant"], GRANT, "same unchanged J lineage")
+        total += finite(cost["actual_outer_full_return_s"], "actual ordered J fee")
+    if audit:
+        debit = before["debits"][end]
+        exact_value((debit["cost_id"], debit["mode"]), (F_RUNTIME_CALLS[0], "original"), "sole F body precedes conditional audit")
+        cost = read(debit["descriptor"])
+        body = cost_proof(cost, debit, read)
+        exact_value(cost["exit_code"], 0, "genuine body exit0 required")
+        for key in ("source_freeze", "body_retry", "contract", "grant", "inputs", "roster", "qualification", "local_debit_offset", "resource_increment_s"):
+            exact_value(body[key], q[key], "same actual F body/audit " + key)
+        exact_value(body["limits"], read(q["contract"])["limits"][ROLES[2]], "body300/285/270/15")
+        manifest = read(q["artifacts"]["manifest"])
+        for key, value in (("schema", SCHEMA + ".manifest.v1"), ("run_valid", True), ("role", ROLES[2]),
+                           ("source_freeze", q["source_freeze"]), ("request", cost["request"]), ("contract", q["contract"])):
+            exact_value(manifest[key], value, "actual F body manifest")
+        report = read(manifest["artifacts"]["report"])
+        require(report["run_valid"] is True and report["first_error"] is None and report["secondary_errors"] == [],
+                "actual scientific report; journal or Source tests never qualify body")
+        runtime_f_candidate_identity(q, report, read)
+        audited = read(r["historical_manifests"][1])
+        exact_value(body["artifacts"], dict(audited["artifacts"], manifest=r["historical_manifests"][1]), "same audited k deployed by F")
+    else:
+        historic = read(r["historical_manifests"][1])
+        runtime_f_candidate_identity(q, read(historic["artifacts"]["report"]), read)
+    for key, start in (("original_cumulative_used_s", "original_cumulative_before_s"),
+                       ("original_stage_used_s", "original_stage_before_s"), ("startup_ray_original_local_used_s", "science_local_used_before_s")):
+        exact_value(before[key], grant[start] + total, "entire ordered historical J carry")
+    exact_value(before["original_remaining_s"], 15600.0 - grant["original_cumulative_before_s"] - total, "paired current ordered Original remaining")
+    return total
+
+
+
+G_RUNTIME_CALLS = conserved.G_CALLS
+H_RUNTIME_CALLS = conserved.H_CALLS
+I_RUNTIME_CALLS = conserved.I_CALLS
+J_RUNTIME_CALLS = conserved.J_CALLS
+
+
+def runtime_j_binding(q, contract, read):
+    require(q["role"] in ROLES[2:] and q["call_id"] == J_RUNTIME_CALLS[ROLES[2:].index(q["role"])], "sole literal I role/call")
+    exact_value(q["source_freeze"]["path"], conserved.J_SOURCE_PATH, "fixed current I Source")
+    exact_value(q["body_retry"]["path"], conserved.J_PATH, "only static I body")
+    freeze = read(q["source_freeze"])
+    exact_value(q["body_retry"], freeze["sources"][conserved.J_PATH], "same reviewed static I pin")
+    mapped = {i["source"]["path"]: i["source"] for i in read(conserved.J_BEFORE_PIN)["snapshots"]}
+    prior = read(mapped[conserved.I_PATH])
+    expected = dict(prior, schema="flylab.m3.contact-learning.body-runtime.v7", retry_id="contact-learning-20261008-j",
+                    calls=list(J_RUNTIME_CALLS), qualification_epoch=conserved.J_EPOCH, source_review_path=conserved.J_REVIEW_PATH,
+                    source_freeze_path=conserved.J_SOURCE_PATH, qualification_lint_cleanup_path=conserved.J_CLEANUP_PATH,
+                    historical_closed287=conserved.J_CLOSED_PIN, failed_i_lint=mapped[conserved.J_I_PATHS["cost"]])
+    r = read(q["body_retry"])
+    exact_value(r, expected, "whole static H, six changes and three additions")
+    for key, value in (("contract", q["contract"]), ("grant", GRANT), ("inputs", INPUTS), ("roster", ROSTER)):
+        exact_value(r[key], value, "same I candidate contract " + key)
+    exact_value(q["limits"], contract["limits"][q["role"]], "unchanged whole I body/audit limits")
+    return r
+
+
+def runtime_i_binding(q, contract, read):
+    require(q["role"] in ROLES[2:] and q["call_id"] == I_RUNTIME_CALLS[ROLES[2:].index(q["role"])], "sole literal I role/call")
+    exact_value(q["source_freeze"]["path"], conserved.I_SOURCE_PATH, "fixed current I Source")
+    exact_value(q["body_retry"]["path"], conserved.I_PATH, "only static I body")
+    freeze = read(q["source_freeze"])
+    exact_value(q["body_retry"], freeze["sources"][conserved.I_PATH], "same reviewed static I pin")
+    mapped = {i["source"]["path"]: i["source"] for i in read(conserved.I_BEFORE_PIN)["snapshots"]}
+    prior = read(mapped[conserved.H_PATH])
+    expected = dict(prior, schema="flylab.m3.contact-learning.body-runtime.v6", retry_id="contact-learning-20261008-i",
+                    calls=list(I_RUNTIME_CALLS), qualification_epoch=conserved.I_EPOCH, source_review_path=conserved.I_REVIEW_PATH,
+                    source_freeze_path=conserved.I_SOURCE_PATH, preflight_recovery_path=conserved.I_RECOVERY_PATH,
+                    historical_closed286=conserved.I_CLOSED_PIN, failed_h_lint=mapped[conserved.I_H_PATHS["cost"]])
+    r = read(q["body_retry"])
+    exact_value(r, expected, "whole static H, six changes and three additions")
+    for key, value in (("contract", q["contract"]), ("grant", GRANT), ("inputs", INPUTS), ("roster", ROSTER)):
+        exact_value(r[key], value, "same I candidate contract " + key)
+    exact_value(q["limits"], contract["limits"][q["role"]], "unchanged whole I body/audit limits")
+    return r
+
+
+def runtime_h_binding(q, contract, read):
+    require(q["role"] in ROLES[2:] and q["call_id"] == H_RUNTIME_CALLS[ROLES[2:].index(q["role"])], "sole literal H role/call")
+    exact_value(q["source_freeze"]["path"], conserved.H_SOURCE_PATH, "fixed current H Source")
+    exact_value(q["body_retry"]["path"], conserved.H_PATH, "only static H body path")
+    freeze = read(q["source_freeze"])
+    exact_value(q["body_retry"], freeze["sources"][conserved.H_PATH], "same reviewed static H pin")
+    before = read(conserved.H_BEFORE_PIN)
+    mapped = {i["source"]["path"]: i["source"] for i in before["snapshots"]}
+    prior = read(mapped[conserved.G_PATH])
+    expected = dict(prior, schema="flylab.m3.contact-learning.body-runtime.v5", retry_id="contact-learning-20261008-h",
+                    calls=list(H_RUNTIME_CALLS), qualification_epoch=conserved.H_EPOCH, source_review_path=conserved.H_REVIEW_PATH,
+                    source_freeze_path=conserved.H_SOURCE_PATH, qualification_lint_repair_path=conserved.H_REPAIR_PATH,
+                    historical_closed285=conserved.H_CLOSED_PIN, failed_g_lint=mapped[conserved.H_G_PATHS["cost"]])
+    r = read(q["body_retry"])
+    exact_value(r, expected, "whole static G plus exactly six H changes/three additions; lineage retained")
+    for key, value in (("contract", q["contract"]), ("grant", GRANT), ("inputs", INPUTS), ("roster", ROSTER)):
+        exact_value(r[key], value, "same H candidate-k contract " + key)
+    exact_value(q["limits"], contract["limits"][q["role"]], "unchanged full H body/audit bounds")
+    return r
+
+
+def runtime_g_binding(q, contract, read):
+    require(q["role"] in ROLES[2:] and q["call_id"] == G_RUNTIME_CALLS[ROLES[2:].index(q["role"])], "sole literal G role/call, no F/E/D/J suffix replay")
+    exact_value(q["source_freeze"]["path"], conserved.G_SOURCE_PATH, "fixed current G Source")
+    exact_value(q["body_retry"]["path"], conserved.G_PATH, "only static G body path")
+    freeze = read(q["source_freeze"])
+    exact_value(q["body_retry"], freeze["sources"][conserved.G_PATH], "same reviewed static G pin")
+    r, prior = read(q["body_retry"]), read(conserved.F_DESCRIPTOR_PIN)
+    mapped = read(conserved.G_BEFORE_PIN)
+    pins = {i["source"]["path"]: i["source"] for i in mapped["snapshots"]}
+    expected = dict(prior, schema="flylab.m3.contact-learning.body-runtime.v4", retry_id="contact-learning-20261008-g",
+                    calls=list(G_RUNTIME_CALLS), qualification_epoch=conserved.G_EPOCH, source_review_path=conserved.G_REVIEW_PATH,
+                    source_freeze_path=conserved.G_SOURCE_PATH, qualification_amendment_path=conserved.G_AMENDMENT_PATH,
+                    historical_closed284=conserved.G_CLOSED_PIN, failed_f_lint=pins[conserved.G_F_PATHS["cost"]])
+    exact_value(r, expected, "entire preserved F candidate/history/scope and exact static G")
+    for key, value in (("contract", q["contract"]), ("grant", GRANT), ("inputs", INPUTS), ("roster", ROSTER)):
+        exact_value(r[key], value, "same G candidate-k contract " + key)
+    exact_value(q["limits"], contract["limits"][q["role"]], "unchanged full G body/audit bounds")
+    return r
+
+def _runtime_epoch_candidate_identity(q, report, read, family):
+    require(family in ("g", "h", "i", "j"), "only three fixed candidate families")
+    binding = {"g": runtime_g_binding, "h": runtime_h_binding, "i": runtime_i_binding, "j": runtime_j_binding}[family]
+    r = binding(q, read(q["contract"]), read)
+    historic = read(r["historical_manifests"][1])
+    audit = read(historic["artifacts"]["report"])
+    exact_value(audit["candidate"], r["candidate"], "entire independently audited k")
+    exact_value(report["candidate"], audit["candidate"], "same whole physical candidate k")
+    exact_value(historic["artifacts"]["candidate_arrays"], r["candidate_arrays"], "same actual audited candidate arrays pin")
+    require(q["source_freeze"] != r["source_k"], "execution G never relabels candidate-k")
+    manifest = read(q["artifacts"]["manifest"])
+    exact_value(manifest["source_freeze"], r["source_k"] if q["role"] == ROLES[2] else q["source_freeze"], "exact G immediate provenance")
+    exact_value(manifest["role"], ROLES[1] if q["role"] == ROLES[2] else ROLES[2], "exact G predecessor")
+    exact_value(manifest["run_valid"], True, "technically valid actual predecessor")
+    exact_value(q["artifacts"], dict(manifest["artifacts"], manifest=q["artifacts"]["manifest"]), "all complete G predecessor artifact pins")
+
+
+def _validate_epoch_history(before, grant, roster, q, read, closed, archive_read, family, *, root=ROOT):
+    from tools.banc_m3_startup_ray_supervisor import generated_budget_limit
+    require(family in ("g", "h", "i", "j"), "only fixed G/H/I contact histories")
+    f = conserved._qualification_family(family)
+    binding = {"g": runtime_g_binding, "h": runtime_h_binding, "i": runtime_i_binding, "j": runtime_j_binding}[family]
+    r = binding(q, read(q["contract"]), read)
+    historical = read({"g": conserved.G_CLOSED_PIN, "h": conserved.H_CLOSED_PIN, "i": conserved.I_CLOSED_PIN, "j": conserved.J_CLOSED_PIN}[family], 524288)
+    conserved.prefix(before, historical)  # includes lint63, gate68 and both actual failed Native calls
+    conserved.known_closed(before)
+    exact_value(conserved.current_caps(before, root, generated_budget_limit), conserved.NEW_CAPS, "same paired live cap epoch")
+    qualification = read(q["qualification"])
+    end = conserved.validate_qualification(qualification, before, root, generated_budget_limit)
+    audit = q["role"] == ROLES[3]
+    require(len(before["debits"]) == end + int(audit), "fresh G before only after all four real costs; optional sole actual body")
+    event = read(before[f["key"]])
+    exact_value(event["schema"], {"g": "flylab.m3.contact-qualification-amendment.v1", "h": "flylab.m3.contact-qualification-lint-repair.v1", "i": "flylab.m3.contact-preflight-recovery.v1", "j": "flylab.m3.contact-qualification-lint-cleanup.v1"}[family], "separate strict PREQUALIFICATION_ONLY event")
+    f["freeze"](qualification["source_freeze"], event, before[f["key"]], root)
+    exact_value(qualification["reviewed_source"], event["reviewed_source"], "same currently reviewed G Source, never old successful bootstrap")
+    total = 0.0
+    originals = [d for d in before["debits"][165:] if d["mode"] == "original"]
+    require(len(originals) == 23 + int(audit), "all historical J Original23 plus sole G body for audit")
+    for debit in originals:
+        cost = closed(read(debit["descriptor"]), debit)
+        exact_value(cost["grant"], GRANT, "same unchanged J lineage")
+        total += finite(cost["actual_outer_full_return_s"], "actual ordered J fee")
+    if audit:
+        debit = before["debits"][end]
+        exact_value((debit["cost_id"], debit["mode"]), (f["calls"][0], "original"), "sole G/H body precedes conditional audit")
+        cost = read(debit["descriptor"])
+        body = cost_proof(cost, debit, read)
+        exact_value(cost["exit_code"], 0, "genuine body exit0 required")
+        for key in ("source_freeze", "body_retry", "contract", "grant", "inputs", "roster", "qualification", "local_debit_offset", "resource_increment_s"):
+            exact_value(body[key], q[key], "same actual G body/audit " + key)
+        exact_value(body["limits"], read(q["contract"])["limits"][ROLES[2]], "body300/285/270/15")
+        manifest = read(q["artifacts"]["manifest"])
+        for key, value in (("schema", SCHEMA + ".manifest.v1"), ("run_valid", True), ("role", ROLES[2]),
+                           ("source_freeze", q["source_freeze"]), ("request", cost["request"]), ("contract", q["contract"])):
+            exact_value(manifest[key], value, "actual G body manifest")
+        report = read(manifest["artifacts"]["report"])
+        require(report["run_valid"] is True and report["first_error"] is None and report["secondary_errors"] == [],
+                "actual scientific report; journal or Source tests never qualify body")
+        _runtime_epoch_candidate_identity(q, report, read, family)
+        audited = read(r["historical_manifests"][1])
+        exact_value(body["artifacts"], dict(audited["artifacts"], manifest=r["historical_manifests"][1]), "same audited k deployed by G")
+    else:
+        historic = read(r["historical_manifests"][1])
+        _runtime_epoch_candidate_identity(q, read(historic["artifacts"]["report"]), read, family)
+    for key, start in (("original_cumulative_used_s", "original_cumulative_before_s"),
+                       ("original_stage_used_s", "original_stage_before_s"), ("startup_ray_original_local_used_s", "science_local_used_before_s")):
+        exact_value(before[key], grant[start] + total, "entire ordered historical J carry")
+    exact_value(before["original_remaining_s"], 15600.0 - grant["original_cumulative_before_s"] - total, "paired current ordered Original remaining")
+    return total
+
+
+def runtime_g_candidate_identity(q, report, read):
+    return _runtime_epoch_candidate_identity(q, report, read, "g")
+
+
+def runtime_h_candidate_identity(q, report, read):
+    return _runtime_epoch_candidate_identity(q, report, read, "h")
+
+
+def validate_g_history(before, grant, roster, q, read, closed, archive_read, *, root=ROOT):
+    return _validate_epoch_history(before, grant, roster, q, read, closed, archive_read, "g", root=root)
+
+
+def validate_h_history(before, grant, roster, q, read, closed, archive_read, *, root=ROOT):
+    return _validate_epoch_history(before, grant, roster, q, read, closed, archive_read, "h", root=root)
+
+
+def runtime_i_candidate_identity(q, report, read):
+    return _runtime_epoch_candidate_identity(q, report, read, "i")
+
+
+def validate_i_history(before, grant, roster, q, read, closed, archive_read, *, root=ROOT):
+    return _validate_epoch_history(before, grant, roster, q, read, closed, archive_read, "i", root=root)
+
+
+def runtime_j_candidate_identity(q, report, read):
+    return _runtime_epoch_candidate_identity(q, report, read, "j")
+
+
+def validate_j_history(before, grant, roster, q, read, closed, archive_read, *, root=ROOT):
+    return _validate_epoch_history(before, grant, roster, q, read, closed, archive_read, "j", root=root)
+
+
+class Admission:
+    def __init__(self, request_path, stage="pre_array", *, root=ROOT, entry=None, runtime_journal=None):
+        require(stage in ("pre_array", "pre_spawn"), "tracking admission stage")
+        if stage == "pre_array":
+            owner = json_load(os.environ["FLYLAB_DIRECT_SCIENCE_OWNER"].encode("utf8"))
+            origin = finite(owner["entry_counter_s"], "actual owner ENTRY")
+            caller = origin if entry is None else entry
+            require(type(caller) is float and math.isfinite(caller) and caller >= origin > 0, "same actual supervisor clock")
+        else:
+            origin = caller = finite(entry, "pre-spawn actual ENTRY")
+            require(origin > 0, "positive actual ENTRY")
+        self.runtime_journal = runtime_journal
+        self.stage, self.entry, self.caller_entry, self._deadline_s = stage, origin, caller, 1150
+        self.deadline()  # no path/Source/ledger read before actual owner deadline
+        self.root = Path(root).resolve()
+        self.request_spec = spec_for(request_path, self.root)
+        self.request = self.read(self.request_spec)
+        q = self.request
+        if self.runtime_journal is not None:
+            self.runtime_journal.bind(q, self.request_spec)
+        require(q["schema"] == SCHEMA + ".request.v1" and q["mode"] == "original" and q["role"] in ROLES, "four finite Original contact roles")
+        self.contract = self.read(q["contract"])
+        exact_value(q["contract"]["path"], STAGE_SPEC, "one fixed stage contract")
+        exact_value(self.contract["roles"], list(ROLES), "fixed contact roles")
+        self.role, self.limits = q["role"], q["limits"]
+        exact_value(self.limits, limits_for(self.role, contract=self.contract), "fixed role bounds")
+        self._deadline_s = self.limits["internal_s"]
+        self.deadline()
+        self.retry = retry_binding(q, self.contract, self.read)
+        exact_value(q["output"], BASE + "/parent-" + q["call_id"] + "/result", "fixed fresh output")
+        exact_value(q["ledger_path"], LEDGER, "same actual ledger")
+        exact_value(q["shared_original_lock_path"], SHARED_LOCK, "same shared Original exclusion")
+        exact_value(q["local_debit_offset"], 165, "preserved J offset")
+        exact_value(q["resource_increment_s"], 0, "no grant or reset")
+        exact_value(q["grant"], GRANT, "historical grant")
+        exact_value(q["inputs"], INPUTS, "historical Original binder")
+        exact_value(q["roster"], ROSTER, "fixed current metadata roster")
+        self.grant, self.inputs, self.roster = self.read(GRANT), self.read(INPUTS), self.read(ROSTER)
+        self.manifest_spec = self.read(self.roster["previous_geometry_roster"])["historical_manifest"]
+        exact_value(q["historical_manifest"], self.manifest_spec, "historical candidate manifest")
+        self.read(self.manifest_spec)
+        self.freeze, self.before = self.read(q["source_freeze"]), self.read(q["before_ledger"], 524288)
+        self.output = path(q["output"], self.root)
+        require(self.roster["schema"] == "flylab.m3.contact-conditioned-learning.input-roster.v1", "qualified contact-learning roster")
+        exact_value(self.contract["roster"], ROSTER, "fixed qualified roster in shared stage contract")
+        exact_value(self.freeze["sources"][STAGE_SPEC], q["contract"], "reviewed shared stage contract bytes")
+        self.check("initial")
+
+    def deadline(self):
+        journal = getattr(self, "runtime_journal", None)
+        if journal is not None:
+            journal.science()  # same ENTRY; does not change or widen _deadline_s
+        elapsed = time.perf_counter() - self.entry
+        require(math.isfinite(elapsed) and elapsed >= 0, "same actual owner clock")
+        if elapsed >= self._deadline_s:
+            raise TimeoutError("contact same owner ENTRY internal deadline")
+        return True
+
+    def read(self, spec, cap=1048576):
+        self.deadline()
+        result = json_load(leaf(spec, self.root, cap))
+        self.deadline()
+        return result
+
+    def check(self, label="science"):
+        self.deadline()
+        require(type(label) is str, "callback label")
+        if label in ("initial", "pre_array", "publication", "pre_construct"):
+            self.fence(label)
+        self.deadline()
+        return True
+
+    def fence(self, label="publication"):
+        journal = getattr(self, "runtime_journal", None)
+        if journal is None:
+            return self._runtime_cold_boundary(label)
+        with journal.fence(label):
+            return self._runtime_cold_boundary(label)
+
+    def _runtime_cold_boundary(self, label):
+        self.deadline()
+        require(label in ("initial", "pre_array", "publication")
+                or (label == "pre_construct" and self.role == "contact_candidate_body" and self.stage == "pre_array"),
+                "explicit cold contact boundary; pre_construct physical role only")
+        return self._cold_fence(label)
+
+    def _cold_fence(self, label):
+        from tools import banc_m3_checkpoint_harness_runtime as harness
+        from tools import banc_m3_checkpoint_runtime as checkpoint
+        if self.request['call_id'] in harness.CALLS:
+            checkpoint = harness
+        if self.request['call_id'] in checkpoint.CALLS:
+            return checkpoint.cold_contact(self, label)
+        self.deadline()
+        q, root = self.request, self.root
+        for spec, value, cap in ((self.request_spec, q, 1048576), (q["grant"], self.grant, 1048576),
+                                 (q["inputs"], self.inputs, 262144), (q["roster"], self.roster, 1048576),
+                                 (q["contract"], self.contract, 1048576), (q["source_freeze"], self.freeze, 1048576), (q["before_ledger"], self.before, 524288)):
+            exact_value(self.read(spec, cap), value, "fresh exact admitted metadata")
+        current_sources(self.freeze, root, self.deadline)
+        if self.retry is not None:
+            exact_value(self.read(q["body_retry"]), self.retry, "fresh exact retry descriptor")
+            retry_path = conserved.J_PATH if q["call_id"] in J_RUNTIME_CALLS else (conserved.I_PATH if q["call_id"] in I_RUNTIME_CALLS else (conserved.H_PATH if q["call_id"] in H_RUNTIME_CALLS else (conserved.G_PATH if q["call_id"] in G_RUNTIME_CALLS else (F_RUNTIME_PATH if q["call_id"] in F_RUNTIME_CALLS else (E_RUNTIME_PATH if q["call_id"] in E_RUNTIME_CALLS else (D_RUNTIME_PATH if q["call_id"] in D_RUNTIME_CALLS else C_RETRY_PATH))))))
+            exact_value(self.freeze["sources"][retry_path], q["body_retry"], "acyclic t pins retry descriptor")
+            old = self.read(self.retry["source_k"])
+            require(set(old["sources"]) <= set(self.freeze["sources"])
+                    and "tests/test_c_banc_contact_body_retry.py" in self.freeze["sources"], "full inherited k278 plus current retry closure")
+            historic_s = self.read(self.retry["descriptor_recovery"]["source_s"])
+            require(set(historic_s["sources"]) <= set(self.freeze["sources"]), "full inherited s438 plus current c closure")
+            if q["call_id"] in D_RUNTIME_CALLS + E_RUNTIME_CALLS + F_RUNTIME_CALLS + G_RUNTIME_CALLS + H_RUNTIME_CALLS + I_RUNTIME_CALLS + J_RUNTIME_CALLS:
+                historic_x = self.read(self.retry["runtime_history"]["source_x"])
+                require(set(historic_x["sources"]) <= set(self.freeze["sources"]), "full inherited x581 plus current runtime closure")
+                historic_y = self.read(RUNTIME_RECOVERY_PINS["source_y"])
+                require(set(historic_y["sources"]) <= set(self.freeze["sources"]), "full inherited y closure plus actual failed qualifier")
+        g = self.grant
+        for key, expected in (("schema", "flylab.m3.startup-ray.original-grant.v1"), ("mode", "original"),
+                              ("grant_id", "startup-ray-original-20261007-j"), ("local_debit_offset", 165),
+                              ("global_limit_s", 16200), ("stage_limit_s", 6300), ("science_local_limit_s", 6000),
+                              ("worker_max", 1), ("automatic_restarts", 0), ("reset", False), ("resource_increment_s", 0)):
+            exact_value(g[key], expected, "same existing J grant " + key)
+        exact_value(self.freeze["human_authorization"], g["human_authorization"], "same existing human authority")
+        live = self.read(spec_for(LEDGER, root, 524288), 524288)
+        exact_value(live["debits"], self.before["debits"], "every historical/generated debit unchanged")
+        for key in ("original_cumulative_used_s", "original_stage_used_s", "startup_ray_original_local_used_s", "original_remaining_s"):
+            finite(live[key], key)
+            exact_value(live[key], self.before[key], "same fresh before usage")
+        from tools.banc_m3_startup_ray_supervisor import generated_budget_limit
+        live_caps = conserved.current_caps(live, root, generated_budget_limit)
+        for key, value in (("original_cumulative_limit_s", live_caps["original_global"]), ("original_stage_cap_s", 6300), ("startup_ray_original_local_limit_s", 6000)):
+            exact_value(live[key], value, "no quota reset")
+        for key in ("startup_ray_original_pending_actuals", "startup_ray_original_blocking_holds", "e360_pending_actuals", "e360_blocking_holds",
+                    "direct_science_pending_actuals", "direct_science_blocking_holds", "e359_reservations", "e360_reservations", "direct_science_reservations", "direct_science_workers"):
+            exact_value(live[key], {}, "closed unrelated scope " + key)
+        event = {"grant": GRANT, "source_freeze": g["source_freeze"], "inputs": g["inputs"], "local_debit_offset": 165, "worker_max": 1, "automatic_restarts": 0}
+        exact_value(live["startup_ray_original_grants"][g["grant_id"]], event, "historical registered J event retained")
+
+        def prior_closed(cost, debit):
+            self.deadline()
+            result = closed_cost(cost, debit, root)
+            self.deadline()
+            exact_value(live["direct_science_calls"][cost["cost_id"]]["state"], "charged", "every prior actual once charged")
+            return result
+
+        def archive_read(item):
+            self.deadline()
+            archived = Path(item["archive_path"])
+            require(archived.is_absolute(), "absolute as-executed archive path")
+            relative = archived.relative_to(root).as_posix()
+            require(relative.startswith((BASE + "/parent-tracking-as-executed-c/", BASE + "/parent-live-replay-as-executed-a/",
+                                         BASE + "/parent-local-foot-geometry-as-executed-c/", BASE + "/parent-local-foot-geometry-as-executed-e/",
+                                          BASE + "/parent-contact-learning-as-executed-k/", BASE + "/parent-contact-learning-as-executed-s/",
+                                          BASE + "/parent-contact-learning-as-executed-x/", BASE + "/parent-contact-learning-as-executed-y/"))
+                    or relative in tuple(BASE + "/parent-contact-learning-" + name + "-junit.xml"
+                                         for name in ("math46", "gate47", "math61", "gate62", "math64", "gate65", "math67", "gate68"))
+                    or relative == D_HISTORY_PINS["stderr_c"]["path"],
+                    "historical archive or exact s qualification metadata only")
+            raw = leaf({"path": relative, "bytes": item["bytes"], "sha256": item["sha256"]}, root, 2097152)
+            self.deadline()
+            return raw
+
+        validate_history(self.before, g, self.roster, q, self.read, prior_closed, archive_read, root=root)
+        for key, cap in (("original_cumulative_used_s", live_caps["original_global"]), ("original_stage_used_s", 6300), ("startup_ray_original_local_used_s", 6000)):
+            require(live[key] + self.limits["outer_s"] + 180 <= cap, "full actual-return Original budget and distinct mandatory close180 reserve")
+        qualification = self.read(q["qualification"])
+        require(qualification["schema"] == ("flylab.m3.direct-science.qualification.v7" if q["call_id"] in J_RUNTIME_CALLS else ("flylab.m3.direct-science.qualification.v6" if q["call_id"] in I_RUNTIME_CALLS else ("flylab.m3.direct-science.qualification.v5" if q["call_id"] in H_RUNTIME_CALLS else ("flylab.m3.direct-science.qualification.v4" if q["call_id"] in G_RUNTIME_CALLS else ("flylab.m3.direct-science.qualification.v3" if q["call_id"] in F_RUNTIME_CALLS else ("flylab.m3.direct-science.qualification.v2" if q["call_id"] in E_RUNTIME_CALLS else "flylab.m3.direct-science.qualification.v1")))))), "historical/current actual qualification epochs remain distinct")
+        exact_value(qualification["source_freeze"], q["source_freeze"], "actually qualified current Source")
+        exact_value(live["direct_science_qualification"], q["qualification"], "registered actual qualification")
+        require(len(qualification["actual_costs"]) == (4 if q["call_id"] in E_RUNTIME_CALLS + F_RUNTIME_CALLS + G_RUNTIME_CALLS + H_RUNTIME_CALLS + I_RUNTIME_CALLS + J_RUNTIME_CALLS else 3), "all current four costs or immutable historical three-cost epoch")
+        for spec in qualification["actual_costs"]:
+            cost = self.read(spec)
+            require(cost["exit_code"] == 0 and cost["charged_once"] is True and cost["cap_exceeded"] is False
+                    and cost["all_owned_ended"] is True and cost["reservation_released"] is True
+                    and cost["cost_id"] in {d["cost_id"] for d in live["debits"]}, "genuine paid closed qualified role")
+            exact_value(cost["source_freeze"], q["source_freeze"], "qualified exact Source")
+        call = live["direct_science_calls"][q["call_id"]]
+        exact_value(call["state"], "admitted", "fresh nonreplayed actual call")
+        exact_value(call["mode"], "original", "Original role")
+        exact_value(call["reserved_s"], self.limits["outer_s"], "actual role reservation")
+        outer = self.read(call["request"])
+        for key, value in (("schema", "flylab.m3.direct-science.supervision.v1"), ("mode", "original"), ("role", self.role),
+                           ("call_id", q["call_id"]), ("science_request", self.request_spec), ("source_freeze", q["source_freeze"]),
+                           ("grant", q["grant"]), ("output", q["output"] + "-supervision"), ("ledger_path", LEDGER), ("shared_original_lock_path", SHARED_LOCK)):
+            exact_value(outer[key], value, "exact owner dispatch " + key)
+        for key in ("outer_s", "child_s", "cleanup_s", "host_bytes", "output_cap_bytes"):
+            exact_value(outer["limits"][key], self.limits[key], "same outer physical bounds")
+        from tools import banc_m3_startup_ray_supervisor as supervisor
+        workers, reservations = live["startup_ray_original_workers"], live["startup_ray_original_reservations"]
+        supervision = path(outer["output"], root)
+        if self.stage == "pre_spawn":
+            exact_value(workers, {}, "no existing Original worker")
+            exact_value(reservations, {}, "no existing Original reservation")
+            require(not path(SHARED_LOCK, root).exists() and not self.output.exists() and not supervision.exists(), "fresh shared exclusion/output")
+        else:
+            require(type(workers) is dict and set(workers) == {q["call_id"]}, "sole actual worker")
+            w = workers[q["call_id"]]
+            exact_value(set(w), {"request", "grant", "state", "worker_max", "reserved_s", "lock_token", "worker_pid", "worker_creation_ticks", "owner_pid", "owner_creation_ticks"}, "complete actual owner lease")
+            for key, value in (("request", self.request_spec), ("grant", GRANT), ("state", "begun"), ("worker_max", 1),
+                               ("reserved_s", self.limits["outer_s"]), ("worker_pid", os.getpid())):
+                exact_value(w[key], value, "actual worker binding")
+            for key in ("worker_pid", "worker_creation_ticks", "owner_pid", "owner_creation_ticks"):
+                require(type(w[key]) is int and w[key] > 0, "typed positive process identity")
+            require(w["worker_pid"] != w["owner_pid"], "distinct actual owner/worker")
+            for prefix in ("owner", "worker"):
+                exact_value(supervisor.creation_ticks(w[prefix + "_pid"]), w[prefix + "_creation_ticks"], "actual PID creation identity")
+            exact_value(w["lock_token"]["path"], SHARED_LOCK, "shared lock only")
+            token = self.read(w["lock_token"])
+            exact_value(token["schema"], "flylab.m3.direct-science.lock-owner.v1", "actual shared token schema")
+            exact_value(json_load(os.environ["FLYLAB_DIRECT_SCIENCE_OWNER"].encode("utf8")), token, "actual environment owner token")
+            for key, value in (("call_id", q["call_id"]), ("request", call["request"]), ("owner_pid", w["owner_pid"]), ("owner_creation_ticks", w["owner_creation_ticks"]), ("entry_counter_s", self.entry)):
+                exact_value(token[key], value, "same actual supervisor origin")
+            require(supervisor.in_named_job(token["job_name"]), "actual same named Windows Job")
+            exact_value(reservations, {q["call_id"]: {"request": self.request_spec, "grant": GRANT, "reserved_s": self.limits["outer_s"]}}, "sole actual reservation")
+            require(supervision.is_dir(), "owner-created supervision output")
+            if label == "initial":
+                require(not self.output.exists(), "worker-alone fresh output")
+        total = 0
+        for directory in (self.output, supervision):
+            if directory.exists():
+                require(directory.is_dir(), "output directory")
+                for item in directory.rglob("*"):
+                    self.deadline()
+                    safe = path(item.relative_to(root).as_posix(), root)
+                    if safe.is_file():
+                        total += safe.stat().st_size
+                        if directory == supervision:
+                            cap = (1 << 20) if safe.name in ("stdout.bin", "stderr.bin") else (64 << 10)
+                            require(safe.stat().st_size <= cap, "tracking opaque stream/metadata finite cap")
+                if directory == self.output:
+                    result_bytes = sum(item.stat().st_size for item in directory.rglob("*") if item.is_file())
+                    require(result_bytes <= self.limits["output_cap_bytes"] - (3 << 20), "tracking-only three MiB supervision reserve")
+        require(total <= self.limits["output_cap_bytes"], "result plus opaque supervision combined output cap")
+        exact_value(live["original_jobs_running"], int(self.stage == "pre_array"), "actual shared jobs")
+        exact_value(live["original_reserved_s"], self.limits["outer_s"] if self.stage == "pre_array" else 0, "actual shared reserved seconds")
+        self.deadline()
+        return True

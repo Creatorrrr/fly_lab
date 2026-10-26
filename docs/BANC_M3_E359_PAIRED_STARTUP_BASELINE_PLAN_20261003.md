@@ -1,0 +1,43 @@
+# E359: 같은 초기 상태의 기준 모델부터 초기 보행 가능성 확인
+
+2026-10-03. 기존 M3 finite-goal/F1–F8 및 최신 사용자의 계획·목표 실행 요청을 계속한다. 새 목표나 새 실행 시간은 만들지 않는다. E358의 실제 비용과 실패를 유지하고, 원본 누적10200/공동 단계300초와 공유 생성150초의 잔여만 사용한다. 이 단계는 자연 보행 완료를 대신하지 않는다.
+
+## 근거와 구분
+
+E358 후보 계산23.289초와 독립 raw 감사2.372초는 실행 당시 유효했고 R 개선0.00887903942174223, O/Q 및 O/T 조건부 일치가 있었다. 보존한 실행 당시 wrapper/tests snapshot과 불변 과학 소스로 provenance를 유지한다. 이는 다른 감각 입력의 신체 보행을 증명하지 않는다.
+
+동일 후보의 신체 실행48.295초는 알려진99 controls/1980 neural/4950 physics/100 boundary rows에서 초기 구간을 중단했다. 생산자 보고 q RMS0.017792953582825483<0.018, q max0.04220501637004681>0.04, tendon RMS0.0013636523143322314<0.009, max0.013189925135820152<0.025. 이후 actual-import source publication이 실패했으므로 이 body는 technical_invalid/unqualified이다. 독립 body raw 감사나 full1.5s/10s/F1–F8을 통과한 것으로 표현하지 않는다.
+
+ROOT는 등록된 installed-source absolute path와 immutable body collector의 ROOT-relative path 사이47개 alias 누락을 찾아 같은 파일/같은 SHA만 인정하고 collision을 거부하도록 고쳤다. 실패 전에 actual import/mismatch를 보존하도록도 고쳤다. 현재19-case/57-phase 및 별도 실 supervisor→fsync/close/reread→actual return fixture가 닫혔다. 이 수정으로 이전 body를 소급 유효화하지 않는다. 원본 body 재실행으로 수정이 검증됐다는 주장도 하지 않는다.
+
+## 지금 실행할 한정된 단계
+
+H359a: E307의 동일 whole control0에서 신경계수 변경이 없는 기준 모델(theta=1)이 고정된 startup99 네 조건을 충족한다. 대립 설명은 기준 모델 자체의 초기 관절/힘줄 궤적이 기존 startup target과 불일치한다는 것이다. 이 기준 모델이 실패하면 후보 step을 줄이는 것으로 초기 문제를 해결할 수 있다고 가정하지 않는다.
+
+한 번의 별도 **기준 모델 진단**과 한 번의 독립 저장 raw 감사를 사전 등록한다. E358 후보 재실행이나 새 후보가 아니다. 이 권한은 계속하도록 승인된 전체 목표의 원인 진단 및 미사용 원본 예산에서 오며, 후보 retry slot에서 추가 body 권한을 추론하지 않는다. 같은 whole·graph·decoder·mask·startup·world 및 원본 coefficient bytes를 사용한다. 두 번째 동일 진단이나 새 학습 후보/body는 이 등록에 넣지 않는다.
+
+기준 모델은 실제 SSPRecoveryResourceTrial.from_checkpoint→SSPEfficacyTrial(theta=1) 경로로 만든다. theta=1은 원본 모든 weight를 보존하는 명시적 대조 조건이다. 새 finite source-only loader로 graph7/whole124(122 unique NPY leaves+state+manifest)/mask+startup2의133개 등록 입력만 읽는다. E343/E358 learned candidate와 reference는 baseline 입력에서 제외한다. `OriginalFactory.construct`만 재사용하고 old E343 load/initial/lifecycle 및 E358 candidate loader/initial/audit를 가짜 후보로 호출하거나 old globals를 monkeypatch하지 않는다. construct 반환 후 실제 live `source_csr.data[positions].copy()`에서 selected weights를 얻고, exact float64 ones8547/f32 roundtrip/group coverage, efficacy patch의 original32/actual32와 source selected bytes 일치를 확인한다. 초기 inverse whole including wall/state를 제외 필드나 tolerance 없이 정확히 비교하고 source graph/adapter/network 및 command/tendon/CPG control0, host/packed CSR 원본 data/indices/indptr 바이트와 palette/topology/sign/pointer guards를 확인한다. efficacy **network identity는 source와 같아야 하며**, trial schema/patch provenance는 별도로 남긴다. source에서 얻은 native palette≤16384와 full CSR digest equality를 쓰고 옛15461이나 learned-candidate inequality를 쓰지 않는다.
+
+constructor requested/returned1, settling2000, neural setup320/capture160을 정확히 기록한다. 실제 확인된 API work가 다른 경우 값을 바꾸어 PASS하지 말고 기술적 오류로 보존한다. 실제 sensory→BANC→decoder→body의99 controls/1980 neural/4950 physics 및 native contact99×50,100 boundary rows, CPG/clocks, requested/returned/device-confirmed/unknown을 확인한다. 실행 결과 `baseline_completed99`는 startup PASS/FAIL와 독립이다. 네 기준을 통과하거나 실패해도 기술적으로 유효한99-control prefix는 저장하고 같은 독립 raw 감사를 수행한다. health/advance/sync/close/observer 오류나 unknown work는 technical_invalid이다. 원본 startup99 함수와 네 기준을 그대로 유지하고, prefix로 full1.5s evaluator를 호출하거나99 뒤로 진행하지 않는다.
+
+별도 감사는 natural full-return/owned PID closure 뒤 finite manifest와 literal raw member/header/dtype/shape, source identities/transfer linkage,100/4950 clocks/CPG/counters 및 startup99를 재계산한다. 기준 body를 다시 생성하거나 GPU를 재획득하지 않는다. 이전 실패 후보 prefix와 비교하려면 **새 감사 worker 안에서만** fresh hash/header/value를 읽고 이전 worker/envelope/transfer와 linkage를 확인한다. 이전 manifest가 없고 source closure가 실패했음을 그대로 남겨 비교는 diagnostic_only로 기록한다. 비교나 현재 baseline PASS로 이전 후보/body를 유효화하지 않는다.
+
+선택적 historical 비교는 새 baseline 독립 감사의 같은 예약 안에서만 수행한다. literal old body `control-raw.npz`, `native-contact.npz`, `evaluation-inputs.npz` 각각≤8MiB 및 old exit/envelope/contract/transfer/selected-ledger/trace/source snapshots metadata만 사전 허용한다. 현재 fresh hash는 현재 보존 파일을 가리키며 없었던 original manifest를 복구하지 않는다. `historical_original_publication_binding_proven=false`, `historical_run_qualified=false`와 이전 first error/exit1/missing actual-import evidence를 유지한다. exact member/header/dtype/shape/99·100·4950 clocks와 theta/selected proof, 동일 whole/graph/decoder/mask/startup/world/CPG 및 boundary/index를 확인한 경우에만 비교한다. 누락·불일치·시간 여유 부족은 reason 있는 `comparison_unavailable`로 남기며 clean baseline audit는 별도로 완료할 수 있다. late timeout/publication 오류가 발생하면 audit 자체는 무효다.
+
+H359b는 선택적인 **다음 설계의 진단 정보**다. 허용한 paired method는 동일99-target에 대한 baseline/historical command·tendon error와 두 prefix 차이의 RMS/max, 다리/관절별 최대 오차 위치 및 고정 기준 초과 위치를 계산하는 것이다. 이 단계에서는 scalar alpha를 수치 탐색하거나 새로운 candidate coefficients를 만들지 않는다. 현재 baseline PASS이면 이 관측을 다음 constrained-update 설계에 사용한다. baseline FAIL이면 H359a를 이 source/target에서 기각하고 state/target/model 정합 또는 baseline calibration을 다음 설계로 제안한다. 어느 결과도 모든 smaller step이 불가능하다거나 closed loop 선형성/새 후보 PASS를 뜻하지 않는다. 새 neural candidate evaluation/body/F1–F8은 이 단계에 실행하지 않고 threshold/target을 수정하지 않는다.
+
+## 실행 경계와 자원
+
+- ROOT 설계→실제 Astra6/max 리뷰→ROOT 반영→실제 Sol6.1/high FIRST→ROOT FIRST→SAME Sol ONE R1→ROOT SECOND→ROOT residual. 생물학 소스/원본 science/core/neural/body/trial/E267/E346 감독 파일과 current E358 tool/tests는 불변이다. 새 `tools/verify_c_banc_m3_startup_baseline.py`, `tests/test_c_banc_startup_baseline.py` 및 ROOT의 등록/행정 기록만 만든다. actual Astra reviewer `gpt-6-astra/max`, original/generated runtime0; 리뷰의 E359-M1–M5를 모두 반영했다.
+- 기존 E358 current19-case Q는 바뀌지 않은 라이브러리 경계에만 재사용한다. 새 tool은 자신만의 완전한 실제 generated cases/닫힌 real supervisor fixture가 필요하다. 원본 입력 hash/header/native/GPU/body는 새 original pre-spawn 및 pre-array authority, 같은 absolute ENTRY, source/current Q·finite inputs·정확한 예약 안에서만 한다. generated fixtures로 original을 우회하지 않는다.
+- 원본 이전9893.754960899503, E358 stage actual78.18, 현재9971.934960899503/10200. E359를 포함한 같은 단계300초의 잔여221.82초, global 잔여228.0650391004968초. 기존6.245초 headroom을 stage spend로 쓰지 않는다. 기존 실패/원본/생성 모든 실제 비용을 보존하고 helpers/마감까지 한 번만 debit한다.
+- 앞선 body prepublication46.202474400022766/full return48.295초를 근거로 baseline outer65/child62/internal60/science55, host6GiB, sampled GPU delta+2MiB≤8GiB, physical0 direct NVML interval.5/sample132/subprocess0; raw/output16MiB를 등록한다. audit outer12/child11/internal10/science9, host2GiB, GPU/body acquisition0/output2MiB. 새 단계 자체 최대85초(65+12+8 preparation/closure headroom)이며 부모 E358/E359 공동stage300/누적10200도 동시에 지킨다. baseline_startup99와 baseline_audit는 각최대1회, 자동 재실행0이며 E358 candidate attempts1/retry0를 변경하지 않는다. 같은 shared original lock/PID/create-time을 사용한다.
+- 기존28debit descriptor와 exact cost_id roster를 immutable inherited ledger snapshot에 고정하고 현재 mutable shared ledger의 전체 old/new cost 및 예약 의미를 parent/child에서 다시 확인한다. caller subset/누락/중복/변조/bool-typed time을 거부한다. 원본 actual full-return/행정 helper costs는 한 번만 debit하고, local85·shared300·global10200 및 생성local25·shared150을 동시에 검사한다. ROOT final owned-source/currentQ pins는 registration과 self-referential hash cycle을 만들지 않는 별도 descriptor/Q linkage로 고정한다. 신규 current cases/Q가 닫히기 전 original 실행은 금지다.
+- 생성 기존80.1900156와 E358 actual19.556을 유지하여 현재99.7460156/150, 잔여50.2539844초. 새 검증 최대25초 prospective reserve, 16MiB 새 생성 retained cap. 현재 E358 whole3.365초/fixture1.462초를 참고하되 새 자격을 가정하지 않고, E359 generated suite12/10/8/7 및 standalone fixture6/5/4/3의 outer/child/internal/science cap과 준비·마감7초를 합해 prospective25 안에 둔다. actual return을 기준으로 재확인하고 CUDA science18-case를 중복 실행하지 않는다. 모든 실패를 포함해 한도가 부족하면 미수행으로 남긴다.
+- startup PASS/FAIL와 run validity, H359 verdict, adoption, M3 milestone을 분리한다. source closure 실패는 actual imports/mismatch를 보존하고 independent-qualified가 아니다. 전 단계의 실패/원본 artifact를 덮거나 삭제하지 않는다. 원본 worker/모든 owned PID/create-time/NVML thread·body 소유권 종료를 확인하며 kill/unknown/late publication은 자격 없음.
+
+새 whole cases는 theta1 실제 source-byte/identity 대조와 fabricated selected 거부, wrong whole/CPG/selected/identity,99 PASS와FAIL lifecycle, 독립 startup tampering,301/부분-prefix full evaluator 금지, historical diagnostic-only/unavailable, source alias/mismatch 보존, inherited cost 누락/중복, same-ENTRY timeout/unknown/owned-close 및 late revocation을 포함한다. 모든 현 test functions의 실제 setup/call/teardown receipt와 새 tool의 실제 original0 parent/child/publisher/full-return fixture를 요구한다. generated fake native observations는 original body 증거가 아니다. 실제 저장 manifest/raw native slip의 validity-mask finite policy를 유지하고 JSON은 엄격 finite이다.
+
+## 다음 판단
+
+baseline 독립 감사가 초기 조건 PASS이면 후보의 startup 영향과 불변 source data를 바탕으로 다음 제약 있는 neural update를 설계한다. FAIL이면 같은 whole source와 startup target의 정합을 먼저 설계한다. 어느 결과에서도 full1.5s·10s·F6/F7/F8·자연/생물학 보행을 주장하지 않는다. 현재 full-goal API 상태는 실제 마지막 조회 blocked이며 완료로 바꾸지 않는다.

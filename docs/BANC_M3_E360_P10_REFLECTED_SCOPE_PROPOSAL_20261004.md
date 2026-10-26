@@ -1,0 +1,37 @@
+# E360 P9 실패 이후 수동 P10 제안 — 미승인
+
+P9는 첫 Ruff 검사에서 exit1 / 39건으로 실패했다. 실제 전체 반환 시간0.607초를82번째 비용으로 한 번 차감했다. 추가800초는 한 번 활성화됐으며 현재 shared503.0620156/1400초, local392.105/1289초다. 남은 allowance는 각각896.9379844초와896.895초다. scanner, fixture, suite, Q, 원본 호출은0회다. F1–F8, M2/UI, 원본20/300/10200, 기존 실패와 실제 비용을 보존한다. 자연 보행과 생물학적 기전은 여전히 미검증이다.
+
+이 문서는 추가 예산을 요청하지 않는다. 기존 잔여 allowance 안에서 새 수동 P10 한 번을 제안한다. 승인된 P9 literal은 P10을 금지하므로 이 문서, 소스 제안과 설계 리뷰만으로 실행 권한이 생기지 않는다. P9를 재개하거나 실패를 수정/재분류하지 않는다.
+
+ROOT에서 설계하고 actual gpt-6-astra/max가 검토한다. 승인 후 actual gpt-6.1-sol이 난이도에 맞는 effort로 새 scoped FIRST를 구현한다. ROOT FIRST에서 필요한 수정은 같은 Sol ONE R1에 맡기며 ROOT SECOND 뒤 잔여 수정은 ROOT가 마무리한다. Sol R2는 없다. 현재 lint 제안은 이전 단계의 ROOT 잔여 소스 수정안이며 활성 소스에 적용하지 않았다.
+
+`parent-e360-ROOT-lint-source-proposal-v2.json`과 proposed tool/tests 사본이 구체적인 소스 제안이다. 규칙 선택, 프로젝트 Ruff 설정과 전체 테스트 요구를 그대로 유지한다. 단일 nested context16개를 순서와 범위를 보존해 결합하고, subprocess.run에 check=False를 명시하고, import 순서/형식과 scanner의 nested if를 정리했다. 실제 고정 production bootstrap을 실행하는 한 개의 finite regression 안의 세 exec site에만 기존 파일의 사용 방식과 같은 S102 주석을 제안했다. 전역 noqa, 검사 선택 축소, 테스트 삭제/skip/xfail은 없다. 현재79개 이름을 보존했다. 출력은 도구의2000-token 제한으로 일부가 유실됐으므로39건 전체 해결이나 Python 문법/런타임 통과를 주장하지 않는다. 승인 후 구현 리뷰에서 알려진 진단과 관련 소스를 모두 점검한다.
+
+P10의 첫 Ruff는 동일한 규칙과 세 개의 활성 Python 파일을 검사한다. stdout/stderr를 bounded fresh text 파일에 보존하고 fsync/close/readback한 뒤 실제 exit code를 반환하여 또다시 진단이 유실되지 않게 한다. 이 저장 시간도 실제 전체 반환에 포함하고 한 번 차감한다. 알려진 실패 소스를 그대로 재실행하는 진단 수집 호출은 하지 않는다. 소스가 수정된 새 P10의 실제 첫 검사만 실행한다. source preparation/AST/compile/Ruff/helper/test를 무료 사전 실행하지 않는다.
+
+실행 권한은 새 direct human scope authorization으로 기록한다. 예산 grant는0이며 P9의1400/1289, 기존 distinct800 grant, 과거 activation/amendment14개(old12+P9 pair)와 두 기존 grant 및 비용82개는 그대로다. immutable inherited82의 전체 calls/passes/debits/evidence 및 offset42를 보존한다. P9 Ruff의 실제 once debit, exit1, cap3, actual0.607, helper가 아닌 Ruff의 internal_completion_valid=true와 미생성 scanner/worker를 확인한다. 원본/GPU는0이다. P9 failure는 P10 correction의 근거이며 테스트나 과학 결과로 승격하지 않는다.
+
+새 P10 authority를 기존 revalidation_amendment로 직접 고정한다. resource_extension은 기존 v2다. P9 current budget selector는 current1400/1289와 직접800 승인/완전한 pair 및 grant를 uncached/nonrecursive로 검증한다. 명시적 P2–P9 historical policy는 옛 caps를 유지하며 P10만 새 finite pass로 선택한다. P9 old request의 own4는 실제 root-final-v2 사본으로 exact descriptor/path/pass/bytes/hash relocation4개를 추가한다. 기존26개를 보존한30개다. historical P9 own9와 fresh P10 own9를 구분하고 P9 전체 상태를 inherited82와 exact typed equality로 검증한다. P9 full closure510와 own9 projection의 ROOT N3 수정도 보존한다.
+
+reader는 기존10개+P10 한 개다. max16 entries,512 descriptors,256KiB literal/2MiB aggregate, passive reached-only7 checkpoints, genuine ENTRY와 actual captured clock/writer, canonical import bridge, first failure 유지, two durable journal fences를 보존한다. 실제 전체 source collection은79개 이상84개 이하이며 기존79개를 모두 보존한다. N84 journal bound4177920≤4194304를 predispatch에 검사한다. 정확한 descriptor 수/aggregate 및 전체 test collection은 실제 scanner/build에서 검증하며 문서만으로 fit을 주장하지 않는다.
+
+whole fresh9-call schedule은 Ruff3, scanner20/18, fixture build25/22, fixture worker55/50/46/42, fixture seal15/13, suite build30/27, suite worker600/560/540/500, suite seal20/18, Q30/27이다. outer total798와 suffix795,775,750,695,680,650,50,30,0을 보존한다. shared/local 잔여에서 whole reservation을 뺀 여유는98.9379844/98.895초다. 신규 P10 한 개, generated 최대10/modified9/total11/original1, automatic0, P11 권한false, 새 original 권한false다. 각 실제 반환을 지연/실패/초과 포함 그대로 한 번 차감하고 Q actual debit 또는 더 이른 닫힌 실패에서 종료한다. suite 성능과600초 완료는 미검증이다.
+
+첫 검사 또는 이후 단계가 실패하면 그 증거·비용을 보존하고 이후 validation/Q/original 단계로 진행하지 않는다. 실패한 worker의 이미 예약된 seal, actual 반환 차감과 owned-scope cleanup은 필요한 범위에서 끝낸다. seal 자체 실패는 실제 helper 비용을 차감한 뒤 native fallback으로 actual worker 비용과 unresolved hold를 정직하게 보존한다. Ruff 실패에는 worker seal이 필요 없다. 성공하면 실제 closed fixture, 전체 suite receipt와 journal, 동일한 candidate/source authority의 Q를 저장·fsync·close·재독한 범위만 검증 완료로 기록한다. 이 성공도 E359 원본 재실행, H359a 채택,1.5초/10초 보행, F1–F8 또는 자연 생물학적 보행 완료를 뜻하지 않는다.
+
+## actual Astra6/max FINAL 반영
+
+`parent-e360-P10-astra-design-review.json`13696B/SHA3e17951ff6de8ce9025754625fddab15326047c08e2d15b77e1b2f43c3e9f729의 P10-1..7을 다음처럼 반영했다. 리뷰 판정은 NEEDS CORRECTIONS이며 ROOT의 반영이 실행 승인을 대신하지 않는다.
+
+P10 once scope activation은 exact inherited82와 zero pending/holds/jobs를 확인한다. old12 activation/amendment fields와 P9 pair의14 fields, original e360_resource_grant 및 P9 별도800 grant를 typed/unchanged로 유지한다. 새 P10 scope activation/amendment pair 두 keys만 추가한다. 추가 grant object, limit/remaining/used/cost/call/pass/phase reset은 없다. 새 direct human manual scope approval과 immutable P10 literal을 실제로 인증한 후에만 dispatch한다.
+
+import 두 지점은16-space 현재 indentation으로 parenthesized form을 반영한 별도 tests-v2.py를 사용한다. old generator/proposal/tests-v1을 보존한다. 리뷰에서 확인한16 context 변환과 한 regression의 세 S102 exec site만 사용하고, 추가 flatten이나 전역 suppression을 허용하지 않는다. Ruff39건 전체 해결과 Python 문법/런타임은 미검증이다.
+
+Ruff capture wrapper는 native PowerShell/.NET로 구현하고 소스 리뷰·고정한 뒤 dispatch한다. 실제 명령은 `.venv/Scripts/ruff.exe check tools/verify_c_banc_m3_source_closure_diagnostic.py tests/test_c_banc_source_closure_diagnostic.py verification/banc-natural-gait-m3-20260919/parent-e360-root-metadata-helper.py`로 고정하며 검사 선택/설정/--fix를 바꾸지 않는다. stdout과 stderr를 독립된8KiB buffers로 동시에 ReadAsync하여 한 pipe가 막힌 채 다른 pipe를 기다리지 않는다. retained cap은 각각1MiB, raw 합계2MiB다. fresh CreateNew 두 text paths를 stdout/stderr에 각각 사용한다. EOF를 확인하고 각 stream을 Flush(true), close, independent bytes/hash readback한다. empty stream도 같은 절차를 거친다. 완료 metadata는 최대16KiB, capture 관련 retained 전체는2MiB+16KiB다. cap 초과는 stream별 observed count와 overflow flag를 기록하고 메모리에 추가 데이터를 쌓지 않으며 EOF 또는 owned 종료까지 두 pipe를 계속 drain한다. `capture_complete=false`와 capture 오류를 명시하고 축약 출력을 완전한 진단으로 표시하지 않는다.
+
+wrapper는 실제 Ruff process identity/start-time과 genuine native entry를 저장하고3초의 외부 상한 안에서 필요 정리를 완료하도록 설계한다. stdout, stderr, manifest 저장·fsync·close·재독과 종료 정리는 ROOT의 actual full-return dispatch interval에 포함한다. 실제 Ruff exit code와 wrapper/capture/publication 오류를 별개로 저장한다. Ruff exit1과 저장 실패가 함께 발생해도 첫 Ruff 오류를 뒤 오류로 덮지 않는다. start/timeout/unknown identity는 실제 상태로 기록하며 return 또는 소유 종료를 만들지 않는다. 외부 실제 반환이3초를 넘으면 그대로 차감하고 실패로 닫는다. 상한을 늘리거나 child-only 시간으로 교체하지 않는다. 이미 실패한 동일 소스의 별도 로그 복구 재실행은 없다.
+
+P9의 current budget authority는 완전한 authenticated P9 pair/distinct800 grant/1400 및1289를 uncached/nonrecursive로 유지한다. P10 scope authority를 별도로 선택한다. P2–P9 명시적 historical caps는 보존하고 P10 요청, scanner/helper pre-import bootstrap, actual clock, checkpoints, CASE/Q, PS Call-Policy/Future-Admin/Require-Fit/begin/actual/admin/worker/fallback/finalize 모두 exact P10 direct descriptor로 연결한다. debit index81은 actual P9이며82 이후만 승인된 P10이다. validate_p9_pass의 current own_sources/read_spec 경로는 historical inherited82 full-state equality와 four frozen v2 relocation을 사용한다. 기존26+4=30을 exact pass/path/full descriptor로 확인하며 historical P9 own9와 fresh P10 own9를 구분한다. ROOT N3 full510 closure와 own9 projection을 보존한다. source_hash_cycle이 없도록 reviewed baseline snapshots와 final fresh source authority를 구분한다.
+
+실패 뒤 다음 검증 단계로 진행하는 dispatch는 막고 이미 예약된 seal, 실제 차감·owned cleanup은 허용한다. 알 수 없는 소유권은 debit-backed hold로 남기며 numerical usage나 실패를 지우지 않는다. 원본/GPU/추가 후보/자동 재시도/P11은 금지한다. min79/current full roster/max84,11 readers/max16/512 descriptors/256KiB/2MiB, genuine ENTRY/clock/writer, narrow metadata scopes, poison/finally/canonical bridge 및 two durable journal fences를 유지한다. exact descriptor/aggregate fit과600초 whole-suite 및 lint completion은 실제 paid 검증 전까지 미검증이며 free probe나 bounds 확대는 없다.

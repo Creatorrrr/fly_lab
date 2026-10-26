@@ -1,0 +1,13 @@
+# Native 검증 비용 ROOT SECOND — 2026-10-08
+
+같은 GPT-6.1 Sol/xhigh sole R1의 R1.md8196B/SHA8fa140c31d47d0f67a5f40546c271cb38a7de6f1ea81e1e458055fb43987abd8, R1.json41814B/SHAb264d2a9c90302aedbd92f0dc64b4c73ae47f33c8b0e286a152b91cad3a762c0와 모든 section을 읽었다. ROOT가 FIRST7/input15/current16/archive16/R1 Source5 핀을 확인했고 이전 FIRST 전체 helper/module과 이번 모든 변경 diff를 검토했다. Metadata/runtime proposals는 FIRST와 exact 동일하다. 실행·컴파일·동치·속도·qualification은 아직 NOT_RUN/UNQUALIFIED다.
+
+ROOT FIRST의 R1–R4 수정은 Source에서 반영됐다. Count 이전에 양쪽의 exact inert class를 검사하고 custom IDictionary의 CountReads/first-error/no-output/candidate attempts0을 비교하는 additive fixture를 넣었다. Exact typed owner/request/descriptor binding, 검증된 세 raw bytes의 contained CreateNew scratch 연결 및 명시적 quote 함수도 확인했다. Strict 원문/기존 오류와 fallback/complete supported traversal/direct owned Type/per-scope lazy 수명은 보존됐다. Account 변경은 common helper 안의 guard뿐이고 Read-Pin/Generated-Budget recursion 및 Write-New 이후는 그대로다.
+
+남은 수정은 ROOT가 맡는다. Module의 CASE_ORDER에는 실제 custom Count stage가 없지만 R1.json에는 small scalar 뒤 해당 stage가 기록됐다. 실행 전 실제 module/report의 case order에 같은 stage를 명시하고 module 자체를 ROOT residual sibling으로 새로 출판한다. Candidate는 검토한 R1 account를 그대로 쓰며 module/ARGV의 fixed path만 새 실제 파일에 맞춘다. 기존 FIRST/R1를 덮어쓰지 않고 Sol R2를 요청하지 않는다. 이는 diagnostic bookkeeping 연결 수정이며 test work를 줄이거나 추가 dispatch/caps를 만드는 변경이 아니다.
+
+Native API의 타입·namespace 수명은 [공식 Add-Type 문서](https://github.com/MicrosoftDocs/PowerShell-Docs/blob/main/reference/7.6/Microsoft.PowerShell.Utility/Add-Type.md)도 참고했다. 해당 문서의 unique names/changed definition refusal과 제안의 GUID namespace/direct returned Type/collision fallback 검사 방향이 부합한다는 Source 판단이다. 설치된 runtime에서의 실제 cold compilation/collision/private layout/InvariantCulture 의미/전체 history fast path는 아직 검증하지 않았으며 문서가 local runtime receipt를 대신하지 않는다.
+
+ROOT residual 후 generic freeze/request 별도 Native admit와 기존 genuine collector를 통해 단일 독립 probe20/12/8/Native8/warm3/max1/repeats0만 실행 가능 여부를 다시 확인한다. Full14/30/기존11/24/owner9/metadata3 이름·classes·assertions·limits·argv는 유지하며 이 진단은 full qualifier가 아니다. Compile-failure/fallback-only/timeout/partial이면 performance INCONCLUSIVE다. Cold/custom-fixture 비용 때문에 완료 또는 whole-group 개선을 예측하지 않는다.
+
+Canonical/ledger/보호 dispatch와 새 grant/reset/close borrowing/Original 대체/criteria 완화는0이다. Current generated921.5029999999998/local964/shared remaining50.28498440000021/close20와 Original remaining3936.9150391004946/16200은 유지한다. Full136초 qualification/adoption/d-body는 계속 차단돼 있다. Gate68 실제 timeout 및 모든 기존 비용·Source를 보존하고 실제 probe의 새 tail도 미래 이력에서 제외하지 않는다. Candidate-k UNADOPTED/F1–F8 ACTIVE·INCOMPLETE/biology UNPROVEN/native VJP UNVERIFIED/M2·UI·unused F6·root GOAL_PLAN·BANC provenance와 외부 CPG/teacher/phase/trajectory/root 교정 금지를 유지한다.

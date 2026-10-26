@@ -1,0 +1,10 @@
+# Bounded follow-up after actual L13R2 full4 timeout
+
+Current whole307/189, actual160.783 charged once; known all-owned closure/two EOF/no unknown/no active lock. Actual full4 INCOMPLETE, stdout F, no JUnit. Original metadata-only branch PASS; one Native batch emitted lock/typed-state/legacy-control PASS then timed out before the whole negatives group or primitive controls returned. This is not four passing tests, primitive parity, measured speedup, actual body or gait success. Entire current SourceS13R2 and raw observations remain immutable.
+
+Current Generated local remaining40.392999999999574/shared48.18098439999949 do not fit another200 envelope or qualification690. Original2236.9150391004946 remains protected behind full qualification. Conservation700 is NOT_RUN. No new grant/refund, reuse/replay, partial admission, weakened gates or new paid call in this iteration.
+
+The next Source-only improvement to evaluate is early rejection of malformed fixed scalar types/cap values and impossible map shape before expensive history reconstruction in K-Validate. It must only reject, never create a positive acceptance path; every positive/current proof still authenticates complete captured raw operands on every cached use and reconstructs the entire typed ledger. Keep all original negatives, full4 identities and primitive controls, Source/caps/protected421/138/core, cumulative ENTRY and owned Job/closure. Source inspection alone cannot establish performance or parity. Review any eventual change with the existing Astra/max workflow before adoption; do not create another Sol/R1 cycle for the same residual.
+
+Alternative optimization must account for repeated dependency authentication costs without skipping required reauthentication or moving trusted acceptance before raw proof. The observed receipt order narrows the unfinished stage but does not identify a timed internal function; no profiler claim. Whole four-test verification and subsequent math23/full61(A25/B36), Original body/audit and F1-F8 remain required. This document records analysis and a bounded next design only; implementation/adoption/execution are NOT_RUN.
+

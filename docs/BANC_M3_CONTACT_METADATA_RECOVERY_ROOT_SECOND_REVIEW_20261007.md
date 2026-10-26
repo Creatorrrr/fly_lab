@@ -1,0 +1,9 @@
+# Metadata 회복 ROOT SECOND
+
+ROOT는 actual GPT-6.1 Sol/high의 sole R1 네 개 proposal와 canonical before pins 및 R1 handoff를 실제 bytes/SHA로 재확인했다. FIRST에서 세 production diff와 신규 test 전체를 읽었고, SECOND에서 두 R1 diff와 일치하는 contract/prepare Source를 재확인했다. R1 owner 94542B/SHA 0b695562b9b7b1ba78435462a16161a68a0c1f30f5354bf4a815daedbcec9f65, contract 15262B/SHA c2fd0d8eee2a7c16a91277d510140504ecca4ecb8b9df5e38b5317f5ba995751, prepare 18662B/SHA 20135b3a5e0e39a15423dea60e4ef0745d8866533db89fa00f57409e3813cafa, test 19925B/SHA 0002f7af6dd1428b34600554d0814bc60e360c0e86b5c9ff3831e5e80e44360a를 수용한다.
+
+Generated-Closed는 generated transfer에 한정하여 e359/e360 포함 required ownership 키의 존재, dictionary type와 Count0을 요구한다. 기존 Original minimal fixtures의 Closed-Old와 generated commit의 active ownership 허용은 보존한다. Scratch negatives는 mutation과 일치하는 fresh before/policy/event pins를 바인딩하고 정확한 semantic refusal reason 및 ledger byte-identical을 확인한다. Insufficient shared fixture는 실제 잔여 조건에 도달한다. Production archive 경계·reparse·size·역사 hash 확인, 단일80 transfer의 두 필드 변경 및 fixed cap 보존, 세 실제 j qualification과 full owner9, suffix/CreateNew/snapshot/no replay 처리도 유지된다.
+
+추가 Sol 수정 요구는 없다. Source 수용이며 runtime PASS가 아니다. ROOT는 qualified-i의 as-executed Source를 먼저 보존하고 네 개 proposal를 반영한 뒤 metadata-only transfer를 실행한다. Initial300/shared1700/Original16200·6300·6000, 230 debits/112 calls/18 Original returns와 모든 실패 비용을 보존한다. 단일80 transfer 뒤 local effective380이며 새 grant는0이다. ROOT만 새로운 j lint18(8/4/4), math19(15/9/6), gate20(40/30/10)와 fixed20close를 실제 genuine collector/Native once charge로 실행한다. 성공 후에만 Original fixed contact direction을 suffix-b로 admission한다. 실제 실패가 발생하면 비용과 Source를 보존하고 잔여 수정은 ROOT가 맡는다.
+
+현 단계는 qualification-i 이후 Original pre-admission 거부를 회복하는 metadata 작업이다. 새 neural/physics/candidate work0이며 F1–F8 INCOMPLETE, biology UNPROVEN, exact native VJP UNVERIFIED, M2/UI·미사용 F6·E150/E222/E224/E360/Q를 보존한다. 테스트 통과를 실제 보행 개선이나 목표 완료로 해석하지 않는다.

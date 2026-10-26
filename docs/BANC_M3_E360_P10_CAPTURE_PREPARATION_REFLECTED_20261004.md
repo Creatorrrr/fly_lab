@@ -1,0 +1,13 @@
+# P10 출력 보존 사전 구현 — 실제 Astra 리뷰 반영
+
+기준 설계는 [사전 구현 설계](BANC_M3_E360_P10_CAPTURE_PREPARATION_DESIGN_20261004.md)다. 실제 위임된 `gpt-6-astra/max`의 최종 in-session 설계 리뷰는 `NEEDS NARROW CORRECTIONS BEFORE OFF-ACTIVE FIRST`였다. 파일 publication은 완료하지 않았으며 ROOT가 실제 최종 메시지와 아래 반영을 별도 JSON으로 기록한다. 독립 모델 introspection이나 구현/런타임 통과를 주장하지 않는다. 이 문서는 구현 사본 준비만 허용하며 P10 실행 승인이 아니다.
+
+1. ROOT와 실행 경로를 고정한다. WorkingDirectory는 고정 repository ROOT이고 FileName은 ROOT 아래 `.venv/Scripts/ruff.exe` 절대 경로다. ArgumentList에는 `check`와 기존 세 target만 사용하며 UseShellExecute=false와 두 redirect를 유지한다. call row의 실제 필드는 begun, sequence_index0, reserved3, future795, cost_id=null, attempt_id=null이며 pass.next_index는 callbegin 뒤 **1**이다. pass.failed_cost=null과 request.action=ruff를 확인한다. source/concrete_fix/direct authority/v2 extension을 live row/request/pass 및 독립적인 ROOT freeze 입력과 대조한다. 전체82/14 fields/두 grant 인증은 미래 ROOT admission에 남긴다.
+
+2. 두 pipe마다 outstanding ReadAsync는 하나이고 IsCompleted일 때만 결과/예외를 관측한다. byte count0만 EOF이며 read fault는 terminal incomplete다. 다른 pipe는 계속 처리한다. overflow/write failure 뒤 보존을 중단하고 drain은 계속한다. read 재시도나 미완료 Result/무한 wait는 없다. 오류는 고정 stage/stream slots로 제한하고 각 메시지는256자 이하로 제한한다. first_failure는 고정 stdout→stderr→process 순서에서 처음 관측한 사건과 monotonic 시각으로 한 번만 정한다. exception 문자열이나 오류 배열을 무제한 축적하지 않는다. 실제 JSON escaping을 포함한 UTF-8 manifest16KiB와 compact summary8KiB 제한을 확인한다. $PID 같은 시스템 변수를 쓰지 않는다.
+
+3. entry clock은 함수 첫 statements에서 잡아 guard/파일 준비 시간을 포함한다. Process.Start 직전 entry+2초 이상이면 프로세스를 시작하지 않는다. entry+2초에 alive identity를 확인한 직접 process에만 한 번 종료 요청하고 entry+2.5초에 비차단 관측을 끝낸다. finally는 둘째 CreateNew 실패를 포함해 열린 file/pipe/process handle과 pending reads를 정리한다. 무제한 await는 없다. 확인한 EOF/exit 증거는 보존하며 Dispose를 종료 증거로 쓰지 않는다. identity/exit 불명은 unresolved ownership이고 미래 ROOT가 실제 차감 및 필요한 hold를 처리해야 한다. fsync/OS 지연의3초 초과를 없애거나 child-only 시간으로 대체하지 않는다.
+
+4. fixed expected_output JSON은 진단 manifest다. request.completion helper 파일은 만들지 않는다. manifest의 capture_complete는 stream/child 관측 결과만 나타내며 이후 manifest publication 성공이나 자기 hash를 선기록하지 않는다. actual Ruff exit는 별도 필드로 보존하고 exit1은 capture가 완전해도 실패다. manifest CreateNew→Flush(true)→close→독립 bytes/hash 검증 뒤 compact 반환 envelope에 publication_verified와 descriptor를 남긴다. ROOT 성공에는 complete stream capture, manifest publication_verified, Ruff exit0과 actual external full-return3초 이내가 모두 필요하다. 어느 하나라도 unknown/false이면 진행하지 않는다.
+
+별도 파일 `parent-e360-p10-capture-proposed.ps1`에 함수만 구현한다. 이 파일의 dot-source/실제 함수 호출/가짜 admission/실제 Ruff/compile/AST/Python/helper/tests/probes는 이번 준비에서 하지 않는다. native PS source parse와 source/hash 리뷰만 허용한다. 현재 P9 own9와 ledger82를 유지하고 FIRST/R1 사본과 인계만 저장한다. 기본 설계의 모든 cap/직접 identity/stream별1MiB/총2MiB+16KiB/소스 핀/새 grant0/F1–F8 제한은 그대로다.

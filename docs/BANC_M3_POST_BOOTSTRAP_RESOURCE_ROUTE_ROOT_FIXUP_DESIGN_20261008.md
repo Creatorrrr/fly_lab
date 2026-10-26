@@ -1,0 +1,34 @@
+# Post-bootstrap ROOT fixup design after actual administrative refusal
+
+2026-10-08. Scope: finish the same stage's remaining ROOT corrections after actual Sol sole R1 and ROOT SECOND. No Sol R2. Ask actual GPT-6 Astra/max for a bounded auxiliary design review before implementation. ROOT owns any further residual under the user's prescribed sequence. Primary whole-BANC neural-only natural gait goal stays ACTIVE/INCOMPLETE.
+
+Actual event F17051B/49617e5236a11b8c367bba1c5ba0dcb0f09051ba02d361139bf744ea87f7e012 and reviewed vector205973B/7d3d18610e821e512e4618c7048f7ab2e87c01786e4dc80b9d58ba605140e4cc were published after complete Source review/adoption. Actual Native administrative conserved-allocation returned exit1 at the Exactly two schema-bound prospective routes guard. Immutable actual tool observation2307B/f1435c615c975eb58902f39a1886c30dfd414e031360d37cc176583560f7fcc4 records the command, first final response and unchanged ledger. This is bookkeeping, not scientific conformance or a scientific debit.
+
+ROOT independently confirmed ledger454791B/40c35c8f08f65a036d678db9d562385425068c04e89bbae2367389cca667c7a2 unchanged,283 debits/165 calls, no allocation pointer and absent shared lock. No F request/freeze/qualification/Original has been created or executed. All four fixed F qualification calls are unused. Caps stay1700/964/16200 and used balances/fees/history remain unchanged.
+
+Source has unparenthesized binary additions inside comma lists at the two-route guard (epoch116/account957 and action1232), four forbidden Source paths (epoch206/account1047) and old writer Source member list (epoch241/account1082). PowerShell's binary comma binds before addition; explicit grouping of every concatenated list element is required. See Microsoft primary reference: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_operator_precedence?view=powershell-7.6 . This Source-based explanation matches the actual guard failure; no standalone parser, AST, Native conformance or test probe ran.
+
+R1: fix all these newly added list expressions using individually parenthesized path elements. Retain exact intended lists, strict types, Source checks and no extra active route. Synchronize the account's exact epoch embedding. Native core remains unchanged. Inspect the rest of the touched Source functions for the same expression shape through bounded Source text only.
+
+R2: preserve original F event, reviewed manifest, static descriptor, all R1/FIRST/ROOT reviews/adoption/failure bytes and old artifacts at their exact paths. Do not overwrite/relabel old F or E metadata. Publish fresh companion paths:
+- parent-conserved-resource-prequalification-reviewed-source-20261008-f-fixed.json
+- parent-conserved-resource-prequalification-20261008-f-fixed.json
+- parent-contact-body-runtime-20261008-f-fixed.json
+- parent-contact-learning-source-freeze-20261008-f-fixed.json
+- parent-contact-learning-qualified-20261008-f-fixed.json
+all under verification/banc-natural-gait-m3-20260919.
+
+The new active administrative event is explicitly schema flylab.m3.conserved-resource-prequalification.v2, event_id conserved-prequalification-20261008-f-fixed-600, with the same F qualification epoch/call IDs and all previous exact fields plus superseded_administrative_refusal pinned to the actual observation. The only active allocation routes are strict old v1 successful-bootstrap and this corrected fixed path/schema. Original F is preserved as an unallocated failed administrative proposal and rejected as an active event. Reusing the four genuinely unused fixed F calls is not a scientific retry or suffix alias; no generated or Original call has been admitted, run or charged in F.
+
+The fresh fixed static body descriptor retains candidate-k/material/history/physics/limits/call identity and changes only its own exact provenance/path bindings needed for this companion route. Both Python and Native bindings must use its new exact pin and corrected source/review/event/qualification paths. Future-success pins remain forbidden. Root reflection/addendum and old23 J Original lineage are preserved. Add an exact Source binding for the actual auxiliary Astra review and ROOT fixup report without self/future hash cycles. The generated ROOT_FIRST note stays outside Source-vector members.
+
+R3: full prospective current Source vector retains every721 inherited E Source member, original static F descriptor and new fixed static descriptor, plus any actually required current review Source/provenance bindings. No previous Source is omitted. Preserve exact Source before every current replacement. Reviewed manifest -> actual v2 event -> actual common-lock allocation -> fresh fixed freeze -> exact unused four requests -> genuine costs and complete JUnits -> registered qualification -> conditional same-candidate body/audit remains acyclic. Freeze explicitly overrides old D body_retry to the fixed F descriptor.
+
+R4: same strict conserved transfer600: shared1700->2300, nested direct964->1564, Original16200->15600, combined17900 unchanged, new resource0, human numerical approval false. Exactly six live fields change, all old debits/calls/modes/grants/policy/transfers/failures/used totals retained. Corrected Source/provenance must be reviewed before another actual administrative commit. If that action refuses, preserve actual refusal and unchanged/uncertain state; never infer commit or release.
+
+R5: extend existing current Generated fixture functions for correct two-path list/cardinality and every expected member, four exact forbidden paths, all three old writer Source names, v1-original-F/wrong-schema rejection and actual superseded-refusal preservation. No new test IDs, skips, subset or replacement receipt. Retain all279 old assertions/26 math-gate functions, prep prefix63017 and full19/disjoint21+32=53 roster. Keep2MiB case container, Source/stream/host/output/science/qualification bounds and common-lock primitive unchanged. All scientific checks only after fresh actual Native admission -> unchanged genuine collector -> actual first FINAL -> once commit.
+
+Four full fixed qualification envelopes remain15/10/5,25/20/5,120/110/10,120/110/10 with host2147483648/output8388608/close20. Any paid failure blocks progression; no fifth/retry/generic Original. Body300/285/270/15 and conditional audit120/100/90/20 remain dependent on all4 genuine successful costs and3complete unskipped19/53 JUnits. The old bootstrap9.208/exit124/Native NOT_STARTED/empty JUnit remains rejected and once paid, never met by this bookkeeping correction.
+
+No approval question, new numerical grant, Original arrays/header/hash, biology or gait PASS. F1-F8, M2/UI, unusedF6 and provenance remain fixed. Candidate-k unadopted; actual BANC gait, biology and Native VJP unverified.
+

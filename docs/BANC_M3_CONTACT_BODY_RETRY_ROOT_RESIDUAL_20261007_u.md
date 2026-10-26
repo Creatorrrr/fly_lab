@@ -1,0 +1,9 @@
+# ROOT 잔여 정적 수정-u — 2026-10-07
+
+Actual full Source-t의 lint48은1.579초/exit1/timeout=false/known closed/once charged다. ROOT가 source constants를 넣은 patch 생성식에서 첫 줄에 literal+를 남겼고 fixture의 keyword-only dict 한 곳도 Ruff C408로 거부됐다. 이 ROOT 오류를 기록하며 수학49/gate50 또는 c-body는 실행하지 않았다. Source-t133821B/SHA3a85a029a77df7771429ed446c43e8ebaf875f4ae44970caeaecd69140a6a547, archive-t12/index4159B/SHAd7bcc3146b8e5f0a9d07c9eaa574af3fb2b938c77db1869601b2e7dbc4f7e92b와 closed263/145437114B/SHA03dd0a2c3afc09e3c3d7fb63bc012cd5ac3b348308a765311888dadc9f54a983를 immutable 보존했다.
+
+u에서 literal+를 제거하고 해당 dict를 literal로 바꿨다. 같은 patch 생성식으로 Native helper 선언 첫 줄에도 literal+가 남은 것을 Source 검색으로 확인하고 함께 제거했다. Native runtime은 아직 미실행이며 이 Source 발견을 실제 PS 실행 실패로 꾸미지 않는다. b private history/c wrapper·enriched fixture·기준·finite c descriptor6990B/SHAca67f386971144a03ca3c5735eebca91e16c81a0321ddca7717c059f195cd2ed와 Astra R1–R3 설계는 유지한다. Actual failed t lint cost1282B/SHA9be409735c75eaf12b56e6fe848b6f59fed1864f71a3ecda8aa63d66d02a89cc는 별도 정확한 closed263 prefix로 검증하며 b 입력 실패·모든 earlier history·공유 비용을 지우지 않는다.
+
+Full Source-u fresh lint51/math52(11)/gate53(24),8/12/64초와 close20, Native host12가 고정이다. Source-equivalence/subset qualification은 없다. c-body의 prefix는266/148/Original22, c audit는267/149/Original23이며 c IDs/Source-k candidate/caps는 불변이다. Source-u는 full Source-t 이름 및 archive12·실패 비용/trace/request/closed263/이 기록을 상속하고 미래 Source/qualification/request/result 또는 live ledger를 참조하지 않는다.
+
+Actual generated594.8069999999999/900/shared remaining376.9809844000001, Original remaining4205.755039100494 및 모든 owners/holds0다. 새 grant/reset/allocation0; 추가 승인 없이 ROOT가 잔여 수정을 마친 뒤 full checks 및 조건부 실제 body/audit로 진행한다. 이 문서는 Source-u freeze/실제 검사 이전이며 runtime/gait proof가 아니다. F1–F8 ACTIVE/INCOMPLETE·candidate unadopted·biology UNPROVEN·exact VJP UNVERIFIED·M2/UI/unused F6는 불변이다.

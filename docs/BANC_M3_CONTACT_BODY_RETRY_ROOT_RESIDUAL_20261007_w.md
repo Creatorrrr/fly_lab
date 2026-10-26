@@ -1,0 +1,9 @@
+# ROOT 측정된 이력 검사 제한 회복-w — 2026-10-07
+
+Actual-v lint54 exit0/1.623초, math55 11 PASS/4.856초, gate56 23 PASS·1 FAIL/51.728초·exit1·outer timeout=false를 genuine FINAL/once-cost/known-close로 보존했다. 남은 failure는 expanded Native history batch의12초 subprocess timeout이며 이전 두 production integration 문제는 해당 검사에서 통과했다. Full v qualification은 실패다. Source-v149981B/SHAe4bafbaf04aa289f04e08082247d43589c211968cc15d8953d1d13507e5ed37b, executed-v12 index4159B/SHA2f86f7eaa6a57b713ab34f00d10590d8faf9c195e5408f16dc277ee107942d2b, closed269/151442231B/SHA c2213ccc38d7d8d5e6acf14d066e889aedb10e51e80b81eaec116879b47fca2d를 immutable 보존했다.
+
+ROOT는 Native metadata batch만24초로, 전체 fresh gate만80/72/8로 바꿨다. 모든 cases/assertions/24 names/owner9/기존11 math/strict negatives/공유 정책을 보존한다. 이전 caps/결과/timeout은 재해석하지 않는다. 기존 per-generated-call120과 local900/shared1700 안에서 lint8+math12+gate80+close20=120 <= remaining204.72600000000023/shared276.51398440000025다. 새 allocation/grant/reset0이며 Original6000·6300·16200/body300/audit120 및 모든 scientific gates는 그대로다.
+
+Full Source-w fresh lint57/math58(11)/gate59(24) 이후 exact before272/154/Original22 c-body,273/155/Original23 c audit를 허용한다. 실제 v3 비용/Source/exits0·0·1/원래64/56/8과 exact closed269 prefix는 추가로 검증한다. Immutable c descriptor, same k candidate, previous b failure/source-s/XML/모든 history·노드·연결 provenance는 유지한다. Source-w는 v 전체 names/Source/archive12/costs/trace/request/closed269/이 기록을 상속하고 mutable live/future/self references는 없다.
+
+Actual generated695.2739999999998/900/shared remaining276.51398440000025, Original remaining4205.755039100494/all owners/pending/holds0다. 이 기록은 Source-w freeze/실제 검사 이전이며 Native24 통과 또는 gait proof를 주장하지 않는다. ROOT가 sole Sol R1/SECOND 이후의 잔여를 계속 맡으며 추가 승인 질문 없이 full qualification/한 번의 실제 body와 조건부 CPU audit를 진행한다. F1–F8 ACTIVE/INCOMPLETE·candidate unadopted·biology UNPROVEN·exact VJP UNVERIFIED·M2/UI/unused F6는 불변이다.

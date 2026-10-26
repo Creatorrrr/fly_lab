@@ -1,0 +1,13 @@
+# Actual bootstrap outcome — 2026-10-08
+
+REJECTED. One fresh Native-admitted complete fixed bootstrap was dispatched with the unchanged genuine collector. The first actual FINAL was exit124 after9.208 seconds. That actual fee was once committed; current ledger has283 debits/165 calls. All previous282 debits/164 calls remain. No allocation, full qualification or candidate-k body execution occurred.
+
+The actual owned supervisor reported timeout, ended descendants, both EOFs, released reservation, no unknown identity and absent physical lock. Pytest emitted an F; its actual JUnit was zero bytes, so it is not complete evidence. The archived actual generated observation records AttributeError: `'str' object has no attribute 'decode'`, pre-spawn refusal and no Native PID/creation/window. The nested Native validator was NOT_STARTED, not tested or slow. Its empty streams are preserved. The outer timeout is distinct from that earlier fixture parser failure.
+
+ROOT fixed the actual environment-owner parsing to pass UTF8 bytes to ray.json_load. This one-line current Source change is unqualified and untested; the as-executed E freeze and all sealed proposals, reviews, actual return and failed JUnit remain immutable. No second bootstrap, renamed replay, test subset, borrowed close reserve or Source-only transfer is allowed.
+
+Current Generated local usage941.4899999999998/964 and shared1669.7020155999999/1700 leave22.51000000000022 local and30.29798440000036 shared seconds. Keeping close20 permits at most an integer2-second next outer reservation. The full qualification and the original fixed bootstrap cannot validly be dispatched from that remaining window. Original remains12263.084960899505/16200; the prospective600 conserved transfer was not committed.
+
+The Source development/review cycle is complete through actual Astra/max design review, actual GPT-6.1 Sol/max FIRST/sole R1, ROOT FIRST/SECOND and ROOT residual. Fifteen Source targets were adopted; the63017-byte preparation prefix, startup/journal, full19/53 roster, M2/UI and unusedF6 were preserved. Source adoption and real process closure are not natural gait. F1–F8 remain active/incomplete, candidate-k unadopted, biology unproven, native VJP unverified. A new valid resource route is needed before more empirical work; failed acceptance remains failed.
+
+Exact pins, first error and next constraint are in `verification/banc-natural-gait-m3-20260919/parent-conserved-bootstrap-ROOT-actual-result-20261008.json`. No approved numerical grant, reset, old qualification reuse or physical acceptance is inferred from the user's delegation of judgment.

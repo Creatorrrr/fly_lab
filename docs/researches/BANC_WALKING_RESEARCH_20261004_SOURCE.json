@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "import_date": "2026-10-04",
+  "source": {
+    "conversation_id": "6ac1c4d7-77a0-83ee-8896-72b3cbd3c43d",
+    "conversation_title": "보행 제어 연구 제안",
+    "turn_id": "39f5fd25-c1ea-49b3-9434-8acb3c37f443",
+    "assistant_message_id": "399526be-540c-475d-bb7f-2f96c7fb5b71",
+    "assistant_started_at": 1791090843.49,
+    "assistant_completed_at": 1791092514.268838,
+    "truncated": true,
+    "char_count": 20000,
+    "api_max_output_chars_per_item": 20000,
+    "attachments": [
+      {
+        "name": "BANC_GPT_PRO_RESEARCH_20261004-135304.zip",
+        "path": "C:\\Users\\ckthd\\AppData\\Local\\Temp\\codex-file-preview-iiFgTw\\BANC_GPT_PRO_RESEARCH_20261004-135304.zip"
+      }
+    ]
+  },
+  "scope": "Complete ZIP-attached final assistant response, imported as API prefix plus rendered-browser continuation",
+  "full_response_acquired": true,
+  "browser_fallback": {
+    "attempted": true,
+    "authenticated": false,
+    "full_response_acquired": false
+  },
+  "missing": [],
+  "external_papers_reverified": false,
+  "external_code_executed": false,
+  "local_experiments_executed": false,
+  "zip": {
+    "filename": "BANC_GPT_PRO_RESEARCH_20261004-135304.zip",
+    "sha256": "3bd3fca9b529ea906ac3f517d7e4afc28cf17cff2e89140e4157e074d1e8dbe3",
+    "snapshot_time": "2026-10-04T13:53:04.940390+09:00"
+  },
+  "local_static_checks": [
+    {
+      "path": "tools/verify_c_banc_m3_reference_parameter_direction.py",
+      "sha256": "656415a13cde92d469b9ad281a16b969ce26b87e543bdc4161961ab621d7005b",
+      "matches_snapshot": true,
+      "lines": [
+        [
+          327,
+          341
+        ],
+        [
+          786,
+          800
+        ],
+        [
+          914,
+          924
+        ]
+      ],
+      "finding": "direction selection and call use R gradient; no startup constraint input"
+    },
+    {
+      "path": "tools/verify_c_banc_m3_candidate_body_handoff.py",
+      "sha256": "5b43ee4ee34a8270ba123d11e99e9820b6f2d25644c027bc46a86ab9b6f7532a",
+      "matches_snapshot": true,
+      "lines": [
+        [
+          1213,
+          1222
+        ],
+        [
+          1251,
+          1279
+        ]
+      ],
+      "finding": "screen thresholds; controls 1..300; startup at control 99"
+    },
+    {
+      "path": "tools/analyze_c_banc_biological_gait.py",
+      "sha256": "bcceb5d1e9f26293ffc800d09a1fbf063a1ab784d73cf5489b74c57ecdd14760",
+      "matches_snapshot": true,
+      "lines": [
+        [
+          180,
+          240
+        ]
+      ],
+      "finding": "0.3 s eligible bouts and AEP/PEP/AEP complete-cycle definition"
+    },
+    {
+      "path": "flylab/c/adaptive_rate.py",
+      "sha256": "3fb6d8288ccf8ad8ec816d3fa5146202173db05067a0f1edd0ddc13d33a9f381",
+      "matches_snapshot": true,
+      "lines": [
+        [
+          224,
+          255
+        ]
+      ],
+      "finding": "rate and adaptation dynamics already implemented"
+    },
+    {
+      "path": "flylab/body.py",
+      "sha256": "99a8b0be53e2c6f2eccddaa027456bb2086d9c3433f6688e89da9ee9d61626f2",
+      "matches_snapshot": true,
+      "lines": [
+        [
+          425,
+          453
+        ]
+      ],
+      "finding": "direct joint-target input path"
+    },
+    {
+      "path": "flylab/c/research_rate.py",
+      "sha256": "b41eb3858a7c12c92252c34aa968c71a2f00f20e9db7106f4f642eee96931c4c",
+      "matches_snapshot": true,
+      "lines": [
+        [
+          3,
+          3
+        ],
+        [
+          146,
+          165
+        ]
+      ],
+      "finding": "Pugliese reference commit and state advance path"
+    },
+    {
+      "path": "tools/verify_c_banc_m3_coordination_parameter_direction.py",
+      "sha256": "fb4d2687baf9ad89b919b7c4692d7039992a319ffef082686933d1bbc563bb2d",
+      "matches_snapshot": true,
+      "lines": [
+        [
+          60,
+          60
+        ],
+        [
+          98,
+          98
+        ],
+        [
+          1224,
+          1224
+        ]
+      ],
+      "finding": "four 5 ms control windows"
+    },
+    {
+      "path": "tools/verify_c_banc_m3_common_descent_body.py",
+      "sha256": "7d123ea4d005f4c45c4cc386f94edd09eabab9a5e54b873dd855613ea272bc4e",
+      "matches_snapshot": true,
+      "lines": [
+        [
+          343,
+          369
+        ],
+        [
+          1442,
+          1457
+        ]
+      ],
+      "finding": "startup four limits and candidate construction path"
+    }
+  ],
+  "current_stage_snapshot": {
+    "thread_id": "01a08f76-0b81-77f3-9056-a144a23f8589",
+    "title": "FlyGym 미사용 기능 적용 검토",
+    "cursor": "0cf11bf7-8841-4781-b1cc-4017d0ca8f92:7",
+    "state": "active; P11 approval pending, checking source and ledger; additional validation execution held"
+  },
+  "handoff": {
+    "authorized_by_user": true,
+    "requested_boundary": "after completing the current registered stage",
+    "status": "message_submitted",
+    "submitted_at": "2026-10-04T15:41:36.005137+09:00",
+    "target_thread_id": "01a08f76-0b81-77f3-9056-a144a23f8589",
+    "target_title": "FlyGym 미사용 기능 적용 검토",
+    "submission_tool_succeeded": true,
+    "adoption_verified": false
+  },
+  "captured_source_utf8_sha256": "ef2d697470231ae0c884918f47fc55e472035898a3f28c4dde19b9e4332a5ee2",
+  "captured_source_characters_verified": 20000,
+  "local_static_verification_time": "2026-10-04T15:31:54.720749+09:00",
+  "response_serialization_verbatim": false,
+  "browser_completion": {
+    "browser": "Chrome",
+    "tab_title": "보행 제어 연구 제안",
+    "url": "https://chatgpt.com/c/6ac1c4d7-77a0-83ee-8896-72b3cbd3c43d",
+    "authenticated": true,
+    "access_provided_by_user": true,
+    "completed_at": "2026-10-04T15:39:28.509039+09:00",
+    "rendered_body_characters": 21802,
+    "continuation_scope": "remaining section C, section D, efficiency section 3, section E, final recommendation",
+    "format_note": "DOM text/tables/math/code list converted to Markdown; preserves content, not original serialization"
+  },
+  "downloaded_artifacts": [
+    {
+      "path": "C:\\Users\\ckthd\\Dev\\Projects\\fly_lab\\docs\\researches\\BANC_RESEARCH_EVIDENCE_20261004.md",
+      "bytes": 134599,
+      "sha256": "b0e9b315c7273c03809e8cebddc33ce0a802556fc3b6af6791b61f8f004670e7",
+      "copied_bytes_verified": true
+    },
+    {
+      "path": "C:\\Users\\ckthd\\Dev\\Projects\\fly_lab\\docs\\researches\\BANC_ATTACHMENT_INTEGRITY_20261004.json",
+      "bytes": 15952,
+      "sha256": "c4299982b2f962fa4143dac2c27be0c8788a54a09b138c7d24383d084e735eaf",
+      "copied_bytes_verified": true
+    }
+  ],
+  "full_response_file": {
+    "path": "C:\\Users\\ckthd\\Dev\\Projects\\fly_lab\\docs\\researches\\BANC_WALKING_RESEARCH_20261004_GPT_PRO.md",
+    "bytes": 46708,
+    "sha256": "a6ef2dc7f5f869b8b6ce5dc44279278bc459adffddedf4910d2c3207ea355074",
+    "body_characters": 25315,
+    "api_prefix_hash_verified": true,
+    "final_recommendation_verified": true
+  },
+  "external_integrity_record_metadata_checked": true
+}
